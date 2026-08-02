@@ -2,13 +2,13 @@
 
 The frontend foundation for 2nd & 15, a fast, modern NFL experience designed around game-day context, responsible AI insight, and fantasy decision support.
 
-Milestone 0 provides the application shell, theme system, route structure, test foundation, and typed API boundary. It deliberately does **not** include authentication, sports data, team assets, or live backend calls.
+Frontend Milestones 0 through 2 provide the application shell, theme system, complete authentication lifecycle, active NFL team catalog, favorite-team onboarding and account controls, reusable team identity fallback, and personalized home states. Live games, schedules, scores, news, statistics, predictions, and fantasy data remain deferred.
 
 ## Prerequisites
 
 - Node.js 20.19 or newer
 - npm 10 or newer
-- The separate 2nd & 15 backend only when working on a later API-backed milestone
+- The separate 2nd & 15 backend for live authentication flows
 
 ## Install
 
@@ -46,6 +46,14 @@ npm run dev
 
 Vite prints the local URL, normally `http://localhost:5173`.
 
+For live authentication, run the sibling backend in a second terminal from `../2ndand15BE` after configuring its `.env`, applying its committed migrations, and following its README:
+
+```bash
+npm run dev
+```
+
+The backend defaults to `http://localhost:3000`, permits the documented frontend origin with credentials, and owns the HTTP-only refresh cookie. A missing or invalid refresh cookie is a normal signed-out startup result.
+
 ## Verification
 
 ```bash
@@ -67,15 +75,21 @@ npm run preview
 
 ## Current routes
 
-| Route      | Current purpose                    |
-| ---------- | ---------------------------------- |
-| `/`        | Minimal responsive landing shell   |
-| `/games`   | Future Games section placeholder   |
-| `/news`    | Future News section placeholder    |
-| `/stats`   | Future Stats section placeholder   |
-| `/ai`      | Future AI Hub placeholder          |
-| `/fantasy` | Future Fantasy section placeholder |
-| `*`        | Not-found recovery page            |
+| Route              | Current purpose                        |
+| ------------------ | -------------------------------------- |
+| `/`                | Public or personalized responsive home |
+| `/games`           | Future Games section placeholder       |
+| `/news`            | Future News section placeholder        |
+| `/stats`           | Future Stats section placeholder       |
+| `/ai`              | Future AI Hub placeholder              |
+| `/fantasy`         | Future Fantasy section placeholder     |
+| `/login`           | Account sign-in                        |
+| `/register`        | Account registration                   |
+| `/forgot-password` | Enumeration-safe recovery request      |
+| `/reset-password`  | Token-based password reset             |
+| `/account`         | Protected current-user account summary |
+| `/choose-team`     | Protected favorite-team selection      |
+| `*`                | Not-found recovery page                |
 
 Placeholder routes contain no fabricated sports data.
 
@@ -101,19 +115,22 @@ src/
   app/                 Bootstrap, providers, query defaults, routes
   components/          Shared navigation and feedback components
   layouts/             Application/public layout composition
-  pages/               Home, section placeholders, route errors
+  features/            Authentication, users, and team behavior
+  pages/               Home, auth, onboarding, account, placeholders
   services/api/        Environment validation and typed fetch boundary
-  stores/              Client-only theme preference
+  stores/              Theme preference and memory-only auth state
   test/                Test setup and application render helper
   theme/               Semantic tokens, MUI theme, theme provider
 ```
 
-Feature directories will be added only when their milestones begin.
+Additional feature directories will be added only when their milestones begin.
 
 ## Backend relationship
 
-The backend is maintained in a separate repository. The frontend validates `VITE_API_BASE_URL` and includes a testable native-fetch client with JSON handling, credentials support, optional authorization-header injection, normalized errors, abort-signal compatibility, and safe `204` handling.
+The backend is maintained in a sibling repository. The frontend validates `VITE_API_BASE_URL` and uses a testable native-fetch client with JSON handling, credentials support, bearer injection, normalized backend errors, abort compatibility, safe `204` handling, deduplicated refresh, and one-time request retry.
 
-Milestone 0 does not instantiate that client in a feature or make backend requests. Access-token storage, refresh coordination, authentication, teams, favorite-team personalization, and password recovery are deferred.
+Access tokens remain only in memory. The refresh token is an HTTP-only cookie managed by the backend. TanStack Query owns current-user and team data; Zustand does not duplicate either. The exact verified contracts are documented in [docs/auth-contract.md](docs/auth-contract.md) and [docs/team-personalization-contract.md](docs/team-personalization-contract.md).
+
+The team catalog is cached for 24 hours. Favorite-team updates submit only internal UUIDs and update the current-user cache directly from the backend response. Approved logo URLs are displayed when available; missing or failed images use the shared abbreviation badge.
 
 See [docs/frontend-architecture.md](docs/frontend-architecture.md), [docs/design-system.md](docs/design-system.md), and [docs/api-integration.md](docs/api-integration.md) for the durable engineering decisions.

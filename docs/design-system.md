@@ -77,6 +77,17 @@ The long-term primary areas are Home, Games, News, Stats, AI Hub, and Fantasy.
 
 Every team identity component accepts an approved image URL when available and always has an abbreviation fallback. The fallback uses readable text, a stable neutral/approved color treatment, accessible labeling, and handles image load failure without layout shift.
 
+The implemented `TeamIdentity` is the single reusable logo/fallback surface for onboarding, account, home, and header contexts. Backend colors are applied only after strict `#RRGGBB` validation and remain supplemental to textual selected states. Official images retain their original colors. Decorative header instances are hidden from assistive technology because the account control supplies its own accessible name.
+
+Team selection uses semantic radio-like buttons with `aria-checked`, visible checkmarks and selected text, responsive one-to-three-column grids, persistent search labels, keyboard-operable conference toggles, and a mobile-safe sticky action region.
+
+## Milestone 2 visual interpretations
+
+- The selection page follows the conceptual mockups' dense rounded-panel language without importing generated team marks or fictional information.
+- Team identity is intentionally badge-forward because the current backend catalog may provide no approved logo URLs.
+- Personalized home uses one prominent “My Team” panel plus four clearly labeled future-module cards; no score, schedule, record, news item, standing, or prediction is fabricated.
+- The mobile header uses the compact favorite badge as the account affordance, while desktop places it beside the Account label.
+
 ### Game and score cards
 
 Reserve the strongest number style for scores. Clearly distinguish scheduled, live, final, postponed, delayed, and unavailable states. Include date/time and timezone context where ambiguity is possible. Live state should be textual, not indicated only by a pulsing dot.

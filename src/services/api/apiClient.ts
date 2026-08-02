@@ -1,13 +1,20 @@
+export interface ValidationDetail {
+  readonly field: string;
+  readonly message: string;
+}
+
 export interface ApiErrorDetails {
-  code?: string;
-  fieldErrors?: Record<string, string[]>;
-  requestId?: string;
+  readonly code?: string;
+  readonly details?: unknown;
+  readonly fieldErrors?: Readonly<Record<string, readonly string[]>>;
+  readonly requestId?: string;
 }
 
 export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
-  readonly fieldErrors?: Record<string, string[]>;
+  readonly details?: unknown;
+  readonly fieldErrors?: Readonly<Record<string, readonly string[]>>;
   readonly requestId?: string;
 
   constructor(status: number, message: string, details: ApiErrorDetails = {}) {
@@ -15,23 +22,27 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
     this.code = details.code;
+    this.details = details.details;
     this.fieldErrors = details.fieldErrors;
     this.requestId = details.requestId;
   }
 }
 
 export interface ApiClientOptions {
-  baseUrl: string;
-  fetchImplementation?: typeof fetch;
-  getAccessToken?: () => string | null;
+  readonly baseUrl: string;
+  readonly fetchImplementation?: typeof fetch;
+  readonly getAccessToken?: () => string | null;
+  readonly refreshAccessToken?: () => Promise<string>;
+  readonly onAuthenticationFailure?: () => void;
 }
 
 export interface ApiRequestOptions extends Omit<
   RequestInit,
   'body' | 'credentials' | 'headers'
 > {
-  body?: unknown;
-  headers?: HeadersInit;
+  readonly authenticated?: boolean;
+  readonly body?: unknown;
+  readonly headers?: HeadersInit;
 }
 
 export interface ApiClient {
@@ -52,20 +63,31 @@ const readString = (
   return typeof value === 'string' ? value : undefined;
 };
 
-const readFieldErrors = (
-  value: unknown,
-): Record<string, string[]> | undefined => {
-  if (!isRecord(value)) {
+const readValidationDetails = (value: unknown): readonly ValidationDetail[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(
+    (item): item is ValidationDetail =>
+      isRecord(item) &&
+      typeof item.field === 'string' &&
+      typeof item.message === 'string',
+  );
+};
+
+const groupFieldErrors = (
+  details: readonly ValidationDetail[],
+): Readonly<Record<string, readonly string[]>> | undefined => {
+  if (details.length === 0) {
     return undefined;
   }
 
-  const entries = Object.entries(value).filter(
-    (entry): entry is [string, string[]] =>
-      Array.isArray(entry[1]) &&
-      entry[1].every((message) => typeof message === 'string'),
-  );
-
-  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+  const grouped: Record<string, string[]> = {};
+  for (const detail of details) {
+    grouped[detail.field] = [...(grouped[detail.field] ?? []), detail.message];
+  }
+  return grouped;
 };
 
 const readResponsePayload = async (response: Response): Promise<unknown> => {
@@ -92,42 +114,83 @@ const readResponsePayload = async (response: Response): Promise<unknown> => {
 
 const createApiError = (response: Response, payload: unknown) => {
   const fallbackMessage = `Request failed with status ${response.status}.`;
+  const errorBody =
+    isRecord(payload) && isRecord(payload.error) ? payload.error : null;
 
-  if (!isRecord(payload)) {
+  if (errorBody === null) {
     return new ApiError(response.status, fallbackMessage, {
       requestId: response.headers.get('x-request-id') ?? undefined,
     });
   }
 
+  const details = errorBody.details;
   return new ApiError(
     response.status,
-    readString(payload, 'message') ?? fallbackMessage,
+    readString(errorBody, 'message') ?? fallbackMessage,
     {
-      code: readString(payload, 'code'),
-      fieldErrors: readFieldErrors(payload.fieldErrors ?? payload.errors),
+      code: readString(errorBody, 'code'),
+      details,
+      fieldErrors: groupFieldErrors(readValidationDetails(details)),
       requestId:
-        readString(payload, 'requestId') ??
+        readString(errorBody, 'requestId') ??
         response.headers.get('x-request-id') ??
         undefined,
     },
   );
 };
 
+const createNetworkError = () =>
+  new ApiError(
+    0,
+    'Unable to reach the server. Check your connection and try again.',
+    {
+      code: 'NETWORK_ERROR',
+    },
+  );
+
 const createRequestUrl = (baseUrl: string, path: string) =>
   `${baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+
+const isAbortError = (error: unknown) =>
+  error instanceof DOMException && error.name === 'AbortError';
 
 export const createApiClient = ({
   baseUrl,
   fetchImplementation = fetch,
   getAccessToken,
-}: ApiClientOptions): ApiClient => ({
-  request: async <ResponseBody>(
+  refreshAccessToken,
+  onAuthenticationFailure,
+}: ApiClientOptions): ApiClient => {
+  let activeRefresh: Promise<string> | null = null;
+
+  const getSharedRefresh = () => {
+    if (refreshAccessToken === undefined) {
+      return Promise.reject(
+        new ApiError(401, 'Authentication is required.', {
+          code: 'UNAUTHORIZED',
+        }),
+      );
+    }
+
+    activeRefresh ??= refreshAccessToken().finally(() => {
+      activeRefresh = null;
+    });
+    return activeRefresh;
+  };
+
+  const execute = async <ResponseBody>(
     path: string,
-    options: ApiRequestOptions = {},
-  ) => {
-    const { body, headers: providedHeaders, ...requestOptions } = options;
+    options: ApiRequestOptions,
+    hasRetried: boolean,
+  ): Promise<ResponseBody> => {
+    const {
+      authenticated = false,
+      body,
+      headers: providedHeaders,
+      ...requestOptions
+    } = options;
     const headers = new Headers(providedHeaders);
-    const accessToken = getAccessToken?.();
+    const accessToken = authenticated ? getAccessToken?.() : null;
 
     headers.set('Accept', 'application/json');
     if (accessToken) {
@@ -140,21 +203,48 @@ export const createApiClient = ({
       requestBody = JSON.stringify(body);
     }
 
-    const response = await fetchImplementation(
-      createRequestUrl(baseUrl, path),
-      {
+    let response: Response;
+    try {
+      response = await fetchImplementation(createRequestUrl(baseUrl, path), {
         ...requestOptions,
         body: requestBody,
         credentials: 'include',
         headers,
-      },
-    );
-    const payload = await readResponsePayload(response);
-
-    if (!response.ok) {
-      throw createApiError(response, payload);
+      });
+    } catch (error: unknown) {
+      if (isAbortError(error)) {
+        throw error;
+      }
+      throw createNetworkError();
     }
 
-    return payload as ResponseBody;
-  },
-});
+    const payload = await readResponsePayload(response);
+    if (response.ok) {
+      return payload as ResponseBody;
+    }
+
+    const apiError = createApiError(response, payload);
+    if (response.status !== 401 || !authenticated) {
+      throw apiError;
+    }
+
+    if (hasRetried) {
+      onAuthenticationFailure?.();
+      throw apiError;
+    }
+
+    try {
+      await getSharedRefresh();
+    } catch (refreshError: unknown) {
+      onAuthenticationFailure?.();
+      throw refreshError;
+    }
+
+    return execute<ResponseBody>(path, options, true);
+  };
+
+  return {
+    request: <ResponseBody>(path: string, options: ApiRequestOptions = {}) =>
+      execute<ResponseBody>(path, options, false),
+  };
+};

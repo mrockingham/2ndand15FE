@@ -4,16 +4,22 @@ import BoltRounded from '@mui/icons-material/BoltRounded';
 import QueryStatsRounded from '@mui/icons-material/QueryStatsRounded';
 import SportsFootballRounded from '@mui/icons-material/SportsFootballRounded';
 import {
+  Alert,
   Box,
   Button,
   Card,
   Chip,
+  CircularProgress,
   Container,
   Stack,
   Typography,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
+
+import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
+import { useCurrentUserQuery } from '@/features/users/queries';
+import { useAuthStore } from '@/stores/authStore';
 
 const productSignals = [
   {
@@ -145,7 +151,7 @@ const FieldPreview = () => (
   </Card>
 );
 
-export const HomePage = () => (
+const PublicHome = () => (
   <Box
     sx={{
       position: 'relative',
@@ -214,20 +220,20 @@ export const HomePage = () => (
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
           <Button
             component={RouterLink}
-            to="/games"
+            to="/register"
             variant="contained"
             size="large"
             endIcon={<ArrowForwardRounded />}
           >
-            Preview game day
+            Create your huddle
           </Button>
           <Button
             component={RouterLink}
-            to="/ai"
+            to="/login"
             variant="outlined"
             size="large"
           >
-            Explore the AI vision
+            Sign in
           </Button>
         </Stack>
 
@@ -261,3 +267,163 @@ export const HomePage = () => (
     </Container>
   </Box>
 );
+
+const futureTeamModules = [
+  {
+    title: 'Next game',
+    description:
+      'Schedules and matchup context will appear here when live sports data is connected.',
+  },
+  {
+    title: 'Latest team news',
+    description:
+      'Attributed reporting for your team is planned for a future data milestone.',
+  },
+  {
+    title: 'AI matchup outlook',
+    description:
+      'Clearly labeled predictions will arrive with confidence and provenance.',
+  },
+  {
+    title: 'Team standings',
+    description:
+      'Verified standings are not connected yet. No placeholder records are shown.',
+  },
+] as const;
+
+const PersonalizedHome = () => {
+  const currentUserQuery = useCurrentUserQuery();
+
+  if (currentUserQuery.isPending) {
+    return (
+      <Box sx={{ display: 'grid', minHeight: '60vh', placeItems: 'center' }}>
+        <CircularProgress aria-label="Loading your personalized home" />
+      </Box>
+    );
+  }
+
+  if (currentUserQuery.isError || currentUserQuery.data === undefined) {
+    return (
+      <Container maxWidth="sm" sx={{ py: 8 }}>
+        <Alert
+          severity="error"
+          action={
+            <Button onClick={() => void currentUserQuery.refetch()}>
+              Retry
+            </Button>
+          }
+        >
+          We couldnâ€™t load your personalized home. Try again in a moment.
+        </Alert>
+      </Container>
+    );
+  }
+
+  const user = currentUserQuery.data;
+  const greetingName = user.displayName?.trim() || 'NFL fan';
+
+  return (
+    <Container maxWidth="xl" sx={{ py: { xs: 4, sm: 6, md: 8 } }}>
+      <Stack spacing={{ xs: 3, md: 4 }}>
+        <Box>
+          <Typography variant="overline" color="primary.light">
+            YOUR HOME FIELD
+          </Typography>
+          <Typography variant="h2" component="h1" sx={{ mt: 1, mb: 1.5 }}>
+            Welcome back, {greetingName}.
+          </Typography>
+          <Typography color="text.secondary">
+            Your personalized NFL home is ready for the next data milestones.
+          </Typography>
+        </Box>
+
+        {user.favoriteTeam === null ? (
+          <Card sx={{ p: { xs: 3, sm: 4 } }}>
+            <Stack spacing={2} sx={{ alignItems: 'flex-start' }}>
+              <SportsFootballRounded color="primary" sx={{ fontSize: 42 }} />
+              <Typography variant="h3" component="h2">
+                Pick your team
+              </Typography>
+              <Typography color="text.secondary" sx={{ maxWidth: 620 }}>
+                Choose a favorite team to shape this home around the NFL
+                coverage you care about. You can skip or change it at any time.
+              </Typography>
+              <Button
+                component={RouterLink}
+                to="/choose-team"
+                state={{ from: '/' }}
+                variant="contained"
+              >
+                Choose favorite team
+              </Button>
+            </Stack>
+          </Card>
+        ) : (
+          <Card
+            sx={{
+              position: 'relative',
+              overflow: 'hidden',
+              p: { xs: 3, sm: 4 },
+              borderColor: 'appSurfaces.borderStrong',
+            }}
+          >
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2.5}
+              sx={{ position: 'relative', alignItems: { sm: 'center' } }}
+            >
+              <TeamIdentity team={user.favoriteTeam} size={88} />
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="overline" color="primary.light">
+                  MY TEAM
+                </Typography>
+                <Typography variant="h3" component="h2" sx={{ mt: 0.5 }}>
+                  {user.favoriteTeam.fullName}
+                </Typography>
+                <Typography color="text.secondary">
+                  {user.favoriteTeam.conference} {user.favoriteTeam.division}
+                </Typography>
+              </Box>
+              <Button component={RouterLink} to="/account" variant="outlined">
+                Team settings
+              </Button>
+            </Stack>
+          </Card>
+        )}
+
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 2,
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, minmax(0, 1fr))',
+              lg: 'repeat(4, minmax(0, 1fr))',
+            },
+          }}
+        >
+          {futureTeamModules.map((module) => (
+            <Card key={module.title} sx={{ p: 2.5 }}>
+              <Chip label="COMING NEXT" size="small" color="primary" />
+              <Typography variant="h4" component="h2" sx={{ mt: 2, mb: 1 }}>
+                {module.title}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {module.description}
+              </Typography>
+            </Card>
+          ))}
+        </Box>
+      </Stack>
+    </Container>
+  );
+};
+
+export const HomePage = () => {
+  const isAuthenticated = useAuthStore(
+    (state) =>
+      state.restorationStatus === 'authenticated' && state.accessToken !== null,
+  );
+
+  return isAuthenticated ? <PersonalizedHome /> : <PublicHome />;
+};

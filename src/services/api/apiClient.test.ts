@@ -32,6 +32,7 @@ describe('API client foundation', () => {
 
     await expect(
       client.request<{ ok: boolean }>('/example', {
+        authenticated: true,
         method: 'POST',
         body: { name: 'test' },
       }),

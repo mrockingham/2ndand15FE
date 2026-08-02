@@ -4,7 +4,7 @@ This file applies to the entire repository. It is the durable working agreement 
 
 ## Current repository state
 
-Milestone 0 is scaffolded with Vite, React, strict TypeScript, MUI, React Router, TanStack Query, Zustand theme state, Vitest, React Testing Library, ESLint, and Prettier. The responsive public shell and placeholder routes are implemented; authentication, teams, backend calls, and sports features remain deferred.
+Frontend Milestones 0 through 2 and Frontend Milestone 8 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, active NFL team catalog, favorite-team onboarding and account controls, reusable team identity fallback, personalized home shell, and role-aware administrative schedule management. Public live games, scores, news, statistics, predictions, fantasy, and other sports features remain deferred.
 
 Read the documents under `docs/` before beginning a new milestone. Do not expand into a later milestone without approval.
 
@@ -56,6 +56,10 @@ Use the feature-oriented structure in `docs/frontend-architecture.md`.
 - Theme/navigation preferences may be persisted locally, but must contain no credentials or sensitive user data.
 - Centralize query keys as factories near their owning feature.
 - Mutations must update or invalidate the smallest relevant query set.
+- The active team catalog uses the stable `['teams', 'list']` query key and a 24-hour stale time.
+- A successful favorite-team mutation writes the returned user directly to `['users', 'me']`; do not issue a duplicate current-user request.
+- Administrative roles come only from the current-user response. `EDITOR` and `ADMIN` may enter schedule administration; full audit access and override deletion are `ADMIN`-only. A frontend guard is a navigation aid, never the authorization boundary.
+- Administrative game lists use deterministic `['admin', 'games', 'list', filters]` keys; detail writes update the matching detail cache and invalidate only list/audit families.
 
 ## Authentication and API rules
 
@@ -63,12 +67,18 @@ Follow `docs/api-integration.md`.
 
 - Send the access token as `Authorization: Bearer <token>`.
 - Include credentials on refresh and logout requests, and on any endpoint whose cookie behavior requires them.
-- On startup, attempt one silent refresh, store the returned access token in memory, then load `/users/me`.
+- On startup, attempt one silent refresh and seed both the returned access token and current-user query from the verified refresh response.
 - A failed startup refresh is a normal signed-out outcome, not a fatal application error.
 - Deduplicate concurrent refresh attempts. Avoid refresh loops and retry the original request at most once after a successful refresh.
 - Clear in-memory authentication state when refresh fails or logout completes.
 - Never log credentials, reset tokens, authorization headers, or sensitive response bodies.
 - Keep backend DTOs at the API boundary. Map them to view models only when the UI needs a different shape.
+- Follow `docs/auth-contract.md` for the verified request and response shapes. Passwords are 12â€“128 characters with no frontend-only composition rules.
+- Accept password-reset credentials only from the `token` query parameter. Never persist them, and remove the token from the visible URL after a successful reset.
+- Preserve only validated same-origin relative destinations after authentication; reject absolute, protocol-relative, backslash, and authentication-route redirects.
+- Follow `docs/team-personalization-contract.md` for team and favorite-team shapes. Submit only internal team UUIDs and never depend on provider mappings.
+- Treat backend team colors and logo URLs as untrusted display data. Validate color syntax and use the shared abbreviation fallback when a logo is absent or fails.
+- Follow `docs/admin-usage.md` for schedule administration. Never expose provider mappings, add provider configuration UI, or accept arbitrary server file paths.
 
 ## UI and design rules
 

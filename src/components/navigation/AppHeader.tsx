@@ -1,20 +1,34 @@
 import LoginRounded from '@mui/icons-material/LoginRounded';
+import PersonRounded from '@mui/icons-material/PersonRounded';
+import AdminPanelSettingsRounded from '@mui/icons-material/AdminPanelSettingsRounded';
 import {
   AppBar,
   Box,
   Button,
   Container,
+  IconButton,
   Toolbar,
-  Tooltip,
 } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 
 import { isNavigationPathActive, navigationItems } from '@/app/navigation';
 import { BrandMark } from '@/components/navigation/BrandMark';
 import { ThemeToggle } from '@/components/navigation/ThemeToggle';
+import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
+import { useCurrentUserQuery } from '@/features/users/queries';
+import { useAuthStore } from '@/stores/authStore';
 
 export const AppHeader = () => {
   const location = useLocation();
+  const isAuthenticated = useAuthStore(
+    (state) =>
+      state.restorationStatus === 'authenticated' && state.accessToken !== null,
+  );
+  const currentUserQuery = useCurrentUserQuery();
+  const favoriteTeam = currentUserQuery.data?.favoriteTeam ?? null;
+  const hasAdminAccess =
+    currentUserQuery.data?.role === 'EDITOR' ||
+    currentUserQuery.data?.role === 'ADMIN';
 
   return (
     <AppBar component="header" position="sticky">
@@ -89,21 +103,62 @@ export const AppHeader = () => {
               ml: { xs: 'auto', md: 0 },
             }}
           >
+            {hasAdminAccess ? (
+              <Button
+                component={RouterLink}
+                to="/admin/games"
+                color="inherit"
+                startIcon={<AdminPanelSettingsRounded />}
+                sx={{ display: { xs: 'none', lg: 'inline-flex' } }}
+              >
+                Admin
+              </Button>
+            ) : null}
             <ThemeToggle />
-            <Tooltip title="Authentication arrives in a future milestone" arrow>
-              <span>
-                <Button
-                  disabled
-                  variant="contained"
-                  size="small"
-                  startIcon={<LoginRounded />}
-                  aria-label="Sign in, coming in a future milestone"
-                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-                >
-                  Sign in
-                </Button>
-              </span>
-            </Tooltip>
+            {hasAdminAccess ? (
+              <IconButton
+                component={RouterLink}
+                to="/admin/games"
+                color="inherit"
+                aria-label="Open schedule administration"
+                sx={{ display: { lg: 'none' } }}
+              >
+                <AdminPanelSettingsRounded />
+              </IconButton>
+            ) : null}
+            <IconButton
+              component={RouterLink}
+              to={isAuthenticated ? '/account' : '/login'}
+              color="inherit"
+              aria-label={isAuthenticated ? 'Open account' : 'Sign in'}
+              sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
+            >
+              {isAuthenticated && favoriteTeam !== null ? (
+                <TeamIdentity decorative team={favoriteTeam} size={30} />
+              ) : isAuthenticated ? (
+                <PersonRounded />
+              ) : (
+                <LoginRounded />
+              )}
+            </IconButton>
+            <Button
+              component={RouterLink}
+              to={isAuthenticated ? '/account' : '/login'}
+              variant="contained"
+              size="small"
+              startIcon={
+                isAuthenticated && favoriteTeam !== null ? (
+                  <TeamIdentity decorative team={favoriteTeam} size={26} />
+                ) : isAuthenticated ? (
+                  <PersonRounded />
+                ) : (
+                  <LoginRounded />
+                )
+              }
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+            >
+              {isAuthenticated ? 'Account' : 'Sign in'}
+            </Button>
           </Box>
         </Toolbar>
       </Container>

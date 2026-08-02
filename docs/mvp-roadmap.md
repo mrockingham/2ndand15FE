@@ -23,6 +23,8 @@ Exit criteria: a minimal application shell runs, both themes render, a basic rou
 
 ## Milestone 1 — Public shell and teams
 
+Status: completed across Frontend Milestones 0 and 2 in July 2026.
+
 Deliverables:
 
 - Responsive public layout with desktop top navigation and mobile bottom navigation behavior
@@ -35,6 +37,8 @@ Exit criteria: a signed-out visitor gets a useful responsive experience and live
 
 ## Milestone 2 — Authentication entry
 
+Status: implemented and verified as part of approved Frontend Milestone 1 in July 2026.
+
 Deliverables:
 
 - Register and login forms using React Hook Form and Zod
@@ -46,6 +50,8 @@ Deliverables:
 Exit criteria: a user can register or log in and reach an authenticated shell without persisting tokens in browser storage.
 
 ## Milestone 3 — Session restoration and route protection
+
+Status: implemented and verified as part of approved Frontend Milestone 1 in July 2026.
 
 Deliverables:
 
@@ -60,6 +66,8 @@ Exit criteria: a valid session survives a browser reload and expired/invalid ses
 
 ## Milestone 4 — Favorite-team personalization
 
+Status: implemented and verified as approved Frontend Milestone 2 in July 2026.
+
 Deliverables:
 
 - Favorite-team onboarding using backend UUIDs
@@ -71,6 +79,8 @@ Deliverables:
 Exit criteria: favorite-team state remains correct across selection, replacement, clearing, navigation, and session restoration.
 
 ## Milestone 5 — Account recovery and logout
+
+Status: implemented and verified as part of approved Frontend Milestone 1 in July 2026.
 
 Deliverables:
 
@@ -97,6 +107,25 @@ Exit criteria: the complete MVP journey meets agreed accessibility, performance,
 ## Later product increments
 
 After the account/personalization slice is stable, sequence backend-supported increments such as games and schedules, news/source attribution, statistics, predictions/accuracy, team and player detail, live play-by-play, the play visualizer, and fantasy integrations. Each needs its own data contract, stale/refresh strategy, responsive design, and trust requirements.
+
+## Frontend Milestone 8 — Administrative schedule management
+
+Status: implemented against backend Milestone 7 in August 2026.
+
+Deliverables:
+
+- Current-user `USER`/`EDITOR`/`ADMIN` roles and role-aware admin navigation
+- Protected `/admin/games`, create/detail, import, and admin-only full audit routes
+- Responsive admin shell without the public mobile bottom navigation
+- Bounded cursor-based game listing using only backend-supported filters
+- Resolved/base/provenance/override/verification and game-scoped audit detail
+- Manual game creation and eligible base editing with explicit kickoff timezone input
+- Partial editorial override updates, field clearing, resolved preview, and admin-only deletion confirmation
+- Two-step CSV-to-JSON schedule validation/write flow with file, row, and formula protections
+- Sanitized audit differences and backend-scoped audit access
+- Focused role, route, API, CSV, state, mutation, and regression tests
+
+Exit criteria: editors can maintain supported schedule data without database or Swagger access, admins receive only the additional backend-supported controls, stale roles fail safely, and no public schedule/live feature or provider synchronization UI is introduced.
 
 ## Proposed first implementation plan
 

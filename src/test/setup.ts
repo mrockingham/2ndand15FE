@@ -3,6 +3,7 @@ import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
 
 import { useThemePreferences } from '@/stores/themePreferences';
+import { useAuthStore } from '@/stores/authStore';
 
 Object.defineProperty(window, 'matchMedia', {
   configurable: true,
@@ -22,6 +23,12 @@ Object.defineProperty(window, 'matchMedia', {
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  window.sessionStorage.clear();
+  useAuthStore.setState({
+    accessToken: null,
+    accessTokenExpiresAt: null,
+    restorationStatus: 'pending',
+  });
   useThemePreferences.setState({ mode: 'dark' });
   vi.restoreAllMocks();
 });

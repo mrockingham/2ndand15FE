@@ -2,7 +2,7 @@
 
 ## Status
 
-Milestone 0 implements the application foundation described here. Sections covering authentication and future feature directories remain architectural targets until their milestones begin.
+Frontend Milestones 0 through 2 and Frontend Milestone 8 implement the application foundation, authentication lifecycle, team catalog, favorite-team personalization, personalized home shell, and administrative schedule workspace described here. Public live sports feature directories remain architectural targets.
 
 ## Goals
 
@@ -51,7 +51,7 @@ src/
   test/
 ```
 
-Milestone 0 creates only `app`, shared navigation/feedback, layouts, pages, API services, theme state, theme configuration, and test helpers. Feature directories will be introduced with their first real feature; empty aspirational directories add noise.
+The current implementation creates only directories with active responsibilities, including `auth`, `teams`, and `users`. Future feature directories will be introduced with their first real feature; empty aspirational directories add noise.
 
 ## Module responsibilities
 
@@ -75,19 +75,22 @@ The implemented outer-to-inner order is:
 2. CSS baseline
 3. Application error boundary
 4. TanStack Query client provider
-5. Router provider
+5. Auth-aware API clients provider
+6. Session bootstrap boundary
+7. Router provider
 
-The router can later render an application-bootstrap boundary that performs session restoration before authenticated routing decisions. Provider code configures libraries; it does not become a second business-logic layer.
+The session bootstrap boundary restores identity before authenticated routing decisions. The API-clients provider injects token access, refresh coordination, and auth cleanup without making the transport layer depend on feature modules. Provider code configures libraries; it does not become a second business-logic layer.
 
 The Query client currently uses a 60-second default stale time, a 30-minute garbage-collection time, two query retries, no automatic window-focus refetch, reconnect refetching, and no mutation retries. Live game and identity features must override those defaults where their domain behavior differs.
 
 ## Routing model
 
-The declarative route tree currently exposes `/`, `/games`, `/news`, `/stats`, `/ai`, `/fantasy`, and a catch-all not-found page. Future section routes contain honest placeholders with no fake sports data. Add lazy-loaded page modules when feature weight makes splitting useful.
+The declarative route tree also exposes protected `/choose-team`. Login and registration direct users without a favorite there while preserving a safe destination. Selection is optional: skipping returns to the app without persisting a special flag or causing a redirect loop. Future sports routes contain honest placeholders with no fake data.
 
 - Public layout: landing and other freely accessible content.
 - Auth layout: login, registration, forgot-password, and reset-password flows.
 - App layout: authenticated dashboard and account/team preferences.
+- Admin layout: an authenticated, role-aware schedule workspace with desktop side navigation and a mobile drawer. It intentionally does not render the public bottom navigation.
 - Not-found route: a useful recovery path rather than a dead end.
 
 Protected routing depends on the completed bootstrap state, not merely on whether an in-memory token currently exists. This prevents redirect flicker while silent refresh is in progress.
@@ -109,12 +112,12 @@ Do not mirror server DTOs into Zustand. Personalized UI derives from the `users/
 
 ## Authentication state machine
 
-Use explicit bootstrap states such as `checking`, `authenticated`, and `anonymous`.
+The implementation uses explicit `pending`, `authenticated`, `anonymous`, and `error` bootstrap states.
 
 ```text
 application starts
   -> POST /auth/refresh with credentials
-     -> success: keep access token in memory -> GET /users/me -> authenticated
+     -> success: keep access token in memory -> seed returned user -> authenticated
      -> failure: clear token/query data -> anonymous
 ```
 
@@ -129,6 +132,9 @@ A normal authenticated request that receives `401` may trigger one shared refres
 - Normalize transport failures to a shared `ApiError` shape while preserving safe field errors when the backend supplies them.
 - Choose stale times from domain behavior; do not apply one global stale time to live games, teams, and user identity.
 - Keep current-user data separate from the access-token store.
+- Cache the public team list under `['teams', 'list']` for 24 hours; no single-team request is needed by the current UI.
+- Set, replace, and clear favorite teams through one authenticated mutation and write its returned user directly to `['users', 'me']`.
+- Do not optimistically update favorite-team state; the server response remains authoritative.
 
 ## Configuration
 
@@ -140,15 +146,22 @@ VITE_API_BASE_URL=http://localhost:<backend-port>/api/v1
 
 The exact local/backend URLs are deployment configuration, not hard-coded constants. `readAppEnvironment` validates the required value at startup, accepts only absolute HTTP(S) URLs without embedded credentials, and normalizes the trailing slash. Vite variables are public browser data and may not contain secrets.
 
-## Milestone 0 implementation boundaries
+## Current implementation boundaries
 
 - `src/app/main.tsx` validates environment configuration and mounts React.
 - `src/app/App.tsx` composes providers separately from the route graph.
 - `src/theme/` owns typed semantic tokens and MUI component defaults.
-- `src/stores/themePreferences.ts` is the only Zustand store and persists only theme mode.
-- `src/services/api/` owns the native-fetch boundary; no feature instantiates it or makes a backend call yet.
+- `src/stores/themePreferences.ts` persists only theme mode. `src/stores/authStore.ts` holds only ephemeral token/bootstrap state and never persists it.
+- `src/services/api/` owns the feature-neutral native-fetch boundary. `src/features/auth/createAuthApiClients.ts` composes public and authenticated clients with session behavior.
 - Desktop navigation exposes all six destinations. Mobile exposes four primary destinations plus a More sheet for AI Hub and Fantasy.
-- Authentication, protected routes, team data, refresh coordination, and all sports features remain deferred.
+- Registration, login, recovery, reset, logout, session restoration, protected account routing, refresh coordination, and current-user loading are implemented.
+- Team catalog, favorite-team onboarding/editing, identity fallback, and personalized home states are implemented.
+- Games, schedules, scores, news, statistics, predictions, fantasy, and all other live sports features remain deferred.
+- `src/features/admin/` owns the verified administrative DTOs, API functions, query keys, mutations, CSV parser, and reusable admin components. Thin route pages live under `src/pages/Admin*` and the dedicated shell lives at `src/layouts/AdminLayout.tsx`.
+- `CurrentUser.role` is the single client source for navigation decisions. `/admin` uses the existing authentication guard followed by an `EDITOR`/`ADMIN` experience guard; `/admin/audit` adds an `ADMIN` experience guard. Backend capability middleware remains the security boundary.
+- Administrative queries use `adminGameKeys.list(filters)`, `adminGameKeys.detail(id)`, `adminAuditKeys.list(filters)`, and `adminAuditKeys.game(id, cursor)`. Writes update returned game detail data and invalidate only affected list/audit families.
+- A backend `403` is rendered as insufficient permission and invalidates `['users', 'me']` so stale role data is replaced through the existing session/current-user flow.
+- Public schedules, live games, scores, news, statistics, predictions, fantasy, and other sports features remain deferred.
 
 ## Error, loading, and empty states
 

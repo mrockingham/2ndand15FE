@@ -2,9 +2,9 @@
 
 ## Scope and contract status
 
-The backend lives in a separate repository. This guide records only the behavior currently supplied for frontend planning. Exact request/response DTOs, error envelopes, local URLs, cookie attributes, and CORS configuration have not yet been provided and must be confirmed before implementing contract-dependent forms.
+The backend lives in the sibling `2ndand15BE` repository. Authentication contracts were verified against its OpenAPI, validators, controllers, service logic, cookie helper, configuration, and route tests in July 2026. See [auth-contract.md](auth-contract.md) for the exact requests, responses, status codes, error envelope, reset-token query parameter, and cookie behavior.
 
-Milestone 0 implements a native-fetch client foundation and environment validation, but no feature creates requests and no authentication/refresh behavior exists yet.
+Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestone 1 implements authentication; Frontend Milestone 2 implements the verified team and favorite-team contracts in [team-personalization-contract.md](team-personalization-contract.md). Frontend Milestone 8 implements the verified backend Milestone 7 administrative schedule contract documented in [admin-usage.md](admin-usage.md).
 
 ## Base configuration
 
@@ -18,25 +18,35 @@ Vite environment values are visible to users. Never place secrets in them.
 
 ## Known endpoints
 
-| Method | Path                      | Authentication                                      | Frontend purpose                               |
-| ------ | ------------------------- | --------------------------------------------------- | ---------------------------------------------- |
-| GET    | `/health`                 | Not specified                                       | Environment/API health diagnostics             |
-| GET    | `/teams`                  | Not specified; presumed public pending confirmation | List teams and favorite-team choices           |
-| GET    | `/teams/:teamId`          | Not specified; presumed public pending confirmation | Team detail                                    |
-| POST   | `/auth/register`          | Public                                              | Create an account and immediately authenticate |
-| POST   | `/auth/login`             | Public                                              | Authenticate                                   |
-| POST   | `/auth/refresh`           | Refresh cookie                                      | Restore/renew an access token                  |
-| POST   | `/auth/logout`            | Refresh cookie and possibly bearer token; confirm   | End the session                                |
-| POST   | `/auth/forgot-password`   | Public                                              | Request password reset instructions            |
-| POST   | `/auth/reset-password`    | Reset credential in request; exact shape unknown    | Complete password reset                        |
-| GET    | `/users/me`               | Bearer token                                        | Load current-user DTO                          |
-| PATCH  | `/users/me/favorite-team` | Bearer token                                        | Select, replace, or clear favorite team        |
+| Method | Path                                | Authentication               | Frontend purpose                               |
+| ------ | ----------------------------------- | ---------------------------- | ---------------------------------------------- |
+| GET    | `/health`                           | Not specified                | Environment/API health diagnostics             |
+| GET    | `/teams`                            | Public                       | List active teams and favorite choices         |
+| GET    | `/teams/:teamId`                    | Public                       | Active team detail when needed                 |
+| POST   | `/auth/register`                    | Public                       | Create an account and immediately authenticate |
+| POST   | `/auth/login`                       | Public                       | Authenticate                                   |
+| POST   | `/auth/refresh`                     | Refresh cookie               | Restore/renew an access token                  |
+| POST   | `/auth/logout`                      | Refresh cookie               | End the session                                |
+| POST   | `/auth/forgot-password`             | Public                       | Request password reset instructions            |
+| POST   | `/auth/reset-password`              | Public token in JSON request | Complete password reset                        |
+| GET    | `/users/me`                         | Bearer token                 | Load current-user DTO                          |
+| PATCH  | `/users/me/favorite-team`           | Bearer token                 | Select, replace, or clear favorite team        |
+| GET    | `/admin/games`                      | Bearer token; editor/admin   | Bounded administrative schedule list           |
+| GET    | `/admin/games/:gameId`              | Bearer token; editor/admin   | Administrative game detail                     |
+| POST   | `/admin/games`                      | Bearer token; editor/admin   | Create a manually owned game                   |
+| PATCH  | `/admin/games/:gameId`              | Bearer token; editor/admin   | Edit a manually owned base game                |
+| PUT    | `/admin/games/:gameId/override`     | Bearer token; editor/admin   | Upsert partial editorial override values       |
+| DELETE | `/admin/games/:gameId/override`     | Bearer token; admin          | Delete the complete override                   |
+| PUT    | `/admin/games/:gameId/verification` | Bearer token; editor/admin   | Record verification source and timestamp       |
+| POST   | `/admin/schedule-imports/validate`  | Bearer token; editor/admin   | Dry-run structured schedule rows               |
+| POST   | `/admin/schedule-imports`           | Bearer token; editor/admin   | Write previously validated structured rows     |
+| GET    | `/admin/audit-events`               | Bearer token; scoped by role | Cursor-paginated sanitized audit events        |
 
 Frontend paths above are relative to the configured `/api/v1` base.
 
-## Known authentication behavior
+## Verified authentication behavior
 
-- Login and registration return an access token in JSON.
+- Login, registration, and refresh return the user DTO, an access token, and `accessTokenExpiresIn` in JSON.
 - Registration immediately authenticates the new user.
 - Send the access token as `Authorization: Bearer <token>`.
 - Access tokens expire after approximately 15 minutes.
@@ -45,19 +55,22 @@ Frontend paths above are relative to the configured `/api/v1` base.
 - The current-user DTO contains `favoriteTeam`, which may be `null`.
 - A user can select, replace, or clear the favorite team.
 - Team IDs are internal UUIDs; provider mappings are not exposed.
+- Logout is idempotent and returns `204` with no response body.
+- Password-reset links use the `token` query parameter.
+- Passwords are 12–128 characters; the backend defines no composition requirements.
 
 ## Session bootstrap
 
 At each full application startup:
 
-1. Set bootstrap state to `checking`.
+1. Set bootstrap state to `pending`.
 2. Call `POST /auth/refresh` with credentials included.
 3. If successful, put the returned access token in the in-memory auth store.
-4. Call `GET /users/me` using that token.
-5. Cache the current-user DTO in TanStack Query and mark the session `authenticated`.
-6. If refresh fails because no valid session exists, clear auth/user state, mark the session `anonymous`, and continue rendering the public application.
+4. Cache the user returned by refresh in TanStack Query and mark the session `authenticated`.
+5. If refresh fails with the verified invalid-session response, clear auth/user state, mark the session `anonymous`, and continue rendering the public application.
+6. If startup fails because the API is unavailable or an unexpected error occurs, show a recoverable startup error with retry and signed-out continuation actions.
 
-An unavailable API and an ordinary invalid/missing refresh cookie may require different UX. The error/status contract is needed to distinguish those cases reliably.
+The verified `401 INVALID_REFRESH_TOKEN` response is treated as the ordinary signed-out case; network and unexpected failures are not silently collapsed into it.
 
 ## Authenticated request and refresh policy
 
@@ -86,27 +99,27 @@ This policy should be tested with parallel requests and aborted navigation.
 - normalized base/path joining
 - JSON request serialization and JSON/text response parsing
 - `credentials: 'include'` on requests so future HTTP-only cookie flows are supported
-- an optional access-token getter for later dependency injection without owning token state
+- an access-token getter for dependency injection without owning token state
+- one shared refresh promise and at most one retry for eligible authenticated requests
 - normalized `ApiError` status, code, safe message, field errors, and request ID when supplied
 - safe empty/`204` handling
 - native `RequestInit` options, including abort signals
 
-`src/services/api/environment.ts` validates `VITE_API_BASE_URL` as an absolute HTTP(S) URL without embedded credentials. `configuredClient.ts` is only a factory; it is not imported by a feature and performs no network activity. Refresh coordination and automatic retry are explicitly deferred.
+`src/services/api/environment.ts` validates `VITE_API_BASE_URL` as an absolute HTTP(S) URL without embedded credentials. `src/features/auth/createAuthApiClients.ts` composes public and authenticated clients; `src/app/createConfiguredApiClients.ts` supplies environment configuration at the application boundary.
 
 ## Query ownership and keys
 
-Suggested key factories:
+Implemented query-key factories:
 
 ```text
-teamKeys.all             -> ['teams']
-teamKeys.detail(teamId)  -> ['teams', teamId]
 userKeys.me              -> ['users', 'me']
+teamKeys.lists()         -> ['teams', 'list']
 ```
 
 - `GET /teams` populates the teams list query.
-- `GET /teams/:teamId` populates a team detail query and may seed/read compatible list data if shapes permit.
+- `GET /teams/:teamId` is verified but not called because the current catalog response has all required fields.
 - `GET /users/me` is the sole source of current-user/favorite-team truth.
-- A successful favorite-team mutation should update the `users/me` cache from the returned DTO when available, then invalidate narrowly if needed.
+- A successful favorite-team mutation updates the `users/me` cache directly from the returned DTO without a duplicate request.
 - Logout removes protected user data. Public team data may remain cached unless product/privacy behavior requires otherwise.
 
 ## DTO and validation policy
@@ -130,19 +143,28 @@ Normalize failures into an application-level error containing, when available:
 - field-level validation errors
 - request/correlation ID
 
-The exact backend error envelope is not known. Do not bind form code to an assumed `{ message }` response until it is confirmed. Forgot-password UI should use a non-enumerating success response if supported by the backend.
+The verified backend envelope is `{ error: { code, message, details?, requestId } }`; validation details use `{ field, message }`. Forms map safe field errors when present and otherwise use stable code/status fallbacks. Forgot-password always presents the backend's generic non-enumerating success message.
 
-## Backend/deployment requirements to verify
+## Remaining backend/deployment requirements
 
 - Exact local, test, and production API origins
-- Request/response DTOs and examples for every endpoint
-- Error envelope and validation-error format
-- Which endpoints require credentials and/or bearer authentication
-- Cookie `SameSite`, `Secure`, domain, path, and expiry behavior
-- Allowed CORS origins, methods, headers, and credential support
+- Request/response DTOs for future sports endpoints
+- Production origin, cookie-domain, and proxy configuration
 - CSRF protections for cookie-backed refresh/logout operations
-- Reset-password link format and token transport
-- Rate-limit responses and retry guidance
+- Product UX for rate-limit retry guidance beyond the verified `429` response
 - Date/time formats and canonical timezone behavior
 
-The frontend scaffold and public shell can begin without all of these answers. Contract-dependent auth and favorite-team integration should not be declared complete until they are resolved.
+Authentication and favorite-team contracts are resolved in [auth-contract.md](auth-contract.md) and [team-personalization-contract.md](team-personalization-contract.md). Future sports integrations must still be verified before implementation.
+
+## Administrative schedule contract
+
+The contract was verified against `src/docs/openapi.ts`, `src/modules/admin/admin.schemas.ts`, `admin.dto.ts`, authorization middleware, controller, service, repository, audit sanitizer, CSV parser, and route tests in the sibling backend repository in August 2026.
+
+- `CurrentUser.role` is `USER`, `EDITOR`, or `ADMIN`; it is never inferred from email and is not copied into client storage.
+- The game list currently accepts only `season`, `limit` (1–100), and UUID `cursor`. Suggested status/team/week/date/source filters are not sent because the backend does not expose them.
+- Administrative game DTOs contain resolved public values, base values, `providerManaged`, provenance, and an optional override. Provider mappings and provider IDs are not returned.
+- Manual kickoff and override timestamps require an explicit offset. The creation UI requires a UTC offset choice; override editing labels its value as UTC.
+- Import endpoints accept JSON `{ rows, dryRun }`; there is no multipart upload. The frontend parses the backend-documented CSV format to structured rows and enforces a 1 MiB/500-row limit.
+- `EDITOR` has schedule view/edit/import/verify and game-scoped audit capabilities. `ADMIN` additionally has full audit and override-removal capabilities.
+- `403` causes a current-user query refresh. `409 PROVIDER_GAME_REQUIRES_OVERRIDE` is presented as a direct-edit ownership conflict, not silently converted into an override.
+- Successful game writes seed the returned detail and invalidate the administrative list and audit families. Successful imports invalidate list and audit families. Public team and current-user queries are not broadly invalidated.
