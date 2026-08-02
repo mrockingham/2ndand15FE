@@ -1,0 +1,77 @@
+import type { AdminGame, AuditEvent } from '@/features/admin/types';
+import { billsFixture, eaglesFixture } from '@/test/authFixtures';
+
+const teamSummary = (team: typeof billsFixture) => ({
+  id: team.id,
+  fullName: team.fullName,
+  abbreviation: team.abbreviation,
+  logoUrl: team.logoUrl,
+  primaryColor: team.primaryColor,
+  secondaryColor: team.secondaryColor,
+});
+
+export const adminGameFixture: AdminGame = {
+  id: '00000000-0000-4000-8000-000000000101',
+  resolved: {
+    id: '00000000-0000-4000-8000-000000000101',
+    league: 'NFL',
+    season: 2026,
+    seasonType: 'REG',
+    week: 1,
+    startTime: '2026-09-11T00:20:00.000Z',
+    status: 'SCHEDULED',
+    homeTeam: teamSummary(billsFixture),
+    awayTeam: teamSummary(eaglesFixture),
+    homeScore: null,
+    awayScore: null,
+    quarter: null,
+    clock: null,
+    venue: { name: 'Highmark Stadium', city: 'Orchard Park' },
+    broadcastNetwork: 'NBC',
+    isNeutralSite: false,
+  },
+  base: {
+    id: '00000000-0000-4000-8000-000000000101',
+    league: 'NFL',
+    season: 2026,
+    seasonType: 'REG',
+    week: 1,
+    startTime: '2026-09-11T00:20:00.000Z',
+    status: 'SCHEDULED',
+    homeTeam: teamSummary(billsFixture),
+    awayTeam: teamSummary(eaglesFixture),
+    homeScore: null,
+    awayScore: null,
+    quarter: null,
+    clock: null,
+    venue: { name: 'Highmark Stadium', city: 'Orchard Park' },
+    broadcastNetwork: 'NBC',
+    isNeutralSite: false,
+  },
+  providerManaged: true,
+  provenance: {
+    sourceType: 'PROVIDER',
+    sourceName: 'Official schedule',
+    sourceUrl: 'https://example.com/schedule',
+    externalReference: null,
+    notes: 'Checked against the published schedule.',
+    importedAt: '2026-07-01T12:00:00.000Z',
+    verifiedAt: null,
+    verifiedById: null,
+  },
+  override: null,
+};
+
+export const auditEventFixture: AuditEvent = {
+  id: '00000000-0000-4000-8000-000000000201',
+  actorUserId: '00000000-0000-4000-8000-000000000301',
+  actorEmailSnapshot: 'editor@example.com',
+  action: 'GAME_VERIFIED',
+  entityType: 'GAME',
+  entityId: adminGameFixture.id,
+  beforeSnapshot: { status: 'PREGAME', authorization: 'secret' },
+  afterSnapshot: { status: 'SCHEDULED', authorization: 'secret' },
+  requestId: null,
+  reason: null,
+  createdAt: '2026-08-01T12:00:00.000Z',
+};

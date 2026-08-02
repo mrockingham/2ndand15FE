@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="2nd & 15 is a modern NFL platform foundation for game-day context, AI insight, and fantasy tools."
+    />
+    <meta name="theme-color" content="#050914" />
+    <script>
+      (() => {
+        const key = '2nd-and-15-theme';
+        let saved = null;
+        try {
+          saved = localStorage.getItem(key);
+        } catch {
+          // Continue with the system preference when storage is unavailable.
+        }
+        const mode =
+          saved === 'light' || saved === 'dark'
+            ? saved
+            : window.matchMedia?.('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+        document.documentElement.dataset.colorScheme = mode;
+      })();
+    </script>
+    <title>2nd &amp; 15</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/app/main.tsx"></script>
+  </body>
+</html>
