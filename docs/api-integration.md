@@ -4,7 +4,7 @@
 
 The backend lives in the sibling `2ndand15BE` repository. Authentication contracts were verified against its OpenAPI, validators, controllers, service logic, cookie helper, configuration, and route tests in July 2026. See [auth-contract.md](auth-contract.md) for the exact requests, responses, status codes, error envelope, reset-token query parameter, and cookie behavior.
 
-Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements the verified backend Milestone 9 public article and editorial CMS contracts documented in [editorial-cms-usage.md](editorial-cms-usage.md).
+Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements the verified backend Milestone 9 public article and editorial CMS contracts documented in [editorial-cms-usage.md](editorial-cms-usage.md). Frontend Milestone 12 implements the backend Milestone 11 public game contracts documented in [public-games-usage.md](public-games-usage.md).
 
 ## Base configuration
 
@@ -31,6 +31,9 @@ Vite environment values are visible to users. Never place secrets in them.
 | POST      | `/auth/reset-password`                                    | Public token in JSON request | Complete password reset                        |
 | GET       | `/users/me`                                               | Bearer token                 | Load current-user DTO                          |
 | PATCH     | `/users/me/favorite-team`                                 | Bearer token                 | Select, replace, or clear favorite team        |
+| GET       | `/games`                                                  | Public                       | Filtered, cursor-paginated resolved games      |
+| GET       | `/games/:gameId`                                          | Public                       | One resolved public game                       |
+| GET       | `/teams/:teamId/games`                                    | Public                       | Bounded team schedule                          |
 | GET       | `/admin/games`                                            | Bearer token; editor/admin   | Bounded administrative schedule list           |
 | GET       | `/admin/games/:gameId`                                    | Bearer token; editor/admin   | Administrative game detail                     |
 | POST      | `/admin/games`                                            | Bearer token; editor/admin   | Create a manually owned game                   |

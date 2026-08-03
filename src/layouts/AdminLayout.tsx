@@ -1,4 +1,5 @@
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
+import CloseRounded from '@mui/icons-material/CloseRounded';
 import FactCheckRounded from '@mui/icons-material/FactCheckRounded';
 import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
@@ -45,10 +46,19 @@ export const AdminLayout = () => {
       ? [{ label: 'Audit log', path: '/admin/audit', icon: HistoryRounded }]
       : []),
   ];
-  const navigation = (
+  const navigation = (showCloseButton = false) => (
     <>
-      <Toolbar sx={{ px: 2 }}>
+      <Toolbar sx={{ px: 2, gap: 1 }}>
         <BrandMark />
+        {showCloseButton ? (
+          <IconButton
+            aria-label="Close administration navigation"
+            onClick={() => setMobileOpen(false)}
+            sx={{ ml: 'auto' }}
+          >
+            <CloseRounded />
+          </IconButton>
+        ) : null}
       </Toolbar>
       <Divider />
       <Stack
@@ -127,7 +137,11 @@ export const AdminLayout = () => {
           <ThemeToggle />
         </Toolbar>
       </AppBar>
-      <Box component="nav" aria-label="Administration">
+      <Box
+        component="nav"
+        aria-label="Administration"
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+      >
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -138,7 +152,7 @@ export const AdminLayout = () => {
             '& .MuiDrawer-paper': { width: drawerWidth },
           }}
         >
-          {navigation}
+          {navigation(true)}
         </Drawer>
         <Drawer
           variant="permanent"
@@ -151,7 +165,7 @@ export const AdminLayout = () => {
             },
           }}
         >
-          {navigation}
+          {navigation()}
         </Drawer>
       </Box>
       <Box

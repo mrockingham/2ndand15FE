@@ -23,6 +23,7 @@ import type {
   AdminGameValues,
   ManualGameCreateInput,
   ManualGameInput,
+  ManualGameUpdateInput,
 } from '@/features/admin/types';
 import { useTeamsQuery } from '@/features/teams/queries';
 
@@ -46,41 +47,62 @@ const offsets = [
 ] as const;
 
 const nullableText = (maximum: number) => z.string().trim().max(maximum);
-const formSchema = z
-  .object({
-    season: z.number().int().min(1920).max(2100),
-    seasonType: z.enum(['PRE', 'REG', 'POST']),
-    week: z
-      .string()
-      .regex(/^$|^(?:[1-9]|1\d|2[0-2])$/, 'Week must be 1–22 or blank.'),
-    startLocal: z.string().min(1, 'Kickoff date and time are required.'),
-    utcOffset: z.enum(offsets, { message: 'Choose the kickoff UTC offset.' }),
-    status: z.enum(statuses),
-    homeTeamId: z.string().uuid('Choose a home team.'),
-    awayTeamId: z.string().uuid('Choose an away team.'),
-    venueName: nullableText(160),
-    venueCity: nullableText(128),
-    broadcastNetwork: nullableText(64),
-    isNeutralSite: z.boolean(),
-    sourceName: z.string().trim().min(1, 'Source name is required.').max(160),
-    sourceUrl: z.union([z.literal(''), z.url().max(2048)]),
-    externalReference: nullableText(256),
-    notes: nullableText(1000),
-  })
-  .superRefine((value, context) => {
-    if (value.homeTeamId === value.awayTeamId && value.homeTeamId !== '') {
-      context.addIssue({
-        code: 'custom',
-        path: ['awayTeamId'],
-        message: 'Home and away teams must differ.',
-      });
-    }
-  });
+const createFormSchema = (requiresKickoff: boolean) =>
+  z
+    .object({
+      season: z.number().int().min(1920).max(2100),
+      seasonType: z.enum(['PRE', 'REG', 'POST']),
+      week: z
+        .string()
+        .regex(/^$|^(?:[1-9]|1\d|2[0-2])$/, 'Week must be 1–22 or blank.'),
+      startLocal: z.string(),
+      utcOffset: z.union([z.enum(offsets), z.literal('')]),
+      status: z.enum(statuses),
+      homeTeamId: z.string().uuid('Choose a home team.'),
+      awayTeamId: z.string().uuid('Choose an away team.'),
+      venueName: nullableText(160),
+      venueCity: nullableText(128),
+      broadcastNetwork: nullableText(64),
+      isNeutralSite: z.boolean(),
+      sourceName: z.string().trim().min(1, 'Source name is required.').max(160),
+      sourceUrl: z.union([z.literal(''), z.url().max(2048)]),
+      externalReference: nullableText(256),
+      notes: nullableText(1000),
+    })
+    .superRefine((value, context) => {
+      if (requiresKickoff && value.startLocal === '') {
+        context.addIssue({
+          code: 'custom',
+          path: ['startLocal'],
+          message: 'Kickoff date and time are required.',
+        });
+      }
+      if (value.startLocal !== '' && value.utcOffset === '') {
+        context.addIssue({
+          code: 'custom',
+          path: ['utcOffset'],
+          message: 'Choose the kickoff UTC offset.',
+        });
+      }
+      if (value.homeTeamId === value.awayTeamId && value.homeTeamId !== '') {
+        context.addIssue({
+          code: 'custom',
+          path: ['awayTeamId'],
+          message: 'Home and away teams must differ.',
+        });
+      }
+    });
 
-type GameFormValues = z.infer<typeof formSchema>;
+type GameFormValues = z.infer<ReturnType<typeof createFormSchema>>;
 
 const nullable = (value: string) => (value.trim() === '' ? null : value.trim());
-const localUtcValue = (iso: string) => new Date(iso).toISOString().slice(0, 16);
+const localUtcValue = (iso: string | null) => {
+  if (iso === null) return '';
+  const parsed = new Date(iso);
+  return Number.isNaN(parsed.getTime())
+    ? ''
+    : parsed.toISOString().slice(0, 16);
+};
 
 const defaultsFromGame = (game?: AdminGameValues): GameFormValues => ({
   season: game?.season ?? new Date().getUTCFullYear(),
@@ -88,7 +110,7 @@ const defaultsFromGame = (game?: AdminGameValues): GameFormValues => ({
   week:
     game?.week === null || game?.week === undefined ? '' : String(game.week),
   startLocal: game ? localUtcValue(game.startTime) : '',
-  utcOffset: game ? '+00:00' : ('' as GameFormValues['utcOffset']),
+  utcOffset: game?.startTime ? '+00:00' : '',
   status: game?.status ?? 'SCHEDULED',
   homeTeamId: game?.homeTeam.id ?? '',
   awayTeamId: game?.awayTeam.id ?? '',
@@ -114,10 +136,11 @@ export const GameForm = ({
   readonly error?: unknown;
   readonly isSubmitting: boolean;
   readonly onSubmit: (
-    input: ManualGameCreateInput | ManualGameInput,
+    input: ManualGameCreateInput | ManualGameUpdateInput,
   ) => Promise<void> | void;
 }) => {
   const isCreate = game === undefined;
+  const requiresKickoff = isCreate || game.startTime !== null;
   const teamsQuery = useTeamsQuery();
   const {
     control,
@@ -125,18 +148,15 @@ export const GameForm = ({
     handleSubmit,
     formState: { errors, isDirty },
   } = useForm<GameFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createFormSchema(requiresKickoff)),
     defaultValues: defaultsFromGame(game),
   });
 
   const submit = handleSubmit(async (values) => {
-    const common: ManualGameInput = {
+    const common: Omit<ManualGameInput, 'startTime'> = {
       season: values.season,
       seasonType: values.seasonType,
       week: values.week === '' ? null : Number(values.week),
-      startTime: new Date(
-        `${values.startLocal}:00${values.utcOffset}`,
-      ).toISOString(),
       status: values.status,
       homeTeamId: values.homeTeamId,
       awayTeamId: values.awayTeamId,
@@ -145,19 +165,31 @@ export const GameForm = ({
       broadcastNetwork: nullable(values.broadcastNetwork),
       isNeutralSite: values.isNeutralSite,
     };
-    await onSubmit(
-      isCreate
-        ? {
-            ...common,
-            provenance: {
-              sourceName: values.sourceName.trim(),
-              sourceUrl: nullable(values.sourceUrl),
-              externalReference: nullable(values.externalReference),
-              notes: nullable(values.notes),
-            },
-          }
-        : common,
-    );
+    if (isCreate) {
+      await onSubmit({
+        ...common,
+        startTime: new Date(
+          `${values.startLocal}:00${values.utcOffset}`,
+        ).toISOString(),
+        provenance: {
+          sourceName: values.sourceName.trim(),
+          sourceUrl: nullable(values.sourceUrl),
+          externalReference: nullable(values.externalReference),
+          notes: nullable(values.notes),
+        },
+      });
+      return;
+    }
+    await onSubmit({
+      ...common,
+      ...(values.startLocal === ''
+        ? {}
+        : {
+            startTime: new Date(
+              `${values.startLocal}:00${values.utcOffset}`,
+            ).toISOString(),
+          }),
+    });
   });
 
   return (
@@ -219,6 +251,7 @@ export const GameForm = ({
             slotProps={{ inputLabel: { shrink: true } }}
             error={Boolean(errors.startLocal)}
             helperText={errors.startLocal?.message}
+            required={requiresKickoff}
             {...register('startLocal')}
           />
           <Controller
@@ -240,7 +273,9 @@ export const GameForm = ({
                 </Select>
                 <FormHelperText>
                   {errors.utcOffset?.message ??
-                    'Required; no timezone is guessed.'}
+                    (requiresKickoff
+                      ? 'Required; no timezone is guessed.'
+                      : 'Leave blank to preserve Time TBD.')}
                 </FormHelperText>
               </FormControl>
             )}

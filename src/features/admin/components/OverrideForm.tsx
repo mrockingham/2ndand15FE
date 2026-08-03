@@ -53,8 +53,13 @@ const statuses: readonly GameStatus[] = [
   'CANCELED',
   'SUSPENDED',
 ];
-const isoLocal = (value: string | null) =>
-  value ? new Date(value).toISOString().slice(0, 16) : '';
+const isoLocal = (value: string | null) => {
+  if (value === null) return '';
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? ''
+    : parsed.toISOString().slice(0, 16);
+};
 
 export const OverrideForm = ({
   game,

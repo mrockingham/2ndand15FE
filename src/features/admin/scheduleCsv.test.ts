@@ -22,6 +22,13 @@ describe('schedule CSV parsing', () => {
     ]);
   });
 
+  it('preserves the backend-supported TBD kickoff literal', () => {
+    const [parsed] = parseScheduleCsv(
+      csv.replace('2026-09-11T00:20:00Z', 'TBD'),
+    );
+    expect(parsed?.startTime).toBe('TBD');
+  });
+
   it('rejects an altered header, same-team row, and spreadsheet formula markers', () => {
     expect(() =>
       parseScheduleCsv(csv.replace('season,seasonType', 'seasonType,season')),

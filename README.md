@@ -2,7 +2,7 @@
 
 The frontend foundation for 2nd & 15, a fast, modern NFL experience designed around game-day context, responsible AI insight, and fantasy decision support.
 
-Frontend Milestones 0 through 2, 8, and 10 provide the application shell, authentication and team personalization, administrative schedule management, the editorial CMS, and the public News experience. Live games, public schedules/scores, statistics, predictions, and fantasy data remain deferred.
+Frontend Milestones 0 through 2, 8, 10, and 12 provide the application shell, authentication and team personalization, administrative schedule management, the editorial CMS, public News, and the public 2026 NFL schedule experience. Live polling, play-by-play, statistics, predictions, and fantasy data remain deferred.
 
 ## Prerequisites
 
@@ -78,7 +78,8 @@ npm run preview
 | Route                        | Current purpose                        |
 | ---------------------------- | -------------------------------------- |
 | `/`                          | Public or personalized responsive home |
-| `/games`                     | Future Games section placeholder       |
+| `/games`                     | Public week-by-week NFL schedule       |
+| `/games/:gameId`             | Public resolved game detail            |
 | `/news`                      | Published and featured article feed    |
 | `/news/:slug`                | Public article detail                  |
 | `/stats`                     | Future Stats section placeholder       |
@@ -119,8 +120,8 @@ src/
   app/                 Bootstrap, providers, query defaults, routes
   components/          Shared navigation and feedback components
   layouts/             Application/public layout composition
-  features/            Auth, teams, administration, and articles
-  pages/               Public, account, News, and admin route composition
+  features/            Auth, teams, games, administration, and articles
+  pages/               Public, account, Games, News, and admin composition
   services/api/        Environment validation and typed fetch boundary
   stores/              Theme preference and memory-only auth state
   test/                Test setup and application render helper
@@ -133,7 +134,7 @@ Additional feature directories will be added only when their milestones begin.
 
 The backend is maintained in a sibling repository. The frontend validates `VITE_API_BASE_URL` and uses a testable native-fetch client with JSON handling, credentials support, bearer injection, normalized backend errors, abort compatibility, safe `204` handling, deduplicated refresh, and one-time request retry.
 
-Access tokens remain only in memory. The refresh token is an HTTP-only cookie managed by the backend. TanStack Query owns current-user, team, schedule, and article data; Zustand does not duplicate them. Verified contracts and operating guidance are documented in [docs/auth-contract.md](docs/auth-contract.md), [docs/team-personalization-contract.md](docs/team-personalization-contract.md), [docs/admin-usage.md](docs/admin-usage.md), and [docs/editorial-cms-usage.md](docs/editorial-cms-usage.md).
+Access tokens remain only in memory. The refresh token is an HTTP-only cookie managed by the backend. TanStack Query owns current-user, team, schedule, and article data; Zustand does not duplicate them. Verified contracts and operating guidance are documented in [docs/auth-contract.md](docs/auth-contract.md), [docs/team-personalization-contract.md](docs/team-personalization-contract.md), [docs/admin-usage.md](docs/admin-usage.md), [docs/public-games-usage.md](docs/public-games-usage.md), and [docs/editorial-cms-usage.md](docs/editorial-cms-usage.md).
 
 The team catalog is cached for 24 hours. Favorite-team updates submit only internal UUIDs and update the current-user cache directly from the backend response. Approved logo URLs are displayed when available; missing or failed images use the shared abbreviation badge.
 

@@ -30,6 +30,12 @@ const LazyAdminLayout = lazy(async () => ({
 const LazyNewsPage = lazy(async () => ({
   default: (await import('@/pages/NewsPage')).NewsPage,
 }));
+const LazyGamesPage = lazy(async () => ({
+  default: (await import('@/pages/GamesPage')).GamesPage,
+}));
+const LazyGameDetailPage = lazy(async () => ({
+  default: (await import('@/pages/GameDetailPage')).GameDetailPage,
+}));
 const LazyArticleDetailPage = lazy(async () => ({
   default: (await import('@/pages/ArticleDetailPage')).ArticleDetailPage,
 }));
@@ -70,16 +76,8 @@ export const appRoutes: RouteObject[] = [
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <HomePage /> },
-      {
-        path: 'games',
-        element: (
-          <SectionPage
-            eyebrow="GAME DAY"
-            title="Games"
-            description="Schedules, live context, scores, and the game center will come together here."
-          />
-        ),
-      },
+      { path: 'games', element: deferred(<LazyGamesPage />) },
+      { path: 'games/:gameId', element: deferred(<LazyGameDetailPage />) },
       { path: 'news', element: deferred(<LazyNewsPage />) },
       { path: 'news/:slug', element: deferred(<LazyArticleDetailPage />) },
       {

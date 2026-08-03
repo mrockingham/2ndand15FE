@@ -144,6 +144,22 @@ Deliverables:
 
 Exit criteria: editors can operate the backend-supported CMS without database or Swagger access, curated material is unmistakably attributed, unpublished material never uses a public endpoint, version conflicts preserve unsaved work, and the public shell does not eagerly load the CMS.
 
+## Frontend Milestone 12 — Public Games and personalized schedule
+
+Status: implemented against backend Milestone 11 in August 2026.
+
+Deliverables:
+
+- Lazy public `/games` and `/games/:gameId` routes backed only by resolved public DTOs
+- Preseason and regular-season week navigation with URL-backed week/team filters
+- Responsive accessible cards with legitimate statuses/scores, venue, broadcast, and neutral-site context
+- First-class nullable kickoff handling with consistent `Time TBD` presentation and deterministic ordering
+- Favorite-team schedule shortcut, bounded next-game derivation, valid regular-season bye handling, and Home integration
+- Cursor pagination, moderate caching, abort signals, manual refresh, and no automatic polling
+- Nullable kickoff compatibility across existing admin values, previews, edits, overrides, and CSV import
+
+Exit criteria: signed-out and personalized users can browse the 2026 schedule without fabricated kickoff, score, correction, or live state; administrative writes invalidate the affected public schedule family; and deferred sports scopes remain excluded.
+
 ## Proposed first implementation plan
 
 After approval, begin only with Milestone 0:

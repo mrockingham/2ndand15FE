@@ -56,6 +56,7 @@ describe('role-aware administration routes and navigation', () => {
   });
 
   it('denies USER, allows EDITOR schedule routes, and restricts full audit to ADMIN', async () => {
+    const user = userEvent.setup();
     const userRender = renderApp('/admin/games', {
       currentUser: currentUserFixture,
       restorationStatus: 'authenticated',
@@ -78,6 +79,23 @@ describe('role-aware administration routes and navigation', () => {
     expect(
       screen.queryByRole('link', { name: 'Audit log' }),
     ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Open administration navigation',
+      }),
+    );
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Close administration navigation',
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', {
+          name: 'Close administration navigation',
+        }),
+      ).not.toBeInTheDocument(),
+    );
     editorRender.unmount();
 
     const deniedAudit = renderApp('/admin/audit', {
@@ -262,6 +280,31 @@ describe('administrative games', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps an imported null kickoff visible and optional during eligible base edits', async () => {
+    const tbdGame = {
+      ...adminGameFixture,
+      providerManaged: false,
+      resolved: { ...adminGameFixture.resolved, startTime: null },
+      base: { ...adminGameFixture.base, startTime: null },
+      provenance: {
+        ...adminGameFixture.provenance!,
+        sourceType: 'OFFICIAL_WEB',
+      },
+    };
+    renderApp(`/admin/games/${adminGameFixture.id}`, {
+      currentUser: editor,
+      restorationStatus: 'authenticated',
+      fetchImplementation: adminRouter({ detail: tbdGame }),
+    });
+    expect((await screen.findAllByText('Time TBD')).length).toBeGreaterThan(1);
+    expect(
+      screen.getByText('Leave blank to preserve Time TBD.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('Kickoff local date and time'),
+    ).not.toBeRequired();
+  });
+
   it('prevents same-team creation and submits kickoff with the explicitly chosen offset', async () => {
     const user = userEvent.setup();
     const fetchImplementation = vi.fn<typeof fetch>((input, init) => {
@@ -290,7 +333,7 @@ describe('administrative games', () => {
         screen.getByRole('combobox', { name: 'Away team' }),
       ).not.toHaveAttribute('aria-disabled', 'true'),
     );
-    fireEvent.change(screen.getByLabelText('Kickoff local date and time'), {
+    fireEvent.change(screen.getByLabelText(/Kickoff local date and time/), {
       target: { value: '2026-09-10T20:20' },
     });
     await user.click(
