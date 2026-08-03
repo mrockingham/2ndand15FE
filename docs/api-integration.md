@@ -4,7 +4,7 @@
 
 The backend lives in the sibling `2ndand15BE` repository. Authentication contracts were verified against its OpenAPI, validators, controllers, service logic, cookie helper, configuration, and route tests in July 2026. See [auth-contract.md](auth-contract.md) for the exact requests, responses, status codes, error envelope, reset-token query parameter, and cookie behavior.
 
-Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestone 1 implements authentication; Frontend Milestone 2 implements the verified team and favorite-team contracts in [team-personalization-contract.md](team-personalization-contract.md). Frontend Milestone 8 implements the verified backend Milestone 7 administrative schedule contract documented in [admin-usage.md](admin-usage.md).
+Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements the verified backend Milestone 9 public article and editorial CMS contracts documented in [editorial-cms-usage.md](editorial-cms-usage.md).
 
 ## Base configuration
 
@@ -18,29 +18,39 @@ Vite environment values are visible to users. Never place secrets in them.
 
 ## Known endpoints
 
-| Method | Path                                | Authentication               | Frontend purpose                               |
-| ------ | ----------------------------------- | ---------------------------- | ---------------------------------------------- |
-| GET    | `/health`                           | Not specified                | Environment/API health diagnostics             |
-| GET    | `/teams`                            | Public                       | List active teams and favorite choices         |
-| GET    | `/teams/:teamId`                    | Public                       | Active team detail when needed                 |
-| POST   | `/auth/register`                    | Public                       | Create an account and immediately authenticate |
-| POST   | `/auth/login`                       | Public                       | Authenticate                                   |
-| POST   | `/auth/refresh`                     | Refresh cookie               | Restore/renew an access token                  |
-| POST   | `/auth/logout`                      | Refresh cookie               | End the session                                |
-| POST   | `/auth/forgot-password`             | Public                       | Request password reset instructions            |
-| POST   | `/auth/reset-password`              | Public token in JSON request | Complete password reset                        |
-| GET    | `/users/me`                         | Bearer token                 | Load current-user DTO                          |
-| PATCH  | `/users/me/favorite-team`           | Bearer token                 | Select, replace, or clear favorite team        |
-| GET    | `/admin/games`                      | Bearer token; editor/admin   | Bounded administrative schedule list           |
-| GET    | `/admin/games/:gameId`              | Bearer token; editor/admin   | Administrative game detail                     |
-| POST   | `/admin/games`                      | Bearer token; editor/admin   | Create a manually owned game                   |
-| PATCH  | `/admin/games/:gameId`              | Bearer token; editor/admin   | Edit a manually owned base game                |
-| PUT    | `/admin/games/:gameId/override`     | Bearer token; editor/admin   | Upsert partial editorial override values       |
-| DELETE | `/admin/games/:gameId/override`     | Bearer token; admin          | Delete the complete override                   |
-| PUT    | `/admin/games/:gameId/verification` | Bearer token; editor/admin   | Record verification source and timestamp       |
-| POST   | `/admin/schedule-imports/validate`  | Bearer token; editor/admin   | Dry-run structured schedule rows               |
-| POST   | `/admin/schedule-imports`           | Bearer token; editor/admin   | Write previously validated structured rows     |
-| GET    | `/admin/audit-events`               | Bearer token; scoped by role | Cursor-paginated sanitized audit events        |
+| Method    | Path                                                      | Authentication               | Frontend purpose                               |
+| --------- | --------------------------------------------------------- | ---------------------------- | ---------------------------------------------- |
+| GET       | `/health`                                                 | Not specified                | Environment/API health diagnostics             |
+| GET       | `/teams`                                                  | Public                       | List active teams and favorite choices         |
+| GET       | `/teams/:teamId`                                          | Public                       | Active team detail when needed                 |
+| POST      | `/auth/register`                                          | Public                       | Create an account and immediately authenticate |
+| POST      | `/auth/login`                                             | Public                       | Authenticate                                   |
+| POST      | `/auth/refresh`                                           | Refresh cookie               | Restore/renew an access token                  |
+| POST      | `/auth/logout`                                            | Refresh cookie               | End the session                                |
+| POST      | `/auth/forgot-password`                                   | Public                       | Request password reset instructions            |
+| POST      | `/auth/reset-password`                                    | Public token in JSON request | Complete password reset                        |
+| GET       | `/users/me`                                               | Bearer token                 | Load current-user DTO                          |
+| PATCH     | `/users/me/favorite-team`                                 | Bearer token                 | Select, replace, or clear favorite team        |
+| GET       | `/admin/games`                                            | Bearer token; editor/admin   | Bounded administrative schedule list           |
+| GET       | `/admin/games/:gameId`                                    | Bearer token; editor/admin   | Administrative game detail                     |
+| POST      | `/admin/games`                                            | Bearer token; editor/admin   | Create a manually owned game                   |
+| PATCH     | `/admin/games/:gameId`                                    | Bearer token; editor/admin   | Edit a manually owned base game                |
+| PUT       | `/admin/games/:gameId/override`                           | Bearer token; editor/admin   | Upsert partial editorial override values       |
+| DELETE    | `/admin/games/:gameId/override`                           | Bearer token; admin          | Delete the complete override                   |
+| PUT       | `/admin/games/:gameId/verification`                       | Bearer token; editor/admin   | Record verification source and timestamp       |
+| POST      | `/admin/schedule-imports/validate`                        | Bearer token; editor/admin   | Dry-run structured schedule rows               |
+| POST      | `/admin/schedule-imports`                                 | Bearer token; editor/admin   | Write previously validated structured rows     |
+| GET       | `/admin/audit-events`                                     | Bearer token; scoped by role | Cursor-paginated sanitized audit events        |
+| GET       | `/articles`                                               | Public                       | Published article list and filters             |
+| GET       | `/articles/featured`                                      | Public                       | Currently featured published articles          |
+| GET       | `/articles/:slug`                                         | Public                       | Published article detail                       |
+| GET       | `/teams/:teamId/articles`                                 | Public                       | Published team article list                    |
+| GET/POST  | `/admin/articles`                                         | Bearer token; editor/admin   | List articles or create a draft                |
+| GET/PATCH | `/admin/articles/:articleId`                              | Bearer token; editor/admin   | Read or version-edit editorial content         |
+| PUT       | `/admin/articles/:articleId/teams`                        | Bearer token; editor/admin   | Versioned replacement of team tags             |
+| POST      | `/admin/articles/:articleId/{publish,unpublish,schedule}` | Bearer token; editor/admin   | Versioned publication lifecycle                |
+| POST      | `/admin/articles/:articleId/{archive,restore}`            | Bearer token; admin          | Versioned archival lifecycle                   |
+| GET       | `/admin/articles/:articleId/revisions`                    | Bearer token; editor/admin   | Immutable revision history                     |
 
 Frontend paths above are relative to the configured `/api/v1` base.
 

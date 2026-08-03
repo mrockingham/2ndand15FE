@@ -4,7 +4,7 @@ This file applies to the entire repository. It is the durable working agreement 
 
 ## Current repository state
 
-Frontend Milestones 0 through 2 and Frontend Milestone 8 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, active NFL team catalog, favorite-team onboarding and account controls, reusable team identity fallback, personalized home shell, and role-aware administrative schedule management. Public live games, scores, news, statistics, predictions, fantasy, and other sports features remain deferred.
+Frontend Milestones 0 through 2, 8, and 10 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, team personalization, role-aware schedule administration, an editorial article CMS, and the public News feed/detail experience. Public live games, scores, statistics, predictions, fantasy, and other sports features remain deferred.
 
 Read the documents under `docs/` before beginning a new milestone. Do not expand into a later milestone without approval.
 
@@ -60,6 +60,7 @@ Use the feature-oriented structure in `docs/frontend-architecture.md`.
 - A successful favorite-team mutation writes the returned user directly to `['users', 'me']`; do not issue a duplicate current-user request.
 - Administrative roles come only from the current-user response. `EDITOR` and `ADMIN` may enter schedule administration; full audit access and override deletion are `ADMIN`-only. A frontend guard is a navigation aid, never the authorization boundary.
 - Administrative game lists use deterministic `['admin', 'games', 'list', filters]` keys; detail writes update the matching detail cache and invalidate only list/audit families.
+- Public and administrative article query families remain separate. Article mutations use `expectedVersion`, write returned detail data, and invalidate the affected admin list/revision and public article families.
 
 ## Authentication and API rules
 
@@ -79,6 +80,7 @@ Follow `docs/api-integration.md`.
 - Follow `docs/team-personalization-contract.md` for team and favorite-team shapes. Submit only internal team UUIDs and never depend on provider mappings.
 - Treat backend team colors and logo URLs as untrusted display data. Validate color syntax and use the shared abbreviation fallback when a logo is absent or fails.
 - Follow `docs/admin-usage.md` for schedule administration. Never expose provider mappings, add provider configuration UI, or accept arbitrary server file paths.
+- Follow `docs/editorial-cms-usage.md` for articles. Render Markdown without raw HTML, keep curated sources clearly attributed, use public DTOs on public routes, and never implement client-side publication visibility rules.
 
 ## UI and design rules
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Frontend Milestones 0 through 2 and Frontend Milestone 8 implement the application foundation, authentication lifecycle, team catalog, favorite-team personalization, personalized home shell, and administrative schedule workspace described here. Public live sports feature directories remain architectural targets.
+Frontend Milestones 0 through 2, 8, and 10 implement the application foundation, authentication lifecycle, team personalization, administrative schedule workspace, editorial CMS, and public News experience described here. Remaining live sports feature directories remain architectural targets.
 
 ## Goals
 
@@ -156,12 +156,14 @@ The exact local/backend URLs are deployment configuration, not hard-coded consta
 - Desktop navigation exposes all six destinations. Mobile exposes four primary destinations plus a More sheet for AI Hub and Fantasy.
 - Registration, login, recovery, reset, logout, session restoration, protected account routing, refresh coordination, and current-user loading are implemented.
 - Team catalog, favorite-team onboarding/editing, identity fallback, and personalized home states are implemented.
-- Games, schedules, scores, news, statistics, predictions, fantasy, and all other live sports features remain deferred.
+- Public News and editorial administration are implemented. Games, public schedules/scores, statistics, predictions, fantasy, and all other live sports features remain deferred.
 - `src/features/admin/` owns the verified administrative DTOs, API functions, query keys, mutations, CSV parser, and reusable admin components. Thin route pages live under `src/pages/Admin*` and the dedicated shell lives at `src/layouts/AdminLayout.tsx`.
 - `CurrentUser.role` is the single client source for navigation decisions. `/admin` uses the existing authentication guard followed by an `EDITOR`/`ADMIN` experience guard; `/admin/audit` adds an `ADMIN` experience guard. Backend capability middleware remains the security boundary.
 - Administrative queries use `adminGameKeys.list(filters)`, `adminGameKeys.detail(id)`, `adminAuditKeys.list(filters)`, and `adminAuditKeys.game(id, cursor)`. Writes update returned game detail data and invalidate only affected list/audit families.
 - A backend `403` is rendered as insufficient permission and invalidates `['users', 'me']` so stale role data is replaced through the existing session/current-user flow.
-- Public schedules, live games, scores, news, statistics, predictions, fantasy, and other sports features remain deferred.
+- `src/features/articles/` owns public/admin DTOs, distinct query-key families, API functions, form validation, safe Markdown rendering, lifecycle controls, and revision presentation. Public pages consume only public article endpoints.
+- News/detail and all admin route modules are lazy-loaded behind a shared accessible route fallback. Home and lightweight auth/account flows remain eager.
+- Public schedules, live games, scores, statistics, predictions, fantasy, and other sports features remain deferred.
 
 ## Error, loading, and empty states
 

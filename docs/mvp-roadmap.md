@@ -106,7 +106,7 @@ Exit criteria: the complete MVP journey meets agreed accessibility, performance,
 
 ## Later product increments
 
-After the account/personalization slice is stable, sequence backend-supported increments such as games and schedules, news/source attribution, statistics, predictions/accuracy, team and player detail, live play-by-play, the play visualizer, and fantasy integrations. Each needs its own data contract, stale/refresh strategy, responsive design, and trust requirements.
+After the implemented account, schedule administration, and News slices, sequence remaining backend-supported increments such as public games and schedules, statistics, predictions/accuracy, team and player detail, live play-by-play, the play visualizer, and fantasy integrations. Each needs its own data contract, stale/refresh strategy, responsive design, and trust requirements.
 
 ## Frontend Milestone 8 — Administrative schedule management
 
@@ -126,6 +126,23 @@ Deliverables:
 - Focused role, route, API, CSV, state, mutation, and regression tests
 
 Exit criteria: editors can maintain supported schedule data without database or Swagger access, admins receive only the additional backend-supported controls, stale roles fail safely, and no public schedule/live feature or provider synchronization UI is introduced.
+
+## Frontend Milestone 10 — Editorial CMS and public News
+
+Status: implemented against backend Milestone 9 in August 2026.
+
+Deliverables:
+
+- Public `/news` featured/feed experience, source-aware article cards, team personalization, and `/news/:slug` detail
+- Public routes backed only by public DTOs and backend-derived publication/featured visibility
+- Editor/admin article list, draft creation, versioned editing/team tags, publish/schedule/unpublish lifecycle, and immutable revisions
+- Admin-only archive/restore controls and full article audit events
+- Type-aware original, curated, and announcement validation with explicit-offset timestamps
+- Markdown rendering that drops raw HTML, executable links, and inline remote images
+- Route-level code splitting for News/detail and administrative workspaces
+- HTTP-boundary, schema, renderer, role, lifecycle, revision, and regression tests
+
+Exit criteria: editors can operate the backend-supported CMS without database or Swagger access, curated material is unmistakably attributed, unpublished material never uses a public endpoint, version conflicts preserve unsaved work, and the public shell does not eagerly load the CMS.
 
 ## Proposed first implementation plan
 

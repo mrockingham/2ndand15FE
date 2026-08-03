@@ -70,6 +70,7 @@ describe('role-aware administration routes and navigation', () => {
       restorationStatus: 'authenticated',
       fetchImplementation: adminRouter(),
     });
+    expect(screen.getByRole('status')).toHaveTextContent('Loading page…');
     expect(
       await screen.findByRole('heading', { name: 'Schedule games' }),
     ).toBeInTheDocument();
@@ -469,7 +470,7 @@ describe('schedule import workflow', () => {
       restorationStatus: 'authenticated',
       fetchImplementation,
     });
-    const input = screen.getByLabelText('Schedule CSV');
+    const input = await screen.findByLabelText('Schedule CSV');
     fireEvent.change(input, { target: { value: csv } });
     await user.click(
       screen.getByRole('button', { name: 'Validate without writing' }),

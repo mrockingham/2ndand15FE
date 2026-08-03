@@ -18,6 +18,7 @@ import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
+import { HomeNewsSection } from '@/features/articles/components/HomeNewsSection';
 import { useCurrentUserQuery } from '@/features/users/queries';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -425,5 +426,10 @@ export const HomePage = () => {
       state.restorationStatus === 'authenticated' && state.accessToken !== null,
   );
 
-  return isAuthenticated ? <PersonalizedHome /> : <PublicHome />;
+  return (
+    <>
+      {isAuthenticated ? <PersonalizedHome /> : <PublicHome />}
+      <HomeNewsSection />
+    </>
+  );
 };

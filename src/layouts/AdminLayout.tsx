@@ -4,6 +4,7 @@ import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import SportsFootballRounded from '@mui/icons-material/SportsFootballRounded';
 import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
+import ArticleRounded from '@mui/icons-material/ArticleRounded';
 import {
   AppBar,
   Box,
@@ -39,6 +40,7 @@ export const AdminLayout = () => {
       path: '/admin/import',
       icon: UploadFileRounded,
     },
+    { label: 'Articles', path: '/admin/articles', icon: ArticleRounded },
     ...(role === 'ADMIN'
       ? [{ label: 'Audit log', path: '/admin/audit', icon: HistoryRounded }]
       : []),
@@ -56,7 +58,7 @@ export const AdminLayout = () => {
       >
         <FactCheckRounded color="primary" />
         <Box>
-          <Typography variant="overline">Schedule workspace</Typography>
+          <Typography variant="overline">Content and schedule</Typography>
           <Chip
             size="small"
             label={role}
@@ -119,7 +121,7 @@ export const AdminLayout = () => {
             <MenuRounded />
           </IconButton>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Schedule admin
+            Administration
           </Typography>
           <Chip size="small" label={role} sx={{ mr: 1 }} />
           <ThemeToggle />

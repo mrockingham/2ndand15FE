@@ -63,5 +63,5 @@ Admins can filter the complete audit log by the backend-supported action, entity
 - Backend list filters are currently limited to season, limit, and cursor.
 - Audit filters are currently limited to action, entity type, entity ID, limit, and cursor; actor/date filters are not exposed.
 - Import validation returns aggregate counts and failures; it has no separate backend validation token. The frontend ties validation to exact unchanged content for the current page lifetime.
-- There is no role-management UI, provider configuration UI, media/news CMS, rich-text editing, multipart upload, public schedule, live polling, WebSocket, play-by-play, or deployment change.
+- There is no role-management UI, provider configuration UI, rich-text/HTML editing, multipart upload, public schedule, live polling, WebSocket, play-by-play, or deployment change. The separate Markdown-based article CMS is documented in [editorial-cms-usage.md](editorial-cms-usage.md).
 - Highlightly remains evaluation-only. No Highlightly synchronization was added.
