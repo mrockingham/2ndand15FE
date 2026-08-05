@@ -27,6 +27,8 @@ The frontend calls only these public endpoints:
 
 Directory search starts at two trimmed characters. Seasons are limited by the verified backend contract to 2020 through 2025, weeks to 1 through 22, list limits to 1 through 100, and season types to `PRE`, `REG`, or `POST`. The UI never sends invented filters.
 
+The player-directory season selector is currently a fixed 2020â€“2025 list because those are the seasons in the imported dataset and verified contract. It should be replaced by a backend-provided season catalog or other dynamic source when newer seasons are imported; adding a new hard-coded year is not the intended long-term update path.
+
 Player, team, game, stat, and summary IDs are opaque internal UUIDs. Provider mappings and provider IDs must never appear in URLs, application state, logs, or presentation.
 
 ## Directory filter meaning
@@ -50,7 +52,9 @@ Source-provided fantasy totals may be labeled and displayed as historical source
 
 Comparison uses only the two players' `/seasons` responses. Search is debounced and calls the public directory endpoint. Selecting the same player on both sides is prevented, and manually supplied duplicate IDs do not produce a comparison.
 
-The comparison selects the newest shared season when no valid season is present in the URL, preferring `REG_POST`, then `REG`, then `POST` for each player. Shared metrics are presented first, role-specific metrics remain visible with unavailable values, and an explicit warning appears for different positions or position groups. The UI does not calculate an overall winner or color-code a conclusion. A **Higher value** annotation is limited to straightforward positive counting/efficiency metrics and is never applied to negative statistics such as interceptions thrown.
+The comparison selects the newest shared season when no valid season is present in the URL. For that season, it intersects both players' available summary types and prefers `REG_POST`, then `REG`, then `POST`. Both players always use the same selected type. When multiple equivalent types exist, a URL-backed `type` selector exposes them; invalid or stale values safely normalize to the preferred shared type. If no type is shared, the UI explains that directly equivalent summaries are unavailable and renders no comparison table.
+
+Shared metrics are presented first, role-specific metrics remain visible with unavailable values, and an explicit warning appears for different positions or position groups. The UI does not calculate an overall winner or color-code a conclusion. A **Higher value** annotation is limited to straightforward positive counting/efficiency metrics and is never applied to negative statistics such as interceptions thrown.
 
 ## Attribution, images, and trust
 
