@@ -8,14 +8,20 @@ These frontend checks improve navigation only. Every administrative request is a
 
 ## Routes
 
-| Route                  | Purpose                                          | Role            |
-| ---------------------- | ------------------------------------------------ | --------------- |
-| `/admin`               | Redirect to Games                                | Editor or admin |
-| `/admin/games`         | Bounded schedule list                            | Editor or admin |
-| `/admin/games/new`     | Manual game creation                             | Editor or admin |
-| `/admin/games/:gameId` | Detail, edit, override, verification, game audit | Editor or admin |
-| `/admin/import`        | Validate and write a schedule CSV                | Editor or admin |
-| `/admin/audit`         | Complete sanitized audit log                     | Admin           |
+| Route                                 | Purpose                                          | Role            |
+| ------------------------------------- | ------------------------------------------------ | --------------- |
+| `/admin`                              | Redirect to Games                                | Editor or admin |
+| `/admin/games`                        | Bounded schedule list                            | Editor or admin |
+| `/admin/games/new`                    | Manual game creation                             | Editor or admin |
+| `/admin/games/:gameId`                | Detail, edit, override, verification, game audit | Editor or admin |
+| `/admin/import`                       | Validate and write a schedule CSV                | Editor or admin |
+| `/admin/audit`                        | Complete sanitized audit log                     | Admin           |
+| `/admin/news-sources`                 | Source registry, health, test, and ingest        | Editor or admin |
+| `/admin/news-sources/new`             | Source creation                                  | Admin           |
+| `/admin/news-sources/:sourceId`       | Source detail and admin-only editing             | Editor or admin |
+| `/admin/news-candidates`              | Editorial candidate inbox                        | Editor or admin |
+| `/admin/news-candidates/manual`       | Manual metadata submission                       | Editor or admin |
+| `/admin/news-candidates/:candidateId` | Candidate review and draft conversion            | Editor or admin |
 
 ## Games and ownership
 
@@ -67,3 +73,5 @@ Admins can filter the complete audit log by the backend-supported action, entity
 - Import validation returns aggregate counts and failures; it has no separate backend validation token. The frontend ties validation to exact unchanged content for the current page lifetime.
 - There is no role-management UI, provider configuration UI, rich-text/HTML editing, multipart upload, live polling, WebSocket, play-by-play, or deployment change. Public schedule behavior is documented in [public-games-usage.md](public-games-usage.md), and the separate Markdown-based article CMS is documented in [editorial-cms-usage.md](editorial-cms-usage.md).
 - Highlightly remains evaluation-only. No Highlightly synchronization was added.
+
+News-source and candidate operating guidance lives in [news-inbox-usage.md](news-inbox-usage.md). Ingestion is explicit and creates only private candidates; it never publishes an article.

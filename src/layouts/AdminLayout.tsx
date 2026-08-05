@@ -6,6 +6,8 @@ import MenuRounded from '@mui/icons-material/MenuRounded';
 import SportsFootballRounded from '@mui/icons-material/SportsFootballRounded';
 import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
 import ArticleRounded from '@mui/icons-material/ArticleRounded';
+import InboxRounded from '@mui/icons-material/InboxRounded';
+import RssFeedRounded from '@mui/icons-material/RssFeedRounded';
 import {
   AppBar,
   Box,
@@ -42,6 +44,16 @@ export const AdminLayout = () => {
       icon: UploadFileRounded,
     },
     { label: 'Articles', path: '/admin/articles', icon: ArticleRounded },
+    {
+      label: 'Candidate inbox',
+      path: '/admin/news-candidates',
+      icon: InboxRounded,
+    },
+    {
+      label: 'News sources',
+      path: '/admin/news-sources',
+      icon: RssFeedRounded,
+    },
     ...(role === 'ADMIN'
       ? [{ label: 'Audit log', path: '/admin/audit', icon: HistoryRounded }]
       : []),

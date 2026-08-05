@@ -39,6 +39,15 @@ const LazyGameDetailPage = lazy(async () => ({
 const LazyArticleDetailPage = lazy(async () => ({
   default: (await import('@/pages/ArticleDetailPage')).ArticleDetailPage,
 }));
+const LazyPlayersPage = lazy(async () => ({
+  default: (await import('@/pages/PlayersPage')).PlayersPage,
+}));
+const LazyPlayerDetailPage = lazy(async () => ({
+  default: (await import('@/pages/PlayerDetailPage')).PlayerDetailPage,
+}));
+const LazyPlayerComparePage = lazy(async () => ({
+  default: (await import('@/pages/PlayerComparePage')).PlayerComparePage,
+}));
 const LazyAdminGamesPage = lazy(async () => ({
   default: (await import('@/pages/AdminGamesPage')).AdminGamesPage,
 }));
@@ -65,6 +74,29 @@ const LazyAdminArticleDetailPage = lazy(async () => ({
   default: (await import('@/pages/AdminArticleDetailPage'))
     .AdminArticleDetailPage,
 }));
+const LazyAdminNewsSourcesPage = lazy(async () => ({
+  default: (await import('@/pages/AdminNewsSourcesPage')).AdminNewsSourcesPage,
+}));
+const LazyAdminNewsSourceCreatePage = lazy(async () => ({
+  default: (await import('@/pages/AdminNewsSourceCreatePage'))
+    .AdminNewsSourceCreatePage,
+}));
+const LazyAdminNewsSourceDetailPage = lazy(async () => ({
+  default: (await import('@/pages/AdminNewsSourceDetailPage'))
+    .AdminNewsSourceDetailPage,
+}));
+const LazyAdminNewsCandidatesPage = lazy(async () => ({
+  default: (await import('@/pages/AdminNewsCandidatesPage'))
+    .AdminNewsCandidatesPage,
+}));
+const LazyAdminNewsCandidateManualPage = lazy(async () => ({
+  default: (await import('@/pages/AdminNewsCandidateManualPage'))
+    .AdminNewsCandidateManualPage,
+}));
+const LazyAdminNewsCandidateDetailPage = lazy(async () => ({
+  default: (await import('@/pages/AdminNewsCandidateDetailPage'))
+    .AdminNewsCandidateDetailPage,
+}));
 
 const deferred = (element: ReactNode) => (
   <Suspense fallback={<RouteLoading />}>{element}</Suspense>
@@ -80,6 +112,12 @@ export const appRoutes: RouteObject[] = [
       { path: 'games/:gameId', element: deferred(<LazyGameDetailPage />) },
       { path: 'news', element: deferred(<LazyNewsPage />) },
       { path: 'news/:slug', element: deferred(<LazyArticleDetailPage />) },
+      { path: 'players', element: deferred(<LazyPlayersPage />) },
+      { path: 'players/compare', element: deferred(<LazyPlayerComparePage />) },
+      {
+        path: 'players/:playerId',
+        element: deferred(<LazyPlayerDetailPage />),
+      },
       {
         path: 'stats',
         element: (
@@ -162,6 +200,30 @@ export const appRoutes: RouteObject[] = [
               {
                 path: 'articles/:articleId',
                 element: deferred(<LazyAdminArticleDetailPage />),
+              },
+              {
+                path: 'news-sources',
+                element: deferred(<LazyAdminNewsSourcesPage />),
+              },
+              {
+                path: 'news-sources/new',
+                element: deferred(<LazyAdminNewsSourceCreatePage />),
+              },
+              {
+                path: 'news-sources/:sourceId',
+                element: deferred(<LazyAdminNewsSourceDetailPage />),
+              },
+              {
+                path: 'news-candidates',
+                element: deferred(<LazyAdminNewsCandidatesPage />),
+              },
+              {
+                path: 'news-candidates/manual',
+                element: deferred(<LazyAdminNewsCandidateManualPage />),
+              },
+              {
+                path: 'news-candidates/:candidateId',
+                element: deferred(<LazyAdminNewsCandidateDetailPage />),
               },
               {
                 element: <RequireAdministrativeRole adminOnly />,

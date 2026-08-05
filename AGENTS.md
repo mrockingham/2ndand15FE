@@ -4,7 +4,7 @@ This file applies to the entire repository. It is the durable working agreement 
 
 ## Current repository state
 
-Frontend Milestones 0 through 2, 8, 10, and 12 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, team personalization, role-aware schedule administration, an editorial article CMS, public News, and the public 2026 preseason/regular-season schedule and game-detail experience. Live polling, play-by-play, statistics, predictions, fantasy, and other sports features remain deferred.
+Frontend Milestones 0 through 2, 8, 10, 12, 14, and 16 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, team personalization, role-aware schedule administration, an editorial article CMS, public News, the public 2026 preseason/regular-season schedule, private news-source/candidate administration, and historical player directory/profile/statistics/comparison experiences. Live polling, play-by-play, predictions, fantasy recommendations, and other sports features remain deferred.
 
 Read the documents under `docs/` before beginning a new milestone. Do not expand into a later milestone without approval.
 
@@ -62,6 +62,8 @@ Use the feature-oriented structure in `docs/frontend-architecture.md`.
 - Administrative game lists use deterministic `['admin', 'games', 'list', filters]` keys; detail writes update the matching detail cache and invalidate affected list/audit families plus the public game family.
 - Public game lists, details, and bounded team schedules use the `['games', ...]` query family with normalized filters. Administrative schedule writes also invalidate this public family.
 - Public and administrative article query families remain separate. Article mutations use `expectedVersion`, write returned detail data, and invalidate the affected admin list/revision and public article families.
+- News-source and candidate query families remain separate under `src/features/newsInbox/`. Source changes invalidate only source lists/detail and audit; candidate actions update detail and invalidate candidate lists/audit. Conversion additionally seeds the returned article detail and invalidates administrative article lists.
+- Public player reads use separate normalized list/search/detail/stats/seasons families under `src/features/players/`. They are historical data with no polling and must never be copied into Zustand or browser persistence.
 
 ## Authentication and API rules
 
@@ -83,6 +85,8 @@ Follow `docs/api-integration.md`.
 - Follow `docs/admin-usage.md` for schedule administration. Never expose provider mappings, add provider configuration UI, or accept arbitrary server file paths.
 - Follow `docs/public-games-usage.md` for public schedule behavior. Treat `startTime: string | null` as authoritative, display `Time TBD`, and never invent a kickoff or infer a public correction.
 - Follow `docs/editorial-cms-usage.md` for articles. Render Markdown without raw HTML, keep curated sources clearly attributed, use public DTOs on public routes, and never implement client-side publication visibility rules.
+- Follow `docs/news-inbox-usage.md` for source and candidate administration. Never scrape pages, fetch source images, copy publisher descriptions into original summaries, schedule ingestion, or imply that ingestion/conversion publishes content.
+- Follow `docs/player-statistics-usage.md` for public player data. Preserve internal UUIDs and nullable values, use only the four public player endpoints, display backend attribution, and never invent appearances, contact nflverse directly, calculate an overall comparison winner, or add imports/predictions/fantasy recommendations.
 
 ## UI and design rules
 

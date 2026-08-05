@@ -7,7 +7,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useParams } from 'react-router-dom';
 import {
   AdminError,
   AdminLoading,
@@ -34,6 +34,10 @@ export const AdminArticleDetailPage = () => {
   const update = useUpdateArticleMutation(articleId);
   const teams = useReplaceArticleTeamsMutation(articleId);
   const role = useCurrentUserQuery().data?.role ?? 'USER';
+  const location = useLocation();
+  const conversionHeadline = (
+    location.state as { convertedCandidateHeadline?: unknown } | null
+  )?.convertedCandidateHeadline;
   if (query.isPending) return <AdminLoading label="Loading article" />;
   if (query.isError)
     return (
@@ -42,6 +46,12 @@ export const AdminArticleDetailPage = () => {
   const article = query.data;
   return (
     <>
+      {typeof conversionHeadline === 'string' ? (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          “{conversionHeadline}” was converted into this private curated draft.
+          Review it before publishing or scheduling.
+        </Alert>
+      ) : null}
       <Button component={RouterLink} to="/admin/articles" sx={{ mb: 2 }}>
         Back to articles
       </Button>

@@ -22,6 +22,8 @@ Scheduling requires a future ISO timestamp with an explicit UTC offset. The brow
 
 ## Revisions and audit
 
+Candidate conversion is an additional draft-entry path documented in [news-inbox-usage.md](news-inbox-usage.md). It requires editor-created summary text, creates a `CURATED` `DRAFT`, seeds the returned article detail, and then opens the existing article editor. Conversion never exposes a publish control and never copies the publisher description into the article summary.
+
 Editors and administrators can inspect immutable revision metadata and a safely rendered snapshot from article detail. There is intentionally no one-click restore because the backend exposes no restore-from-revision operation. Administrators may also inspect compact article audit events; editors are not sent to the admin-only full audit endpoint.
 
 ## Content and media safety
