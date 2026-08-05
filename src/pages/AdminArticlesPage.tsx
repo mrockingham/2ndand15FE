@@ -1,0 +1,251 @@
+import AddRounded from '@mui/icons-material/AddRounded';
+import {
+  Box,
+  Button,
+  Card,
+  CardActionArea,
+  CardContent,
+  MenuItem,
+  Paper,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+} from '@mui/material';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+
+import {
+  AdminEmpty,
+  AdminError,
+  AdminLoading,
+} from '@/features/admin/components/AdminRequestState';
+import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { ArticleStatusChip } from '@/features/articles/components/ArticleStatusChip';
+import { useAdminArticlesQuery } from '@/features/articles/queries';
+import type { ArticleStatus, ArticleType } from '@/features/articles/types';
+import { useTeamsQuery } from '@/features/teams/queries';
+
+export const AdminArticlesPage = () => {
+  const [parameters, setParameters] = useSearchParams();
+  const teams = useTeamsQuery();
+  const searchValue = parameters.get('search') ?? '';
+  const filters = {
+    limit: 25,
+    cursor: parameters.get('cursor') || undefined,
+    status: (parameters.get('status') || undefined) as
+      ArticleStatus | undefined,
+    type: (parameters.get('type') || undefined) as ArticleType | undefined,
+    teamId: parameters.get('teamId') || undefined,
+    featured: parameters.has('featured')
+      ? parameters.get('featured') === 'true'
+      : undefined,
+    search: searchValue.trim().length >= 2 ? searchValue.trim() : undefined,
+  };
+  const query = useAdminArticlesQuery(filters);
+  const update = (key: string, value: string) => {
+    const next = new URLSearchParams(parameters);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    next.delete('cursor');
+    setParameters(next);
+  };
+  return (
+    <>
+      <AdminPageHeader
+        title="Articles"
+        description="Create, review, feature, and publish editorial coverage."
+        action={
+          <Button
+            component={RouterLink}
+            to="/admin/articles/new"
+            variant="contained"
+            startIcon={<AddRounded />}
+          >
+            New article
+          </Button>
+        }
+      />
+      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={1.5}>
+          <TextField
+            fullWidth
+            label="Search"
+            value={parameters.get('search') ?? ''}
+            onChange={(event) => update('search', event.target.value)}
+          />
+          <TextField
+            fullWidth
+            select
+            label="Status"
+            value={parameters.get('status') ?? ''}
+            onChange={(event) => update('status', event.target.value)}
+          >
+            <MenuItem value="">Active statuses</MenuItem>
+            {['DRAFT', 'SCHEDULED', 'PUBLISHED', 'UNPUBLISHED', 'ARCHIVED'].map(
+              (status) => (
+                <MenuItem key={status} value={status}>
+                  {status}
+                </MenuItem>
+              ),
+            )}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label="Type"
+            value={parameters.get('type') ?? ''}
+            onChange={(event) => update('type', event.target.value)}
+          >
+            <MenuItem value="">All types</MenuItem>
+            {['ORIGINAL', 'CURATED', 'ANNOUNCEMENT'].map((type) => (
+              <MenuItem key={type} value={type}>
+                {type}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label="Team"
+            value={parameters.get('teamId') ?? ''}
+            onChange={(event) => update('teamId', event.target.value)}
+          >
+            <MenuItem value="">All teams</MenuItem>
+            {teams.data?.map((team) => (
+              <MenuItem key={team.id} value={team.id}>
+                {team.abbreviation}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            fullWidth
+            select
+            label="Featured"
+            value={parameters.get('featured') ?? ''}
+            onChange={(event) => update('featured', event.target.value)}
+          >
+            <MenuItem value="">Any</MenuItem>
+            <MenuItem value="true">Featured</MenuItem>
+            <MenuItem value="false">Not featured</MenuItem>
+          </TextField>
+        </Stack>
+      </Paper>
+      {query.isPending ? <AdminLoading label="Loading articles" /> : null}
+      {query.isError ? (
+        <AdminError error={query.error} onRetry={() => void query.refetch()} />
+      ) : null}
+      {query.data?.articles.length === 0 ? (
+        <AdminEmpty
+          title="No articles found"
+          description="No editorial articles match these filters."
+        />
+      ) : null}
+      {query.data?.articles.length ? (
+        <>
+          <TableContainer
+            component={Paper}
+            variant="outlined"
+            sx={{ display: { xs: 'none', lg: 'block' } }}
+          >
+            <Table aria-label="Editorial articles">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Type</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Teams</TableCell>
+                  <TableCell>Featured</TableCell>
+                  <TableCell>Publication</TableCell>
+                  <TableCell>Updated</TableCell>
+                  <TableCell>Version</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {query.data.articles.map((article) => (
+                  <TableRow
+                    key={article.id}
+                    component={RouterLink}
+                    to={`/admin/articles/${article.id}`}
+                    hover
+                    sx={{ textDecoration: 'none' }}
+                  >
+                    <TableCell>{article.title}</TableCell>
+                    <TableCell>{article.type}</TableCell>
+                    <TableCell>
+                      <ArticleStatusChip status={article.status} />
+                    </TableCell>
+                    <TableCell>
+                      {article.teams
+                        .map((team) => team.abbreviation)
+                        .join(', ') || 'League-wide'}
+                    </TableCell>
+                    <TableCell>
+                      {article.isFeatured
+                        ? `Yes · ${article.featuredPriority ?? 'default'}`
+                        : 'No'}
+                    </TableCell>
+                    <TableCell>
+                      {article.scheduledFor
+                        ? `Scheduled ${new Date(article.scheduledFor).toLocaleString()}`
+                        : article.publishedAt
+                          ? new Date(article.publishedAt).toLocaleString()
+                          : 'Not published'}
+                    </TableCell>
+                    <TableCell>
+                      {new Date(article.updatedAt).toLocaleString()}
+                    </TableCell>
+                    <TableCell>{article.version}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <Stack spacing={2} sx={{ display: { lg: 'none' } }}>
+            {query.data.articles.map((article) => (
+              <Card key={article.id} variant="outlined">
+                <CardActionArea
+                  component={RouterLink}
+                  to={`/admin/articles/${article.id}`}
+                >
+                  <CardContent>
+                    <Stack direction="row" spacing={1}>
+                      <ArticleStatusChip status={article.status} />
+                      <Typography variant="overline">{article.type}</Typography>
+                    </Stack>
+                    <Typography variant="h5" sx={{ my: 1 }}>
+                      {article.title}
+                    </Typography>
+                    <Typography color="text.secondary">
+                      {article.teams
+                        .map((team) => team.abbreviation)
+                        .join(' · ') || 'League-wide'}{' '}
+                      · Version {article.version}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
+              </Card>
+            ))}
+          </Stack>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+            {query.data.nextCursor ? (
+              <Button
+                onClick={() => {
+                  const next = new URLSearchParams(parameters);
+                  next.set('cursor', query.data.nextCursor ?? '');
+                  setParameters(next);
+                }}
+              >
+                Next page
+              </Button>
+            ) : null}
+          </Box>
+        </>
+      ) : null}
+    </>
+  );
+};

@@ -255,7 +255,7 @@ describe('onboarding and personalized routes', () => {
       screen.getByRole('heading', { name: 'Buffalo Bills' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/schedules and matchup context/i),
+      screen.getByRole('heading', { name: /your next kickoff/i }),
     ).toBeInTheDocument();
     unmount();
 

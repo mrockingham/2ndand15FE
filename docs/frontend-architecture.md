@@ -2,7 +2,7 @@
 
 ## Status
 
-Frontend Milestones 0 through 2 and Frontend Milestone 8 implement the application foundation, authentication lifecycle, team catalog, favorite-team personalization, personalized home shell, and administrative schedule workspace described here. Public live sports feature directories remain architectural targets.
+Frontend Milestones 0 through 2, 8, 10, 12, 14, and 16 implement the application foundation, authentication lifecycle, team personalization, administrative schedule workspace, editorial CMS, public News, public Games schedule, private source/candidate workflow, and historical player/statistics experience described here. Remaining live sports feature directories remain architectural targets.
 
 ## Goals
 
@@ -34,6 +34,8 @@ src/
     teams/
     users/
     games/
+    players/
+    newsInbox/
     news/
     stats/
     ai/
@@ -153,15 +155,22 @@ The exact local/backend URLs are deployment configuration, not hard-coded consta
 - `src/theme/` owns typed semantic tokens and MUI component defaults.
 - `src/stores/themePreferences.ts` persists only theme mode. `src/stores/authStore.ts` holds only ephemeral token/bootstrap state and never persists it.
 - `src/services/api/` owns the feature-neutral native-fetch boundary. `src/features/auth/createAuthApiClients.ts` composes public and authenticated clients with session behavior.
-- Desktop navigation exposes all six destinations. Mobile exposes four primary destinations plus a More sheet for AI Hub and Fantasy.
+- Desktop navigation exposes all seven destinations. Mobile exposes four primary destinations plus a More sheet for Stats, AI Hub, and Fantasy.
 - Registration, login, recovery, reset, logout, session restoration, protected account routing, refresh coordination, and current-user loading are implemented.
 - Team catalog, favorite-team onboarding/editing, identity fallback, and personalized home states are implemented.
-- Games, schedules, scores, news, statistics, predictions, fantasy, and all other live sports features remain deferred.
+- Public News, editorial administration, the public schedule/game-detail experience, and historical player statistics are implemented. Live polling, play-by-play, predictions, fantasy recommendations, and other sports features remain deferred.
 - `src/features/admin/` owns the verified administrative DTOs, API functions, query keys, mutations, CSV parser, and reusable admin components. Thin route pages live under `src/pages/Admin*` and the dedicated shell lives at `src/layouts/AdminLayout.tsx`.
 - `CurrentUser.role` is the single client source for navigation decisions. `/admin` uses the existing authentication guard followed by an `EDITOR`/`ADMIN` experience guard; `/admin/audit` adds an `ADMIN` experience guard. Backend capability middleware remains the security boundary.
-- Administrative queries use `adminGameKeys.list(filters)`, `adminGameKeys.detail(id)`, `adminAuditKeys.list(filters)`, and `adminAuditKeys.game(id, cursor)`. Writes update returned game detail data and invalidate only affected list/audit families.
+- Administrative queries use `adminGameKeys.list(filters)`, `adminGameKeys.detail(id)`, `adminAuditKeys.list(filters)`, and `adminAuditKeys.game(id, cursor)`. Writes update returned game detail data and invalidate affected list/audit families plus public game queries.
 - A backend `403` is rendered as insufficient permission and invalidates `['users', 'me']` so stale role data is replaced through the existing session/current-user flow.
-- Public schedules, live games, scores, news, statistics, predictions, fantasy, and other sports features remain deferred.
+- `src/features/articles/` owns public/admin DTOs, distinct query-key families, API functions, form validation, safe Markdown rendering, lifecycle controls, and revision presentation. Public pages consume only public article endpoints.
+- `src/features/games/` owns public game DTOs, transport, normalized query keys, nullable kickoff utilities, cards, schedule grouping, and favorite-team next-game composition. Public week lists use cursor-aware queries with a five-minute stale time and no polling.
+- `src/features/newsInbox/` owns authenticated source/candidate DTOs, schemas, transport, separate deterministic query-key families, mutations, and reusable workflow components. It stores nothing in Zustand or browser persistence.
+- `src/features/players/` owns exact public player DTOs, the four bounded read endpoints, normalized list/search/detail/stats/seasons query families, safe presentation utilities, and responsive player components. Player server data stays in TanStack Query and is never persisted in Zustand or browser storage.
+- The `/players`, `/players/:playerId`, and `/players/compare` modules are lazy-loaded behind the shared accessible route fallback.
+- The Games route URL owns `type`, `week`, optional `team`, and optional historical `season` filters. The backend remains the source of the default current season.
+- News/detail and all admin route modules—including each source and candidate route—are lazy-loaded behind a shared accessible route fallback. Home and lightweight auth/account flows remain eager.
+- Public 2026 preseason and regular-season schedules, resolved game details, Home integration, favorite-team next-game presentation, and historical 2020â€“2025 player statistics are implemented. Live polling, play-by-play, predictions, fantasy recommendations, and other sports features remain deferred.
 
 ## Error, loading, and empty states
 

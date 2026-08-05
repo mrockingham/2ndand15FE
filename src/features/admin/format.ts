@@ -1,14 +1,18 @@
 import type { GameStatus, SeasonType } from '@/features/admin/types';
 
-export const formatAdminDateTime = (value: string) =>
-  new Intl.DateTimeFormat(undefined, {
+export const formatAdminDateTime = (value: string | null) => {
+  if (value === null) return 'Time TBD';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Time TBD';
+  return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
     timeZoneName: 'short',
-  }).format(new Date(value));
+  }).format(parsed);
+};
 
 export const seasonTypeLabel: Readonly<Record<SeasonType, string>> = {
   PRE: 'Preseason',

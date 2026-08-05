@@ -14,6 +14,7 @@ import {
   writeScheduleImport,
 } from '@/features/admin/api';
 import { adminAuditKeys, adminGameKeys } from '@/features/admin/queryKeys';
+import { gameKeys } from '@/features/games/queryKeys';
 import type {
   AdminGame,
   AdminGameListFilters,
@@ -71,8 +72,11 @@ const useGameWriteSuccess = () => {
   const queryClient = useQueryClient();
   return (game: AdminGame) => {
     queryClient.setQueryData(adminGameKeys.detail(game.id), game);
+    queryClient.setQueryData(gameKeys.detail(game.id), game.resolved);
     void queryClient.invalidateQueries({ queryKey: adminGameKeys.lists() });
     void queryClient.invalidateQueries({ queryKey: adminAuditKeys.all });
+    void queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+    void queryClient.invalidateQueries({ queryKey: gameKeys.teamLists() });
   };
 };
 
@@ -142,6 +146,7 @@ export const useWriteImportMutation = () => {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminGameKeys.lists() });
       void queryClient.invalidateQueries({ queryKey: adminAuditKeys.all });
+      void queryClient.invalidateQueries({ queryKey: gameKeys.all });
     },
   });
 };

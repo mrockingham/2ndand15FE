@@ -2,7 +2,7 @@
 
 The frontend foundation for 2nd & 15, a fast, modern NFL experience designed around game-day context, responsible AI insight, and fantasy decision support.
 
-Frontend Milestones 0 through 2 provide the application shell, theme system, complete authentication lifecycle, active NFL team catalog, favorite-team onboarding and account controls, reusable team identity fallback, and personalized home states. Live games, schedules, scores, news, statistics, predictions, and fantasy data remain deferred.
+Frontend Milestones 0 through 2, 8, 10, 12, 14, and 16 provide the application shell, authentication and team personalization, administrative schedule management, the editorial CMS, public News, the public 2026 NFL schedule, the private news-source/candidate-review workflow, and the historical player directory, profiles, statistics, and comparisons. Live polling, play-by-play, predictions, and fantasy recommendations remain deferred.
 
 ## Prerequisites
 
@@ -75,21 +75,35 @@ npm run preview
 
 ## Current routes
 
-| Route              | Current purpose                        |
-| ------------------ | -------------------------------------- |
-| `/`                | Public or personalized responsive home |
-| `/games`           | Future Games section placeholder       |
-| `/news`            | Future News section placeholder        |
-| `/stats`           | Future Stats section placeholder       |
-| `/ai`              | Future AI Hub placeholder              |
-| `/fantasy`         | Future Fantasy section placeholder     |
-| `/login`           | Account sign-in                        |
-| `/register`        | Account registration                   |
-| `/forgot-password` | Enumeration-safe recovery request      |
-| `/reset-password`  | Token-based password reset             |
-| `/account`         | Protected current-user account summary |
-| `/choose-team`     | Protected favorite-team selection      |
-| `*`                | Not-found recovery page                |
+| Route                                 | Current purpose                           |
+| ------------------------------------- | ----------------------------------------- |
+| `/`                                   | Public or personalized responsive home    |
+| `/games`                              | Public week-by-week NFL schedule          |
+| `/games/:gameId`                      | Public resolved game detail               |
+| `/news`                               | Published and featured article feed       |
+| `/news/:slug`                         | Public article detail                     |
+| `/players`                            | Historical player directory               |
+| `/players/compare`                    | Two-player season comparison              |
+| `/players/:playerId`                  | Player profile, summaries, and game log   |
+| `/stats`                              | Future Stats section placeholder          |
+| `/ai`                                 | Future AI Hub placeholder                 |
+| `/fantasy`                            | Future Fantasy section placeholder        |
+| `/login`                              | Account sign-in                           |
+| `/register`                           | Account registration                      |
+| `/forgot-password`                    | Enumeration-safe recovery request         |
+| `/reset-password`                     | Token-based password reset                |
+| `/account`                            | Protected current-user account summary    |
+| `/choose-team`                        | Protected favorite-team selection         |
+| `/admin/articles`                     | Editor/admin article workspace            |
+| `/admin/articles/new`                 | Editor/admin draft creation               |
+| `/admin/articles/:articleId`          | Article edit, lifecycle, and revisions    |
+| `/admin/news-sources`                 | Editor/admin source registry and health   |
+| `/admin/news-sources/new`             | Admin-only source creation                |
+| `/admin/news-sources/:sourceId`       | Source health, operations, and admin edit |
+| `/admin/news-candidates`              | Private editorial candidate inbox         |
+| `/admin/news-candidates/manual`       | Manual candidate metadata submission      |
+| `/admin/news-candidates/:candidateId` | Review, dismissal, and draft conversion   |
+| `*`                                   | Not-found recovery page                   |
 
 Placeholder routes contain no fabricated sports data.
 
@@ -105,7 +119,7 @@ Placeholder routes contain no fabricated sports data.
 
 - Desktop and larger tablet layouts use a sticky top header with all primary destinations.
 - Mobile uses a compact header and five-item fixed bottom navigation.
-- AI Hub and Fantasy are available through the mobile **More** sheet to preserve comfortable target sizes.
+- Stats, AI Hub, and Fantasy are available through the mobile **More** sheet to preserve comfortable target sizes.
 - Main content reserves safe-area-aware space above the mobile navigation.
 
 ## Project structure
@@ -115,8 +129,8 @@ src/
   app/                 Bootstrap, providers, query defaults, routes
   components/          Shared navigation and feedback components
   layouts/             Application/public layout composition
-  features/            Authentication, users, and team behavior
-  pages/               Home, auth, onboarding, account, placeholders
+  features/            Auth, teams, games, players, administration, articles, and news inbox
+  pages/               Public, account, Games, News, Players, and admin composition
   services/api/        Environment validation and typed fetch boundary
   stores/              Theme preference and memory-only auth state
   test/                Test setup and application render helper
@@ -129,7 +143,7 @@ Additional feature directories will be added only when their milestones begin.
 
 The backend is maintained in a sibling repository. The frontend validates `VITE_API_BASE_URL` and uses a testable native-fetch client with JSON handling, credentials support, bearer injection, normalized backend errors, abort compatibility, safe `204` handling, deduplicated refresh, and one-time request retry.
 
-Access tokens remain only in memory. The refresh token is an HTTP-only cookie managed by the backend. TanStack Query owns current-user and team data; Zustand does not duplicate either. The exact verified contracts are documented in [docs/auth-contract.md](docs/auth-contract.md) and [docs/team-personalization-contract.md](docs/team-personalization-contract.md).
+Access tokens remain only in memory. The refresh token is an HTTP-only cookie managed by the backend. TanStack Query owns current-user, team, schedule, player, article, source, and candidate data; Zustand does not duplicate them. Verified contracts and operating guidance are documented in [docs/auth-contract.md](docs/auth-contract.md), [docs/team-personalization-contract.md](docs/team-personalization-contract.md), [docs/admin-usage.md](docs/admin-usage.md), [docs/public-games-usage.md](docs/public-games-usage.md), [docs/player-statistics-usage.md](docs/player-statistics-usage.md), [docs/editorial-cms-usage.md](docs/editorial-cms-usage.md), and [docs/news-inbox-usage.md](docs/news-inbox-usage.md).
 
 The team catalog is cached for 24 hours. Favorite-team updates submit only internal UUIDs and update the current-user cache directly from the backend response. Approved logo URLs are displayed when available; missing or failed images use the shared abbreviation badge.
 

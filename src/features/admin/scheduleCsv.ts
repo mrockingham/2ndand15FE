@@ -27,7 +27,7 @@ const rowSchema = z.object({
   season: z.number().int().min(1920).max(2100),
   seasonType: z.enum(['PRE', 'REG', 'POST']),
   week: z.number().int().min(1).max(22).nullable(),
-  startTime: z.iso.datetime({ offset: true }),
+  startTime: z.union([z.iso.datetime({ offset: true }), z.literal('TBD')]),
   awayTeam: z.string().min(2).max(8),
   homeTeam: z.string().min(2).max(8),
   status: z.enum([

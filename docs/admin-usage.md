@@ -8,14 +8,20 @@ These frontend checks improve navigation only. Every administrative request is a
 
 ## Routes
 
-| Route                  | Purpose                                          | Role            |
-| ---------------------- | ------------------------------------------------ | --------------- |
-| `/admin`               | Redirect to Games                                | Editor or admin |
-| `/admin/games`         | Bounded schedule list                            | Editor or admin |
-| `/admin/games/new`     | Manual game creation                             | Editor or admin |
-| `/admin/games/:gameId` | Detail, edit, override, verification, game audit | Editor or admin |
-| `/admin/import`        | Validate and write a schedule CSV                | Editor or admin |
-| `/admin/audit`         | Complete sanitized audit log                     | Admin           |
+| Route                                 | Purpose                                          | Role            |
+| ------------------------------------- | ------------------------------------------------ | --------------- |
+| `/admin`                              | Redirect to Games                                | Editor or admin |
+| `/admin/games`                        | Bounded schedule list                            | Editor or admin |
+| `/admin/games/new`                    | Manual game creation                             | Editor or admin |
+| `/admin/games/:gameId`                | Detail, edit, override, verification, game audit | Editor or admin |
+| `/admin/import`                       | Validate and write a schedule CSV                | Editor or admin |
+| `/admin/audit`                        | Complete sanitized audit log                     | Admin           |
+| `/admin/news-sources`                 | Source registry, health, test, and ingest        | Editor or admin |
+| `/admin/news-sources/new`             | Source creation                                  | Admin           |
+| `/admin/news-sources/:sourceId`       | Source detail and admin-only editing             | Editor or admin |
+| `/admin/news-candidates`              | Editorial candidate inbox                        | Editor or admin |
+| `/admin/news-candidates/manual`       | Manual metadata submission                       | Editor or admin |
+| `/admin/news-candidates/:candidateId` | Candidate review and draft conversion            | Editor or admin |
 
 ## Games and ownership
 
@@ -30,7 +36,7 @@ Game detail separates:
 
 Manually owned games can be edited directly. Provider-managed games must use an editorial override; a `409 PROVIDER_GAME_REQUIRES_OVERRIDE` is explained rather than silently changing the operation. Editing base or override fields may clear verification. Deleting the entire override requires `ADMIN` and an explicit confirmation.
 
-Kickoff creation requires a local date/time plus an explicit UTC offset. No timezone is guessed. Override kickoff values are explicitly entered as UTC.
+Kickoff creation requires a local date/time plus an explicit UTC offset. No timezone is guessed. Existing imported games may legitimately have `startTime: null`; admin list, detail, resolved/base previews, and edit defaults display `Time TBD`. Editing another field on a manually owned TBD game preserves the null kickoff by omitting `startTime`. Assigning a kickoff still requires an explicit offset, and manual creation cannot submit null. Override kickoff values may explicitly resolve to a timestamp or null as supported by the backend.
 
 ## Verification
 
@@ -45,6 +51,8 @@ season,seasonType,week,startTime,awayTeam,homeTeam,status,venueName,venueCity,br
 ```
 
 The browser parses CSV into JSON rows because the API accepts `{ rows, dryRun }`; it does not send multipart files or server paths. Files/content are limited to 1 MiB and 500 rows. Values beginning with spreadsheet formula markers are rejected and all feedback is rendered as text.
+
+The `startTime` CSV value accepts either an ISO 8601 timestamp with an explicit offset or the exact literal `TBD`, matching the backend import contract. `TBD` is never converted into an invented date or time.
 
 The workflow is intentionally two-step:
 
@@ -63,5 +71,7 @@ Admins can filter the complete audit log by the backend-supported action, entity
 - Backend list filters are currently limited to season, limit, and cursor.
 - Audit filters are currently limited to action, entity type, entity ID, limit, and cursor; actor/date filters are not exposed.
 - Import validation returns aggregate counts and failures; it has no separate backend validation token. The frontend ties validation to exact unchanged content for the current page lifetime.
-- There is no role-management UI, provider configuration UI, media/news CMS, rich-text editing, multipart upload, public schedule, live polling, WebSocket, play-by-play, or deployment change.
+- There is no role-management UI, provider configuration UI, rich-text/HTML editing, multipart upload, live polling, WebSocket, play-by-play, or deployment change. Public schedule behavior is documented in [public-games-usage.md](public-games-usage.md), and the separate Markdown-based article CMS is documented in [editorial-cms-usage.md](editorial-cms-usage.md).
 - Highlightly remains evaluation-only. No Highlightly synchronization was added.
+
+News-source and candidate operating guidance lives in [news-inbox-usage.md](news-inbox-usage.md). Ingestion is explicit and creates only private candidates; it never publishes an article.

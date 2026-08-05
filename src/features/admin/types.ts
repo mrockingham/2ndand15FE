@@ -25,7 +25,7 @@ export interface AdminGameValues {
   readonly season: number;
   readonly seasonType: SeasonType;
   readonly week: number | null;
-  readonly startTime: string;
+  readonly startTime: string | null;
   readonly status: GameStatus;
   readonly homeTeam: AdminGameTeam;
   readonly awayTeam: AdminGameTeam;
@@ -140,7 +140,7 @@ export interface ScheduleImportRow {
   readonly season: number;
   readonly seasonType: SeasonType;
   readonly week: number | null;
-  readonly startTime: string;
+  readonly startTime: string | 'TBD';
   readonly awayTeam: string;
   readonly homeTeam: string;
   readonly status: GameStatus;

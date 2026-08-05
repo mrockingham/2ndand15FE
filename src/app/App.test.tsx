@@ -18,11 +18,23 @@ describe('application routing', () => {
     expect(screen.getByTestId('mobile-navigation')).toBeInTheDocument();
   });
 
-  it('renders a secondary route without fake product data', () => {
-    renderApp('/news');
+  it('lazy-loads the real News route without fake product data', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ data: [], meta: { nextCursor: null } }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    );
+    renderApp('/news', { fetchImplementation });
 
-    expect(screen.getByRole('heading', { name: 'News' })).toBeInTheDocument();
-    expect(screen.getByText('Foundation preview')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Loading page…');
+    expect(
+      await screen.findByRole('heading', { name: 'News' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Foundation preview')).not.toBeInTheDocument();
+    expect(fetchImplementation).toHaveBeenCalled();
   });
 
   it('renders not-found content for an unknown route', () => {

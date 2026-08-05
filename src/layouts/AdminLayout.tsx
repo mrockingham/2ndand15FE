@@ -1,9 +1,13 @@
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
+import CloseRounded from '@mui/icons-material/CloseRounded';
 import FactCheckRounded from '@mui/icons-material/FactCheckRounded';
 import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import SportsFootballRounded from '@mui/icons-material/SportsFootballRounded';
 import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
+import ArticleRounded from '@mui/icons-material/ArticleRounded';
+import InboxRounded from '@mui/icons-material/InboxRounded';
+import RssFeedRounded from '@mui/icons-material/RssFeedRounded';
 import {
   AppBar,
   Box,
@@ -39,14 +43,34 @@ export const AdminLayout = () => {
       path: '/admin/import',
       icon: UploadFileRounded,
     },
+    { label: 'Articles', path: '/admin/articles', icon: ArticleRounded },
+    {
+      label: 'Candidate inbox',
+      path: '/admin/news-candidates',
+      icon: InboxRounded,
+    },
+    {
+      label: 'News sources',
+      path: '/admin/news-sources',
+      icon: RssFeedRounded,
+    },
     ...(role === 'ADMIN'
       ? [{ label: 'Audit log', path: '/admin/audit', icon: HistoryRounded }]
       : []),
   ];
-  const navigation = (
+  const navigation = (showCloseButton = false) => (
     <>
-      <Toolbar sx={{ px: 2 }}>
+      <Toolbar sx={{ px: 2, gap: 1 }}>
         <BrandMark />
+        {showCloseButton ? (
+          <IconButton
+            aria-label="Close administration navigation"
+            onClick={() => setMobileOpen(false)}
+            sx={{ ml: 'auto' }}
+          >
+            <CloseRounded />
+          </IconButton>
+        ) : null}
       </Toolbar>
       <Divider />
       <Stack
@@ -56,7 +80,7 @@ export const AdminLayout = () => {
       >
         <FactCheckRounded color="primary" />
         <Box>
-          <Typography variant="overline">Schedule workspace</Typography>
+          <Typography variant="overline">Content and schedule</Typography>
           <Chip
             size="small"
             label={role}
@@ -119,13 +143,17 @@ export const AdminLayout = () => {
             <MenuRounded />
           </IconButton>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Schedule admin
+            Administration
           </Typography>
           <Chip size="small" label={role} sx={{ mr: 1 }} />
           <ThemeToggle />
         </Toolbar>
       </AppBar>
-      <Box component="nav" aria-label="Administration">
+      <Box
+        component="nav"
+        aria-label="Administration"
+        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+      >
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -136,7 +164,7 @@ export const AdminLayout = () => {
             '& .MuiDrawer-paper': { width: drawerWidth },
           }}
         >
-          {navigation}
+          {navigation(true)}
         </Drawer>
         <Drawer
           variant="permanent"
@@ -149,7 +177,7 @@ export const AdminLayout = () => {
             },
           }}
         >
-          {navigation}
+          {navigation()}
         </Drawer>
       </Box>
       <Box

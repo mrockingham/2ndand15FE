@@ -8,7 +8,7 @@ import {
 } from '@/features/admin/queries';
 import type {
   ManualGameCreateInput,
-  ManualGameInput,
+  ManualGameUpdateInput,
 } from '@/features/admin/types';
 
 export const AdminGameCreatePage = () => {
@@ -25,7 +25,9 @@ export const AdminGameCreatePage = () => {
         submitLabel="Create game"
         error={mutation.error}
         isSubmitting={mutation.isPending}
-        onSubmit={async (input: ManualGameCreateInput | ManualGameInput) => {
+        onSubmit={async (
+          input: ManualGameCreateInput | ManualGameUpdateInput,
+        ) => {
           const game = await mutation.mutateAsync(
             input as ManualGameCreateInput,
           );

@@ -18,6 +18,8 @@ import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
+import { HomeNewsSection } from '@/features/articles/components/HomeNewsSection';
+import { HomeGamesSection } from '@/features/games/components/HomeGamesSection';
 import { useCurrentUserQuery } from '@/features/users/queries';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -270,11 +272,6 @@ const PublicHome = () => (
 
 const futureTeamModules = [
   {
-    title: 'Next game',
-    description:
-      'Schedules and matchup context will appear here when live sports data is connected.',
-  },
-  {
     title: 'Latest team news',
     description:
       'Attributed reporting for your team is planned for a future data milestone.',
@@ -398,7 +395,7 @@ const PersonalizedHome = () => {
             gridTemplateColumns: {
               xs: '1fr',
               sm: 'repeat(2, minmax(0, 1fr))',
-              lg: 'repeat(4, minmax(0, 1fr))',
+              lg: 'repeat(3, minmax(0, 1fr))',
             },
           }}
         >
@@ -424,6 +421,18 @@ export const HomePage = () => {
     (state) =>
       state.restorationStatus === 'authenticated' && state.accessToken !== null,
   );
+  const currentUserQuery = useCurrentUserQuery();
 
-  return isAuthenticated ? <PersonalizedHome /> : <PublicHome />;
+  return (
+    <>
+      {isAuthenticated ? <PersonalizedHome /> : <PublicHome />}
+      <HomeGamesSection
+        signedIn={isAuthenticated}
+        favoriteTeam={
+          isAuthenticated ? currentUserQuery.data?.favoriteTeam : undefined
+        }
+      />
+      <HomeNewsSection />
+    </>
+  );
 };

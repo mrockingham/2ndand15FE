@@ -32,7 +32,7 @@ import {
 } from '@/features/admin/queries';
 import type {
   ManualGameCreateInput,
-  ManualGameInput,
+  ManualGameUpdateInput,
 } from '@/features/admin/types';
 import { useCurrentUserQuery } from '@/features/users/queries';
 
@@ -176,9 +176,11 @@ export const AdminGameDetailPage = () => {
               error={updateMutation.error}
               isSubmitting={updateMutation.isPending}
               onSubmit={async (
-                input: ManualGameCreateInput | ManualGameInput,
+                input: ManualGameCreateInput | ManualGameUpdateInput,
               ) => {
-                await updateMutation.mutateAsync(input as ManualGameInput);
+                await updateMutation.mutateAsync(
+                  input as ManualGameUpdateInput,
+                );
               }}
             />
           </Box>

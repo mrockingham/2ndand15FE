@@ -106,7 +106,7 @@ Exit criteria: the complete MVP journey meets agreed accessibility, performance,
 
 ## Later product increments
 
-After the account/personalization slice is stable, sequence backend-supported increments such as games and schedules, news/source attribution, statistics, predictions/accuracy, team and player detail, live play-by-play, the play visualizer, and fantasy integrations. Each needs its own data contract, stale/refresh strategy, responsive design, and trust requirements.
+After the implemented account, schedule administration, News, public Games, and historical player-statistics slices, sequence remaining backend-supported increments such as predictions/accuracy, team detail, live play-by-play, the play visualizer, and fantasy integrations. Each needs its own data contract, stale/refresh strategy, responsive design, and trust requirements.
 
 ## Frontend Milestone 8 — Administrative schedule management
 
@@ -126,6 +126,69 @@ Deliverables:
 - Focused role, route, API, CSV, state, mutation, and regression tests
 
 Exit criteria: editors can maintain supported schedule data without database or Swagger access, admins receive only the additional backend-supported controls, stale roles fail safely, and no public schedule/live feature or provider synchronization UI is introduced.
+
+## Frontend Milestone 10 — Editorial CMS and public News
+
+Status: implemented against backend Milestone 9 in August 2026.
+
+Deliverables:
+
+- Public `/news` featured/feed experience, source-aware article cards, team personalization, and `/news/:slug` detail
+- Public routes backed only by public DTOs and backend-derived publication/featured visibility
+- Editor/admin article list, draft creation, versioned editing/team tags, publish/schedule/unpublish lifecycle, and immutable revisions
+- Admin-only archive/restore controls and full article audit events
+- Type-aware original, curated, and announcement validation with explicit-offset timestamps
+- Markdown rendering that drops raw HTML, executable links, and inline remote images
+- Route-level code splitting for News/detail and administrative workspaces
+- HTTP-boundary, schema, renderer, role, lifecycle, revision, and regression tests
+
+Exit criteria: editors can operate the backend-supported CMS without database or Swagger access, curated material is unmistakably attributed, unpublished material never uses a public endpoint, version conflicts preserve unsaved work, and the public shell does not eagerly load the CMS.
+
+## Frontend Milestone 12 — Public Games and personalized schedule
+
+Status: implemented against backend Milestone 11 in August 2026.
+
+Deliverables:
+
+- Lazy public `/games` and `/games/:gameId` routes backed only by resolved public DTOs
+- Preseason and regular-season week navigation with URL-backed week/team filters
+- Responsive accessible cards with legitimate statuses/scores, venue, broadcast, and neutral-site context
+- First-class nullable kickoff handling with consistent `Time TBD` presentation and deterministic ordering
+- Favorite-team schedule shortcut, bounded next-game derivation, valid regular-season bye handling, and Home integration
+- Cursor pagination, moderate caching, abort signals, manual refresh, and no automatic polling
+- Nullable kickoff compatibility across existing admin values, previews, edits, overrides, and CSV import
+
+Exit criteria: signed-out and personalized users can browse the 2026 schedule without fabricated kickoff, score, correction, or live state; administrative writes invalidate the affected public schedule family; and deferred sports scopes remain excluded.
+
+## Frontend Milestone 14 — News sources and candidate inbox
+
+Status: implemented against backend Milestone 13 in August 2026.
+
+- Lazy editor/admin source registry, source health/detail, candidate inbox, candidate detail, and manual-candidate routes
+- Admin-only source create/edit/pause/resume with public-URL validation and live-feed change confirmation
+- Read-only source testing and separately confirmed manual ingestion with bounded result feedback
+- URL-owned candidate filters, cursor pagination, plain-text publisher metadata, safe links, and deterministic team suggestions
+- Backend-authoritative review/save/dismiss transitions and required dismissal reasons
+- Candidate conversion requiring an empty-by-default original summary and producing only a `CURATED` `DRAFT` before navigation to the article editor
+- Separate normalized source/candidate query families and narrow source, candidate, article-list, and audit invalidation
+
+Exit criteria: authorized editors can collect and review metadata without scraping or auto-publication; administrators alone can change source definitions; publisher descriptions never initialize original summaries; and no scheduler, AI generation, image fetching, or recurring ingestion is introduced.
+
+## Frontend Milestone 16 â€” Players and historical statistics
+
+Status: implemented against backend Milestone 15 in August 2026.
+
+- Lazy public player directory, profile, and two-player comparison routes
+- URL-owned debounced search, exact raw-position/team/season filters, favorite-team shortcut, and cursor pagination
+- Exact nullable identity fields with safe HTTP(S) headshots and initials fallback
+- Backend-derived regular-season, postseason, and combined season summaries with position-aware metric groups
+- Recorded-appearance game logs that never turn missing weeks, byes, or nullable values into zero-stat rows
+- Neutral URL-shareable comparisons using only existing season-summary APIs, with cross-position warnings and no overall winner
+- Separate normalized list/search/detail/stats/seasons query families, historical stale times, abort signals, and no polling
+- Visible backend-provided nflverse/CC BY 4.0 attribution and clear local-storage provenance
+- HTTP-boundary, formatting, nullable-data, pagination, profile, comparison, and route tests
+
+Exit criteria: visitors can find players, inspect verified historical summaries and recorded appearances, and compare two players without provider identifiers, fabricated data, direct nflverse calls, imports, predictions, or fantasy recommendations.
 
 ## Proposed first implementation plan
 

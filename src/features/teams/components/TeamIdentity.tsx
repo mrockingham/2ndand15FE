@@ -2,13 +2,19 @@ import { alpha, Box, type SxProps, type Theme } from '@mui/material';
 import { useState } from 'react';
 
 import { safeTeamColor } from '@/features/teams/teamPresentation';
-import type { Team } from '@/features/teams/types';
+
+export interface TeamIdentityData {
+  readonly abbreviation: string;
+  readonly fullName: string;
+  readonly logoUrl: string | null;
+  readonly primaryColor: string;
+}
 
 interface TeamIdentityProps {
   readonly decorative?: boolean;
   readonly size?: number;
   readonly sx?: SxProps<Theme>;
-  readonly team: Team;
+  readonly team: TeamIdentityData;
 }
 
 export const TeamIdentity = ({
