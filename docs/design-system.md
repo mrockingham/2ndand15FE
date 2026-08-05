@@ -70,6 +70,7 @@ The long-term primary areas are Home, Games, News, Stats, AI Hub, and Fantasy.
 - Mobile uses a bottom navigation for the most important destinations plus a clear path to remaining areas.
 - Signed-out experiences retain public navigation and obvious login/register actions.
 - Current location is expressed with text/icon state in addition to color.
+- Stats is a released public destination: desktop navigation links directly to it, while mobile exposes it in the More sheet with the future AI and Fantasy destinations.
 
 ## Core component patterns
 

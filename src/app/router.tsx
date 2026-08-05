@@ -48,6 +48,9 @@ const LazyPlayerDetailPage = lazy(async () => ({
 const LazyPlayerComparePage = lazy(async () => ({
   default: (await import('@/pages/PlayerComparePage')).PlayerComparePage,
 }));
+const LazyStatsPage = lazy(async () => ({
+  default: (await import('@/pages/StatsPage')).StatsPage,
+}));
 const LazyAdminGamesPage = lazy(async () => ({
   default: (await import('@/pages/AdminGamesPage')).AdminGamesPage,
 }));
@@ -118,16 +121,7 @@ export const appRoutes: RouteObject[] = [
         path: 'players/:playerId',
         element: deferred(<LazyPlayerDetailPage />),
       },
-      {
-        path: 'stats',
-        element: (
-          <SectionPage
-            eyebrow="BEYOND THE BOX SCORE"
-            title="Stats"
-            description="Team, player, and league performance tools are planned for a later milestone."
-          />
-        ),
-      },
+      { path: 'stats', element: deferred(<LazyStatsPage />) },
       {
         path: 'ai',
         element: (

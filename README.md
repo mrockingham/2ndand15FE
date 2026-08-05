@@ -2,7 +2,7 @@
 
 The frontend foundation for 2nd & 15, a fast, modern NFL experience designed around game-day context, responsible AI insight, and fantasy decision support.
 
-Frontend Milestones 0 through 2, 8, 10, 12, 14, and 16 provide the application shell, authentication and team personalization, administrative schedule management, the editorial CMS, public News, the public 2026 NFL schedule, the private news-source/candidate-review workflow, and the historical player directory, profiles, statistics, and comparisons. Live polling, play-by-play, predictions, and fantasy recommendations remain deferred.
+Frontend Milestones 0 through 2, 8, 10, 12, 14, 16, and 18 provide the application shell, authentication and team personalization, administrative schedule management, the editorial CMS, public News, the public 2026 NFL schedule, the private news-source/candidate-review workflow, historical player experiences, and the public Stats Hub. Live polling, play-by-play, predictions, and fantasy recommendations remain deferred.
 
 ## Prerequisites
 
@@ -85,7 +85,7 @@ npm run preview
 | `/players`                            | Historical player directory               |
 | `/players/compare`                    | Two-player season comparison              |
 | `/players/:playerId`                  | Player profile, summaries, and game log   |
-| `/stats`                              | Future Stats section placeholder          |
+| `/stats`                              | Historical leaderboards and recent stats  |
 | `/ai`                                 | Future AI Hub placeholder                 |
 | `/fantasy`                            | Future Fantasy section placeholder        |
 | `/login`                              | Account sign-in                           |
@@ -129,8 +129,8 @@ src/
   app/                 Bootstrap, providers, query defaults, routes
   components/          Shared navigation and feedback components
   layouts/             Application/public layout composition
-  features/            Auth, teams, games, players, administration, articles, and news inbox
-  pages/               Public, account, Games, News, Players, and admin composition
+  features/            Domain modules, including players and the Stats Hub
+  pages/               Public, account, sports, editorial, and admin composition
   services/api/        Environment validation and typed fetch boundary
   stores/              Theme preference and memory-only auth state
   test/                Test setup and application render helper
@@ -143,7 +143,7 @@ Additional feature directories will be added only when their milestones begin.
 
 The backend is maintained in a sibling repository. The frontend validates `VITE_API_BASE_URL` and uses a testable native-fetch client with JSON handling, credentials support, bearer injection, normalized backend errors, abort compatibility, safe `204` handling, deduplicated refresh, and one-time request retry.
 
-Access tokens remain only in memory. The refresh token is an HTTP-only cookie managed by the backend. TanStack Query owns current-user, team, schedule, player, article, source, and candidate data; Zustand does not duplicate them. Verified contracts and operating guidance are documented in [docs/auth-contract.md](docs/auth-contract.md), [docs/team-personalization-contract.md](docs/team-personalization-contract.md), [docs/admin-usage.md](docs/admin-usage.md), [docs/public-games-usage.md](docs/public-games-usage.md), [docs/player-statistics-usage.md](docs/player-statistics-usage.md), [docs/editorial-cms-usage.md](docs/editorial-cms-usage.md), and [docs/news-inbox-usage.md](docs/news-inbox-usage.md).
+Access tokens remain only in memory. The refresh token is an HTTP-only cookie managed by the backend. TanStack Query owns current-user, team, schedule, player, Stats Hub, article, source, and candidate data; Zustand does not duplicate them. Verified contracts and operating guidance are documented in [docs/auth-contract.md](docs/auth-contract.md), [docs/team-personalization-contract.md](docs/team-personalization-contract.md), [docs/admin-usage.md](docs/admin-usage.md), [docs/public-games-usage.md](docs/public-games-usage.md), [docs/player-statistics-usage.md](docs/player-statistics-usage.md), [docs/stats-hub-usage.md](docs/stats-hub-usage.md), [docs/editorial-cms-usage.md](docs/editorial-cms-usage.md), and [docs/news-inbox-usage.md](docs/news-inbox-usage.md).
 
 The team catalog is cached for 24 hours. Favorite-team updates submit only internal UUIDs and update the current-user cache directly from the backend response. Approved logo URLs are displayed when available; missing or failed images use the shared abbreviation badge.
 

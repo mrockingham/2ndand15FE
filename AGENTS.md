@@ -4,7 +4,7 @@ This file applies to the entire repository. It is the durable working agreement 
 
 ## Current repository state
 
-Frontend Milestones 0 through 2, 8, 10, 12, 14, and 16 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, team personalization, role-aware schedule administration, an editorial article CMS, public News, the public 2026 preseason/regular-season schedule, private news-source/candidate administration, and historical player directory/profile/statistics/comparison experiences. Live polling, play-by-play, predictions, fantasy recommendations, and other sports features remain deferred.
+Frontend Milestones 0 through 2, 8, 10, 12, 14, 16, and 18 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, team personalization, role-aware schedule administration, an editorial article CMS, public News, the public 2026 preseason/regular-season schedule, private news-source/candidate administration, historical player experiences, and the public historical Stats Hub. Live polling, play-by-play, predictions, fantasy recommendations, and other sports features remain deferred.
 
 Read the documents under `docs/` before beginning a new milestone. Do not expand into a later milestone without approval.
 
@@ -64,6 +64,7 @@ Use the feature-oriented structure in `docs/frontend-architecture.md`.
 - Public and administrative article query families remain separate. Article mutations use `expectedVersion`, write returned detail data, and invalidate the affected admin list/revision and public article families.
 - News-source and candidate query families remain separate under `src/features/newsInbox/`. Source changes invalidate only source lists/detail and audit; candidate actions update detail and invalidate candidate lists/audit. Conversion additionally seeds the returned article detail and invalidates administrative article lists.
 - Public player reads use separate normalized list/search/detail/stats/seasons families under `src/features/players/`. They are historical data with no polling and must never be copied into Zustand or browser persistence.
+- Public Stats Hub reads use separate metadata/season/weekly/recent families under `src/features/statsHub/`. Metadata is the source of seasons, metrics, availability, positions, precision, ranking notes, and limits. Stats URL state is normalized before requests; opaque cursors remain query state and are never decoded or persisted.
 
 ## Authentication and API rules
 
@@ -87,6 +88,7 @@ Follow `docs/api-integration.md`.
 - Follow `docs/editorial-cms-usage.md` for articles. Render Markdown without raw HTML, keep curated sources clearly attributed, use public DTOs on public routes, and never implement client-side publication visibility rules.
 - Follow `docs/news-inbox-usage.md` for source and candidate administration. Never scrape pages, fetch source images, copy publisher descriptions into original summaries, schedule ingestion, or imply that ingestion/conversion publishes content.
 - Follow `docs/player-statistics-usage.md` for public player data. Preserve internal UUIDs and nullable values, use only the four public player endpoints, display backend attribution, and never invent appearances, contact nflverse directly, calculate an overall comparison winner, or add imports/predictions/fantasy recommendations.
+- Follow `docs/stats-hub-usage.md` for public leaderboards and recent performance. Display backend ranks and aggregates directly, preserve team-split and missing-value semantics, and do not add live statistics, rates, fantasy metrics, AI analysis, or predictions.
 
 ## UI and design rules
 

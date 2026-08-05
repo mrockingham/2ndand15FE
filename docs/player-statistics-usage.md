@@ -4,6 +4,8 @@
 
 Frontend Milestone 16 consumes the read-only player APIs delivered by backend Milestone 15. It provides a public directory, profiles with season summaries and recorded game appearances, and a neutral two-player comparison. The frontend does not import player data, contact nflverse directly, poll for changes, synthesize missing appearances, calculate predictions, or make fantasy recommendations.
 
+The player-directory season options remain tied to the imported 2020–2025 dataset. The Stats Hub now receives imported seasons dynamically from `/stats/metadata`; a future focused cleanup should share that source without making the player directory fail when Stats metadata is unavailable.
+
 The contract was verified against the sibling backend player schemas, DTO mapping, routes, service, repository, and tests in August 2026.
 
 ## Public routes

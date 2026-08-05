@@ -2,7 +2,7 @@
 
 ## Status
 
-Frontend Milestones 0 through 2, 8, 10, 12, 14, and 16 implement the application foundation, authentication lifecycle, team personalization, administrative schedule workspace, editorial CMS, public News, public Games schedule, private source/candidate workflow, and historical player/statistics experience described here. Remaining live sports feature directories remain architectural targets.
+Frontend Milestones 0 through 2, 8, 10, 12, 14, 16, and 18 implement the application foundation, authentication lifecycle, team personalization, administrative schedule workspace, editorial CMS, public News, public Games schedule, private source/candidate workflow, historical player experiences, and public Stats Hub described here. Remaining live sports feature directories remain architectural targets.
 
 ## Goals
 
@@ -37,7 +37,7 @@ src/
     players/
     newsInbox/
     news/
-    stats/
+    statsHub/
     ai/
     fantasy/
     play-visualizer/
@@ -87,7 +87,7 @@ The Query client currently uses a 60-second default stale time, a 30-minute garb
 
 ## Routing model
 
-The declarative route tree also exposes protected `/choose-team`. Login and registration direct users without a favorite there while preserving a safe destination. Selection is optional: skipping returns to the app without persisting a special flag or causing a redirect loop. Future sports routes contain honest placeholders with no fake data.
+The declarative route tree also exposes protected `/choose-team`. Login and registration direct users without a favorite there while preserving a safe destination. Selection is optional: skipping returns to the app without persisting a special flag or causing a redirect loop. `/stats` is public and lazy-loaded; future AI and Fantasy routes contain honest placeholders with no fake data.
 
 - Public layout: landing and other freely accessible content.
 - Auth layout: login, registration, forgot-password, and reset-password flows.
@@ -167,7 +167,8 @@ The exact local/backend URLs are deployment configuration, not hard-coded consta
 - `src/features/games/` owns public game DTOs, transport, normalized query keys, nullable kickoff utilities, cards, schedule grouping, and favorite-team next-game composition. Public week lists use cursor-aware queries with a five-minute stale time and no polling.
 - `src/features/newsInbox/` owns authenticated source/candidate DTOs, schemas, transport, separate deterministic query-key families, mutations, and reusable workflow components. It stores nothing in Zustand or browser persistence.
 - `src/features/players/` owns exact public player DTOs, the four bounded read endpoints, normalized list/search/detail/stats/seasons query families, safe presentation utilities, and responsive player components. Player server data stays in TanStack Query and is never persisted in Zustand or browser storage.
-- The `/players`, `/players/:playerId`, and `/players/compare` modules are lazy-loaded behind the shared accessible route fallback.
+- `src/features/statsHub/` owns metadata, season leaders, weekly leaders, recent performance, metadata-driven presentation, normalized URL state, and separate deterministic query-key families. Metadata is cached for one day and historical reads for six hours, with no polling or focus refetch.
+- The `/players`, `/players/:playerId`, `/players/compare`, and `/stats` modules are lazy-loaded behind the shared accessible route fallback.
 - The Games route URL owns `type`, `week`, optional `team`, and optional historical `season` filters. The backend remains the source of the default current season.
 - News/detail and all admin route modules—including each source and candidate route—are lazy-loaded behind a shared accessible route fallback. Home and lightweight auth/account flows remain eager.
 - Public 2026 preseason and regular-season schedules, resolved game details, Home integration, favorite-team next-game presentation, and historical 2020â€“2025 player statistics are implemented. Live polling, play-by-play, predictions, fantasy recommendations, and other sports features remain deferred.

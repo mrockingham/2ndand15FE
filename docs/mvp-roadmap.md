@@ -190,6 +190,21 @@ Status: implemented against backend Milestone 15 in August 2026.
 
 Exit criteria: visitors can find players, inspect verified historical summaries and recorded appearances, and compare two players without provider identifiers, fabricated data, direct nflverse calls, imports, predictions, or fantasy recommendations.
 
+## Frontend Milestone 18 — Public Stats Hub
+
+Status: implemented against backend Milestone 17 in August 2026.
+
+- Lazy public `/stats` route driven by backend metadata rather than hardcoded seasons, categories, metrics, positions, precision, limits, or ranking rules
+- URL-shareable season and weekly leaderboards with compatible filter normalization and exact `REG`, `POST`, and `REG_POST` behavior
+- Responsive tables/cards displaying backend competition ranks, ties, team context, player/game links, recorded zeroes, and nullable values faithfully
+- Team, favorite-team, exact position, and position-group filtering with traded-player split semantics
+- Opaque cursor pagination that preserves backend order and rank continuity without cursor decoding or URL persistence
+- Debounced player selection and server-summarized recent recorded appearances with 5/10/20 limits and no trend claims
+- Separate metadata, season, weekly, and recent query families with one-day/six-hour stale times, abort signals, and no polling
+- Visible nflverse attribution and backend coverage notes, including the absence of live 2026 player statistics
+
+Exit criteria: visitors can share and explore historical rankings and recent recorded performance without fabricated data, client-side ranking or aggregation, private provider details, rate/fantasy metrics, AI analysis, predictions, or backend changes.
+
 ## Proposed first implementation plan
 
 After approval, begin only with Milestone 0:

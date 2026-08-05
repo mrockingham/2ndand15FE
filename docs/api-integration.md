@@ -4,7 +4,7 @@
 
 The backend lives in the sibling `2ndand15BE` repository. Authentication contracts were verified against its OpenAPI, validators, controllers, service logic, cookie helper, configuration, and route tests in July 2026. See [auth-contract.md](auth-contract.md) for the exact requests, responses, status codes, error envelope, reset-token query parameter, and cookie behavior.
 
-Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements public articles and the CMS. Frontend Milestone 12 implements public games. Frontend Milestone 14 implements the backend Milestone 13 source and candidate contracts documented in [news-inbox-usage.md](news-inbox-usage.md). Frontend Milestone 16 implements the backend Milestone 15 public player contracts documented in [player-statistics-usage.md](player-statistics-usage.md).
+Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements public articles and the CMS. Frontend Milestone 12 implements public games. Frontend Milestone 14 implements the backend Milestone 13 source and candidate contracts documented in [news-inbox-usage.md](news-inbox-usage.md). Frontend Milestone 16 implements the backend Milestone 15 public player contracts documented in [player-statistics-usage.md](player-statistics-usage.md). Frontend Milestone 18 implements backend Milestone 17 Stats Hub reads documented in [stats-hub-usage.md](stats-hub-usage.md).
 
 ## Base configuration
 
@@ -38,6 +38,10 @@ Vite environment values are visible to users. Never place secrets in them.
 | GET       | `/players/:playerId`                                                | Public                       | Public player identity/profile                 |
 | GET       | `/players/:playerId/stats`                                          | Public                       | Cursor-paginated recorded game statistics      |
 | GET       | `/players/:playerId/seasons`                                        | Public                       | Available season summaries                     |
+| GET       | `/stats/metadata`                                                   | Public                       | Stats capabilities, filters, and coverage      |
+| GET       | `/stats/leaders`                                                    | Public                       | Cursor-paginated season leaderboard            |
+| GET       | `/stats/weekly-leaders`                                             | Public                       | Cursor-paginated weekly leaderboard            |
+| GET       | `/stats/recent`                                                     | Public                       | Recent recorded player performances            |
 | GET       | `/admin/games`                                                      | Bearer token; editor/admin   | Bounded administrative schedule list           |
 | GET       | `/admin/games/:gameId`                                              | Bearer token; editor/admin   | Administrative game detail                     |
 | POST      | `/admin/games`                                                      | Bearer token; editor/admin   | Create a manually owned game                   |
@@ -142,6 +146,10 @@ playerKeys.list(filters) -> ['players', 'list', normalizedFilters]
 playerKeys.detail(id)    -> ['players', 'detail', id]
 playerKeys.stats(id, f)  -> ['players', 'detail', id, 'stats', normalizedFilters]
 playerKeys.seasons(id)   -> ['players', 'detail', id, 'seasons']
+statsHubKeys.metadata()  -> ['statsHub', 'metadata']
+statsHubKeys.season(f)   -> ['statsHub', 'season', normalizedFilters]
+statsHubKeys.weekly(f)   -> ['statsHub', 'weekly', normalizedFilters]
+statsHubKeys.recent(f)   -> ['statsHub', 'recent', normalizedFilters]
 ```
 
 - `GET /teams` populates the teams list query.
@@ -150,6 +158,7 @@ playerKeys.seasons(id)   -> ['players', 'detail', id, 'seasons']
 - A successful favorite-team mutation updates the `users/me` cache directly from the returned DTO without a duplicate request.
 - Logout removes protected user data. Public team data may remain cached unless product/privacy behavior requires otherwise.
 - Player directory/search results, identities, recorded game stats, and season summaries use separate normalized keys. They are historical public reads with no polling; list/search data is fresh for 10 minutes and detail/statistical data for one hour.
+- Stats metadata is fresh for 24 hours. Season leaders, weekly leaders, and recent performance are fresh for six hours. These historical queries pass abort signals, do not poll, and do not aggressively refetch on focus. Leaderboard cursors stay opaque and outside the URL.
 
 ## DTO and validation policy
 
