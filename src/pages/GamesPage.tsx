@@ -54,18 +54,16 @@ const readWeek = (value: string | null, seasonType: 'PRE' | 'REG' | null) => {
 };
 
 const chooseInitialWeek = (games: readonly Game[]) => {
-  const active = games.find(
-    (game) =>
-      game.week !== null &&
-      ['PREGAME', 'IN_PROGRESS', 'HALFTIME'].includes(game.status),
+  const active = games.find((game) =>
+    ['PREGAME', 'IN_PROGRESS', 'HALFTIME'].includes(game.status),
   );
   if (active !== undefined) return active;
   const upcoming = games
-    .filter((game) => game.week !== null && isGameUpcoming(game))
+    .filter((game) => isGameUpcoming(game))
     .sort(compareGames)[0];
   if (upcoming !== undefined) return upcoming;
   const completed = games
-    .filter((game) => game.week !== null && game.status === 'FINAL')
+    .filter((game) => game.status === 'FINAL')
     .sort(compareGames)
     .at(-1);
   return completed;
@@ -75,7 +73,9 @@ export const GamesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedType = readSeasonType(searchParams.get('type'));
   const requestedWeek = readWeek(searchParams.get('week'), requestedType);
-  const needsInitialWeek = requestedType === null || requestedWeek === null;
+  const needsInitialWeek =
+    requestedType === null ||
+    (requestedType === 'REG' && requestedWeek === null);
   const bootstrapQuery = useGamesQuery({ limit: 100 }, needsInitialWeek);
   const teamsQuery = useTeamsQuery();
   const currentUserQuery = useCurrentUserQuery();
@@ -92,14 +92,12 @@ export const GamesPage = () => {
         : 'REG';
     const type = requestedType ?? chosenType;
     next.set('type', type);
-    next.set(
-      'week',
-      String(
-        requestedType === null && chosenType === chosen?.seasonType
-          ? (chosen?.week ?? 1)
-          : 1,
-      ),
-    );
+    const chosenWeek =
+      requestedType === null && chosenType === chosen?.seasonType
+        ? chosen?.week
+        : 1;
+    if (type === 'PRE' && chosenWeek === null) next.delete('week');
+    else next.set('week', String(chosenWeek ?? 1));
     setSearchParams(next, { replace: true });
   }, [
     bootstrapQuery.data,
@@ -124,7 +122,7 @@ export const GamesPage = () => {
       teamId,
       limit: 100,
     },
-    selectedType !== null && selectedWeek !== null,
+    selectedType !== null && (selectedType === 'PRE' || selectedWeek !== null),
   );
   const games = scheduleQuery.data?.pages.flatMap((page) => page.games) ?? [];
   const favoriteTeam = currentUserQuery.data?.favoriteTeam ?? null;
@@ -205,8 +203,8 @@ export const GamesPage = () => {
               exclusive
               value={selectedType}
               onChange={(_, value: SeasonType | null) => {
-                if (value === 'PRE' || value === 'REG')
-                  updateFilters({ type: value, week: '1' });
+                if (value === 'PRE') updateFilters({ type: value, week: null });
+                if (value === 'REG') updateFilters({ type: value, week: '1' });
               }}
               aria-label="Season type"
               fullWidth
@@ -222,24 +220,41 @@ export const GamesPage = () => {
             >
               <Button
                 startIcon={<ArrowBackRounded />}
-                disabled={selectedWeek === null || selectedWeek <= 1}
-                onClick={() =>
-                  updateFilters({ week: String((selectedWeek ?? 2) - 1) })
+                disabled={
+                  selectedWeek === null ||
+                  (selectedType === 'REG' && selectedWeek <= 1)
                 }
+                onClick={() => {
+                  if (selectedType === 'PRE' && selectedWeek === 1)
+                    updateFilters({ week: null });
+                  else
+                    updateFilters({
+                      week: String((selectedWeek ?? 2) - 1),
+                    });
+                }}
                 aria-label="Previous week"
               >
                 Previous
               </Button>
               <FormControl sx={{ minWidth: { md: 220 } }}>
-                <InputLabel id="week-selector-label">Week</InputLabel>
+                <InputLabel id="week-selector-label" shrink>
+                  Week
+                </InputLabel>
                 <Select
                   labelId="week-selector-label"
                   label="Week"
                   value={selectedWeek ?? ''}
-                  onChange={(event) =>
-                    updateFilters({ week: String(event.target.value) })
-                  }
+                  displayEmpty
+                  onChange={(event) => {
+                    const value = String(event.target.value);
+                    updateFilters({
+                      week: value === '' ? null : value,
+                    });
+                  }}
                 >
+                  {selectedType === 'PRE' ? (
+                    <MenuItem value="">All Preseason</MenuItem>
+                  ) : null}
                   {Array.from({ length: maxWeek }, (_, index) => index + 1).map(
                     (week) => (
                       <MenuItem key={week} value={week}>
@@ -302,7 +317,11 @@ export const GamesPage = () => {
         <Box>
           <Typography variant="h3" component="h2">
             {selectedType === null ? 'Schedule' : seasonTypeLabel[selectedType]}
-            {selectedWeek === null ? '' : ` · Week ${selectedWeek}`}
+            {selectedWeek === null
+              ? selectedType === 'PRE'
+                ? ' · All games'
+                : ''
+              : ` · Week ${selectedWeek}`}
           </Typography>
           {selectedTeam === undefined ? null : (
             <Typography color="text.secondary" sx={{ mt: 0.5 }}>

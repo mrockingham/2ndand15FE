@@ -4,7 +4,7 @@ This file applies to the entire repository. It is the durable working agreement 
 
 ## Current repository state
 
-Frontend Milestones 0 through 2, 8, 10, 12, 14, 16, and 18 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, team personalization, role-aware schedule administration, an editorial article CMS, public News, the public 2026 preseason/regular-season schedule, private news-source/candidate administration, historical player experiences, and the public historical Stats Hub. Live polling, play-by-play, predictions, fantasy recommendations, and other sports features remain deferred.
+Frontend Milestones 0 through 2, 8, 10, 12, 14, 16, 18, 20, 21, and 25 are implemented. The repository includes the responsive public shell, dual theme system, complete authentication lifecycle, team personalization, role-aware schedule administration, an editorial article CMS, public News, the public 2026 preseason/regular-season schedule, private news-source/candidate administration, historical player experiences, the public historical Stats Hub, public Team Directory and Team Hub experiences, the personalized Home composition, and the Tier 1 AI Hub for published weekly predictions and model performance. Live polling, play-by-play, current 2026 rosters, Tier 2 player/injury intelligence, AI chat, fantasy recommendations, and other sports features remain deferred.
 
 Read the documents under `docs/` before beginning a new milestone. Do not expand into a later milestone without approval.
 
@@ -65,6 +65,7 @@ Use the feature-oriented structure in `docs/frontend-architecture.md`.
 - News-source and candidate query families remain separate under `src/features/newsInbox/`. Source changes invalidate only source lists/detail and audit; candidate actions update detail and invalidate candidate lists/audit. Conversion additionally seeds the returned article detail and invalidates administrative article lists.
 - Public player reads use separate normalized list/search/detail/stats/seasons families under `src/features/players/`. They are historical data with no polling and must never be copied into Zustand or browser persistence.
 - Public Stats Hub reads use separate metadata/season/weekly/recent families under `src/features/statsHub/`. Metadata is the source of seasons, metrics, availability, positions, precision, ranking notes, and limits. Stats URL state is normalized before requests; opaque cursors remain query state and are never decoded or persisted.
+- Public Team Hub reads use separate overview/roster/leader families under `src/features/teamHub/`. The hub supplies historical coverage; Stats metadata supplies leader controls. Team Hub URL state is normalized before query keys, and roster/leader cursors remain opaque query state outside the URL.
 
 ## Authentication and API rules
 
@@ -89,6 +90,8 @@ Follow `docs/api-integration.md`.
 - Follow `docs/news-inbox-usage.md` for source and candidate administration. Never scrape pages, fetch source images, copy publisher descriptions into original summaries, schedule ingestion, or imply that ingestion/conversion publishes content.
 - Follow `docs/player-statistics-usage.md` for public player data. Preserve internal UUIDs and nullable values, use only the four public player endpoints, display backend attribution, and never invent appearances, contact nflverse directly, calculate an overall comparison winner, or add imports/predictions/fantasy recommendations.
 - Follow `docs/stats-hub-usage.md` for public leaderboards and recent performance. Display backend ranks and aggregates directly, preserve team-split and missing-value semantics, and do not add live statistics, rates, fantasy metrics, AI analysis, or predictions.
+- Follow `docs/team-hub-usage.md` for the public team directory and hubs. Preserve historical roster evidence and team-split leader semantics, keep latest-team context separate, and never imply a current 2026 roster, decode cursors, or expose provider/import details.
+- Follow `docs/home-page-usage.md` for Home query composition and its visitor, no-favorite, and favorite-team states. Keep weekly model confidence separate from probability, label historical leaders factually, and never invent current standings or 2026 player statistics.
 
 ## UI and design rules
 

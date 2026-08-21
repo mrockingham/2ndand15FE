@@ -7,6 +7,9 @@ import { ApiError } from '@/services/api/apiClient';
 import { useApiClients } from '@/services/api/useApiClients';
 
 const SCHEDULE_STALE_TIME = 5 * 60_000;
+const CURRENT_SCHEDULE_SEASON = 2026;
+const isCurrentSchedule = (season: number | undefined) =>
+  season === undefined || season === CURRENT_SCHEDULE_SEASON;
 const retryPublicGameQuery = (count: number, error: unknown) =>
   !(error instanceof ApiError && error.status > 0 && error.status < 500) &&
   count < 2;
@@ -21,6 +24,7 @@ export const useGamesQuery = (filters: GameListFilters, enabled = true) => {
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     enabled,
     staleTime: SCHEDULE_STALE_TIME,
+    refetchOnMount: isCurrentSchedule(filters.season) ? 'always' : true,
     retry: retryPublicGameQuery,
   });
 };
@@ -32,6 +36,7 @@ export const useGameQuery = (gameId: string) => {
     queryFn: ({ signal }) => getGame(publicClient, gameId, signal),
     enabled: gameId !== '',
     staleTime: SCHEDULE_STALE_TIME,
+    refetchOnMount: 'always',
     retry: retryPublicGameQuery,
   });
 };
@@ -48,6 +53,7 @@ export const useTeamGamesQuery = (
       listTeamGames(publicClient, teamId, filters, signal),
     enabled: enabled && teamId !== '',
     staleTime: SCHEDULE_STALE_TIME,
+    refetchOnMount: isCurrentSchedule(filters.season) ? 'always' : true,
     retry: retryPublicGameQuery,
   });
 };

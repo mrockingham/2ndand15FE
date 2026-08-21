@@ -16,9 +16,11 @@ import type { PublicArticleListItem } from '@/features/articles/types';
 export const ArticleCard = ({
   article,
   favoriteTeamId,
+  headingComponent = 'h2',
 }: {
   readonly article: PublicArticleListItem;
   readonly favoriteTeamId?: string;
+  readonly headingComponent?: 'h2' | 'h3';
 }) => {
   const favorite = favoriteTeamId
     ? article.teams.some((team) => team.id === favoriteTeamId)
@@ -48,7 +50,7 @@ export const ArticleCard = ({
               <Chip size="small" color="secondary" label="My team" />
             ) : null}
           </Stack>
-          <Typography component="h2" variant="h4">
+          <Typography component={headingComponent} variant="h4">
             <Link
               component={RouterLink}
               to={`/news/${article.slug}`}

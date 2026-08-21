@@ -46,3 +46,58 @@ export const tbdGameFixture: Game = {
   venue: { name: null, city: null },
   broadcastNetwork: null,
 };
+
+export const panthersGameTeamFixture = {
+  id: '38c0acd1-35e3-429d-81cf-e37db8bbaf9c',
+  fullName: 'Carolina Panthers',
+  abbreviation: 'CAR',
+  logoUrl: null,
+  primaryColor: '#0085CA',
+  secondaryColor: '#101820',
+} as const;
+
+export const cardinalsGameTeamFixture = {
+  id: '8d07dd7a-c2d5-410d-bffc-5c013f88420d',
+  fullName: 'Arizona Cardinals',
+  abbreviation: 'ARI',
+  logoUrl: null,
+  primaryColor: '#97233F',
+  secondaryColor: '#000000',
+} as const;
+
+export const hallOfFameGameFixture: Game = {
+  id: '0768c441-16a6-457c-b50f-e7273d750d77',
+  league: 'NFL',
+  season: 2026,
+  seasonType: 'PRE',
+  week: null,
+  startTime: '2026-08-07T00:00:00.000Z',
+  status: 'FINAL',
+  awayTeam: panthersGameTeamFixture,
+  homeTeam: cardinalsGameTeamFixture,
+  awayScore: 33,
+  homeScore: 30,
+  quarter: 4,
+  clock: '0',
+  venue: {
+    name: 'Tom Benson Hall of Fame Stadium',
+    city: 'Canton, Ohio',
+  },
+  broadcastNetwork: 'NBC',
+  isNeutralSite: true,
+};
+
+export const preseasonWeekOneFixture: Game = {
+  ...hallOfFameGameFixture,
+  id: '99999999-9999-4999-8999-999999999998',
+  week: 1,
+  startTime: '2026-08-13T23:00:00.000Z',
+  status: 'SCHEDULED',
+  awayScore: null,
+  homeScore: null,
+  quarter: null,
+  clock: null,
+  venue: { name: 'Week One Stadium', city: 'Charlotte' },
+  broadcastNetwork: 'ESPN',
+  isNeutralSite: false,
+};

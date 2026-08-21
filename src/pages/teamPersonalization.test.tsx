@@ -235,9 +235,13 @@ describe('onboarding and personalized routes', () => {
     await user.click(screen.getByRole('button', { name: 'Skip for now' }));
 
     expect(
-      await screen.findByRole('heading', { name: /welcome back/i }),
+      await screen.findByRole('heading', {
+        name: /choose your team. make home yours/i,
+      }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/pick your team/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/unlock your team-first home/i),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: /choose your favorite/i }),
     ).not.toBeInTheDocument();
@@ -249,22 +253,19 @@ describe('onboarding and personalized routes', () => {
       restorationStatus: 'authenticated',
     });
     expect(
-      screen.getByRole('heading', { name: /welcome back/i }),
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole('heading', { name: 'Buffalo Bills' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /your next kickoff/i }),
-    ).toBeInTheDocument();
+      screen.getByRole('link', { name: /open team hub/i }),
+    ).toHaveAttribute('href', `/teams/${billsFixture.id}`);
     unmount();
 
     renderApp('/');
     expect(
-      screen.getByRole('heading', { name: /see the game/i }),
+      screen.getByRole('heading', { name: /your front row to football/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('link', { name: /create your huddle/i }),
+      screen.getByRole('link', { name: /create account/i }),
     ).toHaveAttribute('href', '/register');
   });
 });
@@ -300,13 +301,13 @@ describe('account favorite controls and identity fallback', () => {
     });
   });
 
-  it('renders an abbreviation when a logo is null or fails to load', () => {
+  it('renders a local helmet when a logo is null or fails to load', () => {
     const { unmount } = renderApp('/account', {
       currentUser: userWithFavoriteFixture,
       restorationStatus: 'authenticated',
     });
     expect(
-      screen.getAllByRole('img', { name: /buffalo bills abbreviation/i })[0],
+      screen.getAllByRole('img', { name: /buffalo bills helmet/i })[0],
     ).toHaveTextContent('BUF');
     unmount();
 
@@ -322,7 +323,7 @@ describe('account favorite controls and identity fallback', () => {
     const logo = screen.getAllByRole('img', { name: /buffalo bills logo/i })[0];
     fireEvent.error(logo);
     expect(
-      screen.getAllByRole('img', { name: /buffalo bills abbreviation/i })[0],
+      screen.getAllByRole('img', { name: /buffalo bills helmet/i })[0],
     ).toHaveTextContent('BUF');
   });
 

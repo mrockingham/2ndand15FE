@@ -1,12 +1,18 @@
 import {
   compareGames,
+  compareGamesForNext,
   formatGameDate,
   formatGameDateTime,
   formatGameTime,
   isGameUpcoming,
   TIME_TBD,
 } from '@/features/games/utils/dateTime';
-import { gameFixture, tbdGameFixture } from '@/test/gameFixtures';
+import {
+  gameFixture,
+  hallOfFameGameFixture,
+  preseasonWeekOneFixture,
+  tbdGameFixture,
+} from '@/test/gameFixtures';
 
 describe('game date and ordering utilities', () => {
   it('treats null and invalid kickoffs as Time TBD', () => {
@@ -50,5 +56,13 @@ describe('game date and ordering utilities', () => {
     expect(isGameUpcoming({ ...tbdGameFixture, status: 'CANCELED' })).toBe(
       false,
     );
+  });
+
+  it('sorts the null-week special event before Preseason Week 1 by kickoff', () => {
+    expect(
+      [preseasonWeekOneFixture, hallOfFameGameFixture].sort(
+        compareGamesForNext,
+      ),
+    ).toEqual([hallOfFameGameFixture, preseasonWeekOneFixture]);
   });
 });

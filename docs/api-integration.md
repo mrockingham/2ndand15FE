@@ -4,7 +4,7 @@
 
 The backend lives in the sibling `2ndand15BE` repository. Authentication contracts were verified against its OpenAPI, validators, controllers, service logic, cookie helper, configuration, and route tests in July 2026. See [auth-contract.md](auth-contract.md) for the exact requests, responses, status codes, error envelope, reset-token query parameter, and cookie behavior.
 
-Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements public articles and the CMS. Frontend Milestone 12 implements public games. Frontend Milestone 14 implements the backend Milestone 13 source and candidate contracts documented in [news-inbox-usage.md](news-inbox-usage.md). Frontend Milestone 16 implements the backend Milestone 15 public player contracts documented in [player-statistics-usage.md](player-statistics-usage.md). Frontend Milestone 18 implements backend Milestone 17 Stats Hub reads documented in [stats-hub-usage.md](stats-hub-usage.md).
+Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements public articles and the CMS. Frontend Milestone 12 implements public games. Frontend Milestone 14 implements the backend Milestone 13 source and candidate contracts documented in [news-inbox-usage.md](news-inbox-usage.md). Frontend Milestone 16 implements the backend Milestone 15 public player contracts documented in [player-statistics-usage.md](player-statistics-usage.md). Frontend Milestone 18 implements backend Milestone 17 Stats Hub reads documented in [stats-hub-usage.md](stats-hub-usage.md). Frontend Milestone 20 implements backend Milestone 19 Team Hub reads documented in [team-hub-usage.md](team-hub-usage.md). Frontend Milestone 21 composes those families with the public weekly-insights endpoint as documented in [home-page-usage.md](home-page-usage.md). Frontend Milestone 25 implements the public Tier 1 prediction experience documented in [ai-hub-frontend.md](ai-hub-frontend.md).
 
 ## Base configuration
 
@@ -23,6 +23,9 @@ Vite environment values are visible to users. Never place secrets in them.
 | GET       | `/health`                                                           | Not specified                | Environment/API health diagnostics             |
 | GET       | `/teams`                                                            | Public                       | List active teams and favorite choices         |
 | GET       | `/teams/:teamId`                                                    | Public                       | Active team detail when needed                 |
+| GET       | `/teams/:teamId/hub`                                                | Public                       | Bounded team overview and historical coverage  |
+| GET       | `/teams/:teamId/roster`                                             | Public                       | Cursor-paginated historical roster evidence    |
+| GET       | `/teams/:teamId/stat-leaders`                                       | Public                       | Cursor-paginated team-split leaders            |
 | POST      | `/auth/register`                                                    | Public                       | Create an account and immediately authenticate |
 | POST      | `/auth/login`                                                       | Public                       | Authenticate                                   |
 | POST      | `/auth/refresh`                                                     | Refresh cookie               | Restore/renew an access token                  |
@@ -150,6 +153,9 @@ statsHubKeys.metadata()  -> ['statsHub', 'metadata']
 statsHubKeys.season(f)   -> ['statsHub', 'season', normalizedFilters]
 statsHubKeys.weekly(f)   -> ['statsHub', 'weekly', normalizedFilters]
 statsHubKeys.recent(f)   -> ['statsHub', 'recent', normalizedFilters]
+teamHubKeys.overview(id) -> ['teamHub', 'overview', id]
+teamHubKeys.roster(id,f) -> ['teamHub', 'roster', id, normalizedFilters]
+teamHubKeys.leader(id,f) -> ['teamHub', 'leaders', id, normalizedFilters]
 ```
 
 - `GET /teams` populates the teams list query.
@@ -159,6 +165,7 @@ statsHubKeys.recent(f)   -> ['statsHub', 'recent', normalizedFilters]
 - Logout removes protected user data. Public team data may remain cached unless product/privacy behavior requires otherwise.
 - Player directory/search results, identities, recorded game stats, and season summaries use separate normalized keys. They are historical public reads with no polling; list/search data is fresh for 10 minutes and detail/statistical data for one hour.
 - Stats metadata is fresh for 24 hours. Season leaders, weekly leaders, and recent performance are fresh for six hours. These historical queries pass abort signals, do not poll, and do not aggressively refetch on focus. Leaderboard cursors stay opaque and outside the URL.
+- Team overview is fresh for five minutes, historical roster pages for one day, and team leader pages for six hours. Each family is separate, passes abort signals, does not poll or refetch on focus, and keeps opaque cursors outside the URL.
 
 ## DTO and validation policy
 

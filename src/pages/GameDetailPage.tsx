@@ -15,12 +15,15 @@ import {
 } from '@mui/material';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
+import { TeamHelmet } from '@/components/team/TeamHelmet';
 import { GameStatusChip } from '@/features/games/components/GameStatusChip';
 import { getPublicGameErrorMessage } from '@/features/games/errors';
-import { isScoreStatus, seasonTypeLabel } from '@/features/games/presentation';
+import {
+  getGameDisplayLabel,
+  isScoreStatus,
+} from '@/features/games/presentation';
 import { useGameQuery } from '@/features/games/queries';
 import { formatGameDateTime } from '@/features/games/utils/dateTime';
-import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
 import { ApiError } from '@/services/api/apiClient';
 
 export const GameDetailPage = () => {
@@ -86,8 +89,7 @@ export const GameDetailPage = () => {
         </Button>
         <Box>
           <Typography variant="overline" color="primary.light">
-            {game.season} {seasonTypeLabel[game.seasonType]}
-            {game.week === null ? '' : ` · Week ${game.week}`}
+            {game.season} · {getGameDisplayLabel(game)}
           </Typography>
           <Typography variant="h2" component="h1" sx={{ mt: 0.75 }}>
             Game details
@@ -138,7 +140,7 @@ export const GameDetailPage = () => {
                 }}
                 aria-label={`Away team ${game.awayTeam.fullName}${canShowScore ? `, ${game.awayScore} points` : ''}`}
               >
-                <TeamIdentity team={game.awayTeam} size={88} />
+                <TeamHelmet team={game.awayTeam.abbreviation} size="lg" />
                 <Typography variant="overline">AWAY</Typography>
                 <Typography variant="h3">{game.awayTeam.fullName}</Typography>
                 {canShowScore ? (
@@ -168,7 +170,7 @@ export const GameDetailPage = () => {
                 }}
                 aria-label={`Home team ${game.homeTeam.fullName}${canShowScore ? `, ${game.homeScore} points` : ''}`}
               >
-                <TeamIdentity team={game.homeTeam} size={88} />
+                <TeamHelmet team={game.homeTeam.abbreviation} size="lg" />
                 <Typography variant="overline">HOME</Typography>
                 <Typography variant="h3">{game.homeTeam.fullName}</Typography>
                 {canShowScore ? (

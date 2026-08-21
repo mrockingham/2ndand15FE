@@ -172,7 +172,9 @@ describe('editorial administration', () => {
       restorationStatus: 'authenticated',
     });
     expect(
-      await screen.findByRole('heading', { name: /welcome back/i }),
+      await screen.findByRole('heading', {
+        name: /choose your team. make home yours/i,
+      }),
     ).toBeInTheDocument();
     denied.unmount();
 

@@ -19,7 +19,7 @@ import {
   formatGameDateTime,
   isGameUpcoming,
 } from '@/features/games/utils/dateTime';
-import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
+import { TeamHelmet } from '@/components/team/TeamHelmet';
 import type { Team } from '@/features/teams/types';
 
 interface FavoriteNextGameProps {
@@ -101,7 +101,7 @@ export const FavoriteNextGame = ({ team }: FavoriteNextGameProps) => {
           <GameStatusChip status={nextGame.status} />
         </Stack>
         <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-          <TeamIdentity team={opponent} size={64} />
+          <TeamHelmet team={opponent.abbreviation} size="md" />
           <Box sx={{ minWidth: 0 }}>
             <Typography color="text.secondary">
               {team.abbreviation} {homeContext}

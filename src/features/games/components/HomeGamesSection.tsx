@@ -22,7 +22,8 @@ interface HomeGamesSectionProps {
 }
 
 const PublicUpcomingGames = () => {
-  const query = useGamesQuery({ limit: 3 });
+  const query = useGamesQuery({});
+
   if (query.isPending) {
     return (
       <Box sx={{ display: 'grid', minHeight: 180, placeItems: 'center' }}>
@@ -82,7 +83,11 @@ export const HomeGamesSection = ({
   <Container
     component="section"
     maxWidth="xl"
-    sx={{ py: { xs: 4, sm: 6 } }}
+    sx={{
+      // py: { xs: 4, sm: 6 },
+      borderRadius: '14px',
+      border: '1px solid black',
+    }}
     aria-labelledby="home-games-heading"
   >
     <Stack spacing={2.5}>
@@ -93,10 +98,7 @@ export const HomeGamesSection = ({
       >
         <Box>
           <Typography variant="overline" color="primary.light">
-            2026 NFL SCHEDULE
-          </Typography>
-          <Typography id="home-games-heading" variant="h3" component="h2">
-            Your next kickoff
+            Live & Upcoming
           </Typography>
         </Box>
         <Button component={RouterLink} to="/games">

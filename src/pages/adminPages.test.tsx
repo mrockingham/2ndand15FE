@@ -62,7 +62,9 @@ describe('role-aware administration routes and navigation', () => {
       restorationStatus: 'authenticated',
     });
     expect(
-      await screen.findByRole('heading', { name: /welcome back/i }),
+      await screen.findByRole('heading', {
+        name: /choose your team. make home yours/i,
+      }),
     ).toBeInTheDocument();
     userRender.unmount();
 
@@ -104,7 +106,9 @@ describe('role-aware administration routes and navigation', () => {
       fetchImplementation: adminRouter(),
     });
     expect(
-      await screen.findByRole('heading', { name: /welcome back/i }),
+      await screen.findByRole('heading', {
+        name: /choose your team. make home yours/i,
+      }),
     ).toBeInTheDocument();
     deniedAudit.unmount();
 
@@ -227,7 +231,9 @@ describe('administrative games', () => {
     );
     await waitFor(() =>
       expect(
-        screen.getByRole('heading', { name: /welcome back/i }),
+        screen.getByRole('heading', {
+          name: /choose your team. make home yours/i,
+        }),
       ).toBeInTheDocument(),
     );
   });

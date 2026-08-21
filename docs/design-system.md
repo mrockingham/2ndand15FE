@@ -1,5 +1,7 @@
 # Design System Direction
 
+Team helmet artwork, favorite-team accent tokens, and entity-local color precedence are documented in [team-visual-identity.md](./team-visual-identity.md).
+
 ## Experience direction
 
 2nd and 15 should feel like a premium game-day broadcast translated into a responsive product: deep spatial layers, decisive score typography, field-inspired detail, and electric highlights. The system should remain calm enough for dense data and accessible in both dark and light modes.
@@ -64,13 +66,15 @@ The mobile bottom navigation and desktop top navigation must not appear simultan
 
 ## Navigation shell
 
-The long-term primary areas are Home, Games, News, Stats, AI Hub, and Fantasy.
+The discoverable areas are Home, Games, News, Players, Teams, Stats, AI Hub, and Fantasy.
 
-- Desktop uses a top app bar with brand, primary navigation, theme control, and account entry.
+- Desktop uses a top app bar with brand, primary navigation, theme control, and account entry. Medium desktop/tablet may omit future placeholder links while keeping every released destination visible; large desktop exposes the complete set.
 - Mobile uses a bottom navigation for the most important destinations plus a clear path to remaining areas.
 - Signed-out experiences retain public navigation and obvious login/register actions.
 - Current location is expressed with text/icon state in addition to color.
-- Stats is a released public destination: desktop navigation links directly to it, while mobile exposes it in the More sheet with the future AI and Fantasy destinations.
+- Teams and Stats are released public destinations: desktop navigation links directly to both, while mobile exposes them in the More sheet with the future AI and Fantasy destinations.
+
+Team directory cards keep the team-page link and favorite action as separate keyboard targets. Team Hub section navigation uses ordinary anchor links so Overview, Historical roster, and Stat leaders remain operable without a nested router. Historical roster and leaderboard data use desktop tables with captions and mobile cards with equivalent reading order.
 
 ## Core component patterns
 

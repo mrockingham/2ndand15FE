@@ -51,6 +51,15 @@ const LazyPlayerComparePage = lazy(async () => ({
 const LazyStatsPage = lazy(async () => ({
   default: (await import('@/pages/StatsPage')).StatsPage,
 }));
+const LazyTeamsPage = lazy(async () => ({
+  default: (await import('@/pages/TeamsPage')).TeamsPage,
+}));
+const LazyTeamHubPage = lazy(async () => ({
+  default: (await import('@/pages/TeamHubPage')).TeamHubPage,
+}));
+const LazyAiHubPage = lazy(async () => ({
+  default: (await import('@/pages/AiHubPage')).AiHubPage,
+}));
 const LazyAdminGamesPage = lazy(async () => ({
   default: (await import('@/pages/AdminGamesPage')).AdminGamesPage,
 }));
@@ -122,15 +131,11 @@ export const appRoutes: RouteObject[] = [
         element: deferred(<LazyPlayerDetailPage />),
       },
       { path: 'stats', element: deferred(<LazyStatsPage />) },
+      { path: 'teams', element: deferred(<LazyTeamsPage />) },
+      { path: 'teams/:teamId', element: deferred(<LazyTeamHubPage />) },
       {
         path: 'ai',
-        element: (
-          <SectionPage
-            eyebrow="RESPONSIBLE INTELLIGENCE"
-            title="AI Hub"
-            description="Transparent predictions and decision support will be built here with confidence and provenance."
-          />
-        ),
+        element: deferred(<LazyAiHubPage />),
       },
       {
         path: 'fantasy',

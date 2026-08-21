@@ -24,11 +24,12 @@ const retryPublic = (count: number, error: unknown) =>
   !(error instanceof ApiError && error.status > 0 && error.status < 500) &&
   count < 2;
 
-export const useStatsMetadataQuery = () => {
+export const useStatsMetadataQuery = (enabled = true) => {
   const { publicClient } = useApiClients();
   return useQuery({
     queryKey: statsHubKeys.metadata(),
     queryFn: ({ signal }) => getStatsMetadata(publicClient, signal),
+    enabled,
     staleTime: METADATA_STALE_TIME,
     refetchOnWindowFocus: false,
     retry: retryPublic,

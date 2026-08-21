@@ -205,6 +205,49 @@ Status: implemented against backend Milestone 17 in August 2026.
 
 Exit criteria: visitors can share and explore historical rankings and recent recorded performance without fabricated data, client-side ranking or aggregation, private provider details, rate/fantasy metrics, AI analysis, predictions, or backend changes.
 
+## Frontend Milestone 20 — Team Directory and Team Hub
+
+Status: implemented against backend Milestone 19 in August 2026.
+
+- Lazy public `/teams` and `/teams/:teamId` routes with URL-backed directory, historical-roster, and team-leader filters
+- Conference/division grouping, full identity search, safe logo fallback, and existing authenticated/anonymous favorite workflow
+- Team hero plus bounded backend-ordered upcoming games, recent completed games, and published article previews
+- Historical roster tables/cards preserving weekly membership evidence, historical position, null/zero values, and separately labeled latest-team context
+- Stats-metadata-driven team leaders preserving backend competition rank, precision, ties, team-only production, and compatible full Stats Hub links
+- Separate five-minute overview, one-day roster, and six-hour leader query families with abort signals, no polling, and opaque cursor pagination outside URLs
+- Section-local loading, empty, error, retry, and cursor-reset states with visible nflverse attribution and historical coverage limits
+
+Exit criteria: visitors can find teams and explore bounded public team context without fabricated current rosters, season records, kickoff times, scores, league-wide totals mislabeled as team production, provider/import details, direct nflverse access, live statistics, AI analysis, fantasy recommendations, predictions, or backend changes.
+
+## Frontend Milestone 21 — Personalized Home and public Hall of Fame landing
+
+Status: implemented in August 2026.
+
+- Distinct visitor, authenticated/no-favorite, and authenticated/favorite Home states
+- Temporary user-provided Hall of Fame Game hero with backend-resolved final status and score
+- Section-local Games, published News, compact weekly AI Hub, and historical Stats composition
+- Favorite-team hero, bounded Team Hub matchup/recent fallback and published team News
+- One shared weekly-insights response for favorite prediction, compact snapshot, and model performance
+- Explicit LOW-confidence, null-evaluation, historical-team-leader, and unavailable-standings semantics
+- Responsive dark/light composition using generic TeamHelmet identity and favorite-team accent tokens
+- No Home endpoint, all-team hub fan-out, fake 2026 player data, fake standings, scraped assets, polling, or Fantasy implementation
+
+Exit criteria: Home remains useful without authentication, gains factual team relevance with one favorite, and isolates aggregate query failures without turning unavailable data into invented sports content.
+
+## Frontend Milestone 25 — AI Hub v1
+
+Status: implemented in August 2026.
+
+- Lazy public `/ai` route with URL-backed season-type and week controls
+- Favorite-team featured prediction with honest closest-matchup fallback
+- Deterministic weekly intelligence, matchup edges, and top-five ranking
+- Full published prediction grid with Game Center links
+- Independent public model-performance state with null-safe evaluation metrics
+- Responsive dark/light sports-dashboard hierarchy using TeamHelmet identity
+- No player projections, injury analysis, simulations, fantasy, betting, live stream, or fake chat
+
+Exit criteria: visitors can explore published Tier 1 weekly predictions and model performance without raw feature data, fabricated explanations, unsupported player intelligence, official-logo scraping, or backend changes.
+
 ## Proposed first implementation plan
 
 After approval, begin only with Milestone 0:
