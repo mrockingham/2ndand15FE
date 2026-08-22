@@ -1,6 +1,18 @@
 # Public Stats Hub usage
 
-Frontend Milestone 18 consumes the read-only Stats Hub delivered by backend Milestone 17. The public `/stats` route provides metadata-driven historical leaderboards and one-player recent-performance exploration. It does not contact nflverse directly and includes no live 2026 player statistics.
+The public `/stats` route has two URL-addressable modes. Current Season presents provider-neutral, game-based 2026 team comparisons. Historical preserves the metadata-driven nflverse player leaderboards and recent-performance exploration delivered by Frontend Milestone 18. The two modes use independent TanStack Query families and failure states.
+
+## Current Season mode
+
+`GET /games/current-stats` returns a bounded season/type/week context, backend-derived availability, resolved games, coverage classifications, and both home/away team-stat rows in one request. The UI never fans out to `GET /games/:gameId/stats`. Current reads use a separate five-minute query key, refetch on mount, do not poll, and do not affect Historical caches.
+
+New `/stats` visits default to Current Season. Current URLs use `mode=current`, `season`, `seasonType`, `week`, and optional internal `teamId`. Existing URLs containing Historical keys such as `view`, `type`, `category`, `metric`, or an older season without `seasonType` restore Historical and normalize to `mode=historical` without losing supported filters.
+
+Only backend-advertised seasons, season types, and weeks are rendered. `ALL` means all currently available game contexts, not the whole future schedule. A favorite team is an optional shortcut and never becomes the default league filter.
+
+Cards retain away/home orientation, scores and status, kickoff, week, helmets, coverage, and a Game Center link. `COMPLETE` shows the primary comparison and expandable details; `PARTIAL` preserves available values and uses em dashes for missing values; `UNAVAILABLE` keeps a final game and score visible without fabricating zeroes; `PENDING` explains that statistics will appear after game data is available. Provider names are never rendered.
+
+Current Season does not include current player leaders or aggregate league team rankings. A compact note explains that rankings require sufficiently complete statistical coverage.
 
 ## Endpoints and ownership
 

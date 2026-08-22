@@ -49,6 +49,26 @@ const scheduleFetch = (games = [gameFixture, tbdGameFixture]) =>
     return Promise.reject(new TypeError(`Unexpected request: ${url.pathname}`));
   });
 
+const gameDetailFetch = (game: Game, gameStatus = 200) =>
+  vi.fn<typeof fetch>((input) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith('/plays'))
+      return Promise.resolve(
+        json({
+          data: { gameId: game.id, playCount: 0, plays: [] },
+          meta: { limitations: [] },
+        }),
+      );
+    if (url.pathname.endsWith('/stats'))
+      return Promise.resolve(
+        json(
+          { error: { code: 'GAME_STATS_NOT_FOUND', message: 'Not found' } },
+          404,
+        ),
+      );
+    return Promise.resolve(json({ data: game }, gameStatus));
+  });
+
 const homeHubResponse = (
   team: Team,
   upcoming: readonly Game[],
@@ -213,23 +233,17 @@ describe('public Games pages', () => {
   });
 
   it('renders a detail page using only resolved public fields and handles a 404', async () => {
-    const successFetch = vi.fn<typeof fetch>(() =>
-      Promise.resolve(
-        json({
-          data: {
-            ...gameFixture,
-            status: 'FINAL',
-            awayScore: 21,
-            homeScore: 17,
-          },
-        }),
-      ),
-    );
+    const finalGame: Game = {
+      ...gameFixture,
+      status: 'FINAL',
+      awayScore: 21,
+      homeScore: 17,
+    };
     renderApp(`/games/${gameFixture.id}`, {
-      fetchImplementation: successFetch,
+      fetchImplementation: gameDetailFetch(finalGame),
     });
     expect(
-      await screen.findByRole('heading', { name: 'Game details' }),
+      await screen.findByRole('heading', { name: 'Game Center' }),
     ).toBeInTheDocument();
     expect(screen.getByText('21')).toBeInTheDocument();
     expect(
@@ -251,9 +265,7 @@ describe('public Games pages', () => {
 
   it('renders the Hall of Fame Game detail as a final neutral-site result', async () => {
     renderApp(`/games/${hallOfFameGameFixture.id}`, {
-      fetchImplementation: vi.fn<typeof fetch>(() =>
-        Promise.resolve(json({ data: hallOfFameGameFixture })),
-      ),
+      fetchImplementation: gameDetailFetch(hallOfFameGameFixture),
     });
 
     expect(

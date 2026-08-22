@@ -2,8 +2,11 @@ import type {
   Game,
   GameListFilters,
   GameListPage,
+  GamePlaysResult,
+  GameStatsResult,
+  GameTeamStats,
 } from '@/features/games/types';
-import type { ApiClient } from '@/services/api/apiClient';
+import { ApiError, type ApiClient } from '@/services/api/apiClient';
 
 interface DataResponse<T> {
   readonly data: T;
@@ -67,4 +70,75 @@ export const getGame = async (
     { method: 'GET', signal },
   );
   return response.data;
+};
+
+interface GamePlaysResponse {
+  readonly data: {
+    readonly gameId: string;
+    readonly playCount: number;
+    readonly plays: GamePlaysResult['plays'];
+  };
+  readonly meta: { readonly limitations: readonly string[] };
+}
+
+export const getGamePlays = async (
+  client: ApiClient,
+  gameId: string,
+  signal?: AbortSignal,
+): Promise<GamePlaysResult> => {
+  const response = await client.request<GamePlaysResponse>(
+    `/games/${encodeURIComponent(gameId)}/plays`,
+    { method: 'GET', signal },
+  );
+  return {
+    gameId: response.data.gameId,
+    playCount: response.data.playCount,
+    plays: response.data.plays,
+    limitations: response.meta.limitations,
+  };
+};
+
+interface GameStatsResponse {
+  readonly data: {
+    readonly gameId: string;
+    readonly teamStats: {
+      readonly home: GameTeamStats;
+      readonly away: GameTeamStats;
+    };
+    readonly playerStats: unknown;
+  };
+  readonly meta: {
+    readonly playerStatsAvailable: boolean;
+    readonly playerStatsCoverage: unknown;
+    readonly limitations: readonly string[];
+  };
+}
+
+export const getGameStats = async (
+  client: ApiClient,
+  gameId: string,
+  signal?: AbortSignal,
+): Promise<GameStatsResult> => {
+  try {
+    const response = await client.request<GameStatsResponse>(
+      `/games/${encodeURIComponent(gameId)}/stats`,
+      { method: 'GET', signal },
+    );
+    return {
+      gameId: response.data.gameId,
+      coverage: 'AVAILABLE',
+      teamStats: response.data.teamStats,
+      limitations: response.meta.limitations,
+    };
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return {
+        gameId,
+        coverage: 'UNAVAILABLE',
+        teamStats: { home: null, away: null },
+        limitations: [],
+      };
+    }
+    throw error;
+  }
 };

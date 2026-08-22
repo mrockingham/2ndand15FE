@@ -3,8 +3,42 @@ import {
   serializeStatsUrlState,
 } from '@/features/statsHub/urlState';
 import { statsMetadataFixture } from '@/test/statsHubFixtures';
+import {
+  readCurrentStatsFilters,
+  resolveStatsMode,
+  serializeCurrentStatsState,
+} from './currentUrlState';
 
 describe('Stats Hub URL state', () => {
+  it('defaults new Stats visits to current while preserving legacy Historical URLs', () => {
+    expect(resolveStatsMode(new URLSearchParams())).toBe('current');
+    expect(resolveStatsMode(new URLSearchParams('season=2025'))).toBe(
+      'historical',
+    );
+    expect(resolveStatsMode(new URLSearchParams('view=week&type=REG'))).toBe(
+      'historical',
+    );
+    expect(
+      resolveStatsMode(new URLSearchParams('mode=current&season=2026')),
+    ).toBe('current');
+  });
+
+  it('round-trips current-season state without accepting invalid team identity', () => {
+    const serialized = serializeCurrentStatsState(
+      { season: 2026, seasonType: 'PRE', week: 2 },
+      '8ef55f16-d6f7-4da4-9f4b-0a8e3461b786',
+    );
+    expect(readCurrentStatsFilters(serialized)).toEqual({
+      season: 2026,
+      seasonType: 'PRE',
+      week: 2,
+      teamId: '8ef55f16-d6f7-4da4-9f4b-0a8e3461b786',
+    });
+    expect(
+      readCurrentStatsFilters(new URLSearchParams('teamId=provider-12')).teamId,
+    ).toBeUndefined();
+  });
+
   it('derives stable defaults from metadata rather than fixed application values', () => {
     const state = normalizeStatsUrlState(
       new URLSearchParams(),

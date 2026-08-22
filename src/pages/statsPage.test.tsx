@@ -127,7 +127,9 @@ describe('public Stats Hub page', () => {
 
   it('changes category to the first metadata-supported metric and shares filter state', async () => {
     const fetchImplementation = statsFetch();
-    const { router } = renderApp('/stats', { fetchImplementation });
+    const { router } = renderApp('/stats?mode=historical', {
+      fetchImplementation,
+    });
     await screen.findAllByText('Alex Quarterback');
 
     await userEvent.click(screen.getByRole('tab', { name: 'Defense' }));
@@ -143,7 +145,7 @@ describe('public Stats Hub page', () => {
 
   it('offers a favorite-team shortcut without hiding league results by default', async () => {
     const fetchImplementation = statsFetch();
-    const { router } = renderApp('/stats', {
+    const { router } = renderApp('/stats?mode=historical', {
       restorationStatus: 'authenticated',
       currentUser: userWithFavoriteFixture,
       fetchImplementation,
@@ -185,7 +187,7 @@ describe('public Stats Hub page', () => {
         new TypeError(`Unexpected request: ${url.pathname}`),
       );
     });
-    renderApp('/stats', { fetchImplementation });
+    renderApp('/stats?mode=historical', { fetchImplementation });
     await userEvent.click(
       await screen.findByRole('button', { name: 'Load more leaders' }),
     );
@@ -282,7 +284,7 @@ describe('public Stats Hub page', () => {
         new TypeError(`Unexpected request: ${url.pathname}`),
       );
     });
-    renderApp('/stats', { fetchImplementation });
+    renderApp('/stats?mode=historical', { fetchImplementation });
 
     await userEvent.click(await screen.findByRole('button', { name: 'Retry' }));
     expect(

@@ -1,5 +1,6 @@
 import {
   getRecentPerformance,
+  getCurrentGameStats,
   getSeasonLeaders,
   getStatsMetadata,
   getWeeklyLeaders,
@@ -20,6 +21,40 @@ const json = (body: unknown) =>
   });
 
 describe('Stats Hub API', () => {
+  it('loads a current-season week with one bounded collection request', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>().mockResolvedValue(
+      json({
+        data: { season: 2026, seasonType: 'PRE', week: 1, games: [] },
+        meta: {
+          availableSeasons: [2026],
+          availableSeasonTypes: ['PRE'],
+          availableWeeks: [1, 2],
+          coverageNote: 'Coverage varies.',
+        },
+      }),
+    );
+    const client = createApiClient({
+      baseUrl: 'http://localhost/api/v1',
+      fetchImplementation,
+    });
+    const controller = new AbortController();
+    const result = await getCurrentGameStats(
+      client,
+      { season: 2026, seasonType: 'PRE', week: 1 },
+      controller.signal,
+    );
+    expect(result).toMatchObject({
+      season: 2026,
+      seasonType: 'PRE',
+      availableWeeks: [1, 2],
+    });
+    expect(fetchImplementation).toHaveBeenCalledOnce();
+    expect(fetchImplementation).toHaveBeenCalledWith(
+      'http://localhost/api/v1/games/current-stats?season=2026&seasonType=PRE&week=1',
+      expect.objectContaining({ method: 'GET', signal: controller.signal }),
+    );
+  });
+
   it('uses metadata and both leaderboard endpoints with exact filters and abort signals', async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()

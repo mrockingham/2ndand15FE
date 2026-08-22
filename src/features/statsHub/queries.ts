@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import {
   getRecentPerformance,
+  getCurrentGameStats,
   getSeasonLeaders,
   getStatsMetadata,
   getWeeklyLeaders,
@@ -17,9 +18,11 @@ import type {
 } from '@/features/statsHub/types';
 import { ApiError } from '@/services/api/apiClient';
 import { useApiClients } from '@/services/api/useApiClients';
+import type { CurrentStatsFilters } from '@/features/statsHub/currentTypes';
 
 const METADATA_STALE_TIME = 24 * 60 * 60_000;
 const HISTORICAL_STALE_TIME = 6 * 60 * 60_000;
+const CURRENT_STALE_TIME = 5 * 60_000;
 const retryPublic = (count: number, error: unknown) =>
   !(error instanceof ApiError && error.status > 0 && error.status < 500) &&
   count < 2;
@@ -31,6 +34,22 @@ export const useStatsMetadataQuery = (enabled = true) => {
     queryFn: ({ signal }) => getStatsMetadata(publicClient, signal),
     enabled,
     staleTime: METADATA_STALE_TIME,
+    refetchOnWindowFocus: false,
+    retry: retryPublic,
+  });
+};
+
+export const useCurrentGameStatsQuery = (
+  filters: CurrentStatsFilters,
+  enabled = true,
+) => {
+  const { publicClient } = useApiClients();
+  return useQuery({
+    queryKey: statsHubKeys.current(filters),
+    queryFn: ({ signal }) => getCurrentGameStats(publicClient, filters, signal),
+    enabled,
+    staleTime: CURRENT_STALE_TIME,
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     retry: retryPublic,
   });

@@ -1,12 +1,24 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
-import { getGame, listGames, listTeamGames } from '@/features/games/api';
+import {
+  getGame,
+  getGamePlays,
+  getGameStats,
+  listGames,
+  listTeamGames,
+} from '@/features/games/api';
 import { gameKeys } from '@/features/games/queryKeys';
 import type { GameListFilters } from '@/features/games/types';
 import { ApiError } from '@/services/api/apiClient';
 import { useApiClients } from '@/services/api/useApiClients';
 
+export interface GameLiveQueryOptions {
+  readonly refetchInterval?: number | false;
+  readonly staleTime?: number;
+}
+
 const SCHEDULE_STALE_TIME = 5 * 60_000;
+const GAME_CENTER_STALE_TIME = 5 * 60_000;
 const CURRENT_SCHEDULE_SEASON = 2026;
 const isCurrentSchedule = (season: number | undefined) =>
   season === undefined || season === CURRENT_SCHEDULE_SEASON;
@@ -29,14 +41,52 @@ export const useGamesQuery = (filters: GameListFilters, enabled = true) => {
   });
 };
 
-export const useGameQuery = (gameId: string) => {
+export const useGameQuery = (
+  gameId: string,
+  options: GameLiveQueryOptions = {},
+) => {
   const { publicClient } = useApiClients();
   return useQuery({
     queryKey: gameKeys.detail(gameId),
     queryFn: ({ signal }) => getGame(publicClient, gameId, signal),
     enabled: gameId !== '',
-    staleTime: SCHEDULE_STALE_TIME,
+    staleTime: options.staleTime ?? SCHEDULE_STALE_TIME,
     refetchOnMount: 'always',
+    refetchInterval: options.refetchInterval,
+    retry: retryPublicGameQuery,
+  });
+};
+
+export const useGamePlaysQuery = (
+  gameId: string,
+  options: GameLiveQueryOptions = {},
+) => {
+  const { publicClient } = useApiClients();
+  return useQuery({
+    queryKey: gameKeys.plays(gameId),
+    queryFn: ({ signal }) => getGamePlays(publicClient, gameId, signal),
+    enabled: gameId !== '',
+    staleTime: options.staleTime ?? GAME_CENTER_STALE_TIME,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchInterval: options.refetchInterval,
+    retry: retryPublicGameQuery,
+  });
+};
+
+export const useGameStatsQuery = (
+  gameId: string,
+  options: GameLiveQueryOptions = {},
+) => {
+  const { publicClient } = useApiClients();
+  return useQuery({
+    queryKey: gameKeys.stats(gameId),
+    queryFn: ({ signal }) => getGameStats(publicClient, gameId, signal),
+    enabled: gameId !== '',
+    staleTime: options.staleTime ?? GAME_CENTER_STALE_TIME,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchInterval: options.refetchInterval,
     retry: retryPublicGameQuery,
   });
 };

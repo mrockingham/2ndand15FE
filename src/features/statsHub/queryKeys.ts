@@ -2,6 +2,7 @@ import type {
   LeaderboardFilters,
   RecentPerformanceFilters,
 } from '@/features/statsHub/types';
+import type { CurrentStatsFilters } from '@/features/statsHub/currentTypes';
 
 const normalizeLeaderboard = (filters: LeaderboardFilters) => ({
   season: filters.season,
@@ -25,6 +26,17 @@ const normalizeRecent = (filters: RecentPerformanceFilters) => ({
 export const statsHubKeys = {
   all: ['statsHub'] as const,
   metadata: () => [...statsHubKeys.all, 'metadata'] as const,
+  current: (filters: CurrentStatsFilters) =>
+    [
+      ...statsHubKeys.all,
+      'current',
+      {
+        season: filters.season,
+        seasonType: filters.seasonType,
+        week: filters.week,
+        teamId: filters.teamId || undefined,
+      },
+    ] as const,
   season: (filters: LeaderboardFilters) =>
     [...statsHubKeys.all, 'season', normalizeLeaderboard(filters)] as const,
   weekly: (filters: LeaderboardFilters) =>

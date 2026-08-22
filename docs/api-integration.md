@@ -4,7 +4,7 @@
 
 The backend lives in the sibling `2ndand15BE` repository. Authentication contracts were verified against its OpenAPI, validators, controllers, service logic, cookie helper, configuration, and route tests in July 2026. See [auth-contract.md](auth-contract.md) for the exact requests, responses, status codes, error envelope, reset-token query parameter, and cookie behavior.
 
-Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements public articles and the CMS. Frontend Milestone 12 implements public games. Frontend Milestone 14 implements the backend Milestone 13 source and candidate contracts documented in [news-inbox-usage.md](news-inbox-usage.md). Frontend Milestone 16 implements the backend Milestone 15 public player contracts documented in [player-statistics-usage.md](player-statistics-usage.md). Frontend Milestone 18 implements backend Milestone 17 Stats Hub reads documented in [stats-hub-usage.md](stats-hub-usage.md). Frontend Milestone 20 implements backend Milestone 19 Team Hub reads documented in [team-hub-usage.md](team-hub-usage.md). Frontend Milestone 21 composes those families with the public weekly-insights endpoint as documented in [home-page-usage.md](home-page-usage.md). Frontend Milestone 25 implements the public Tier 1 prediction experience documented in [ai-hub-frontend.md](ai-hub-frontend.md).
+Milestone 0 implements the native-fetch client foundation and environment validation. Frontend Milestones 1 and 2 implement authentication and team personalization. Frontend Milestone 8 implements administrative schedules. Frontend Milestone 10 implements public articles and the CMS. Frontend Milestone 12 implements public games. Frontend Milestone 14 implements the backend Milestone 13 source and candidate contracts documented in [news-inbox-usage.md](news-inbox-usage.md). Frontend Milestone 16 implements the backend Milestone 15 public player contracts documented in [player-statistics-usage.md](player-statistics-usage.md). Frontend Milestone 18 implements backend Milestone 17 Stats Hub reads documented in [stats-hub-usage.md](stats-hub-usage.md). Frontend Milestone 20 implements backend Milestone 19 Team Hub reads documented in [team-hub-usage.md](team-hub-usage.md). Frontend Milestone 21 composes those families with the public weekly-insights endpoint as documented in [home-page-usage.md](home-page-usage.md). Frontend Milestone 25 implements the public Tier 1 prediction experience documented in [ai-hub-frontend.md](ai-hub-frontend.md). Frontend Milestone 26 implements the Game Center foundation (scoreboard, play-by-play, field progress, team stats) against completed-game data, with no live polling, documented in [game-center-usage.md](game-center-usage.md).
 
 ## Base configuration
 
@@ -36,6 +36,8 @@ Vite environment values are visible to users. Never place secrets in them.
 | PATCH     | `/users/me/favorite-team`                                           | Bearer token                 | Select, replace, or clear favorite team        |
 | GET       | `/games`                                                            | Public                       | Filtered, cursor-paginated resolved games      |
 | GET       | `/games/:gameId`                                                    | Public                       | One resolved public game                       |
+| GET       | `/games/:gameId/plays`                                              | Public                       | Structured play-by-play for the Game Center    |
+| GET       | `/games/:gameId/stats`                                              | Public                       | Per-game team statistics for the Game Center   |
 | GET       | `/teams/:teamId/games`                                              | Public                       | Bounded team schedule                          |
 | GET       | `/players`                                                          | Public                       | Filtered, cursor-paginated player directory    |
 | GET       | `/players/:playerId`                                                | Public                       | Public player identity/profile                 |
@@ -153,6 +155,9 @@ statsHubKeys.metadata()  -> ['statsHub', 'metadata']
 statsHubKeys.season(f)   -> ['statsHub', 'season', normalizedFilters]
 statsHubKeys.weekly(f)   -> ['statsHub', 'weekly', normalizedFilters]
 statsHubKeys.recent(f)   -> ['statsHub', 'recent', normalizedFilters]
+gameKeys.detail(id)      -> ['games', 'detail', id]
+gameKeys.plays(id)       -> ['games', 'detail', id, 'plays']
+gameKeys.stats(id)       -> ['games', 'detail', id, 'stats']
 teamHubKeys.overview(id) -> ['teamHub', 'overview', id]
 teamHubKeys.roster(id,f) -> ['teamHub', 'roster', id, normalizedFilters]
 teamHubKeys.leader(id,f) -> ['teamHub', 'leaders', id, normalizedFilters]

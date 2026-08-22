@@ -135,6 +135,7 @@ export const normalizeStatsUrlState = (
 
 export const serializeStatsUrlState = (state: NormalizedStatsUrlState) => {
   const parameters = new URLSearchParams();
+  parameters.set('mode', 'historical');
   parameters.set('view', state.view);
   parameters.set('season', String(state.season));
   parameters.set('type', state.seasonType);

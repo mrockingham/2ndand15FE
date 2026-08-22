@@ -20,6 +20,9 @@ import { useSearchParams } from 'react-router-dom';
 import { PlayerAttribution } from '@/features/players/components/PlayerAttribution';
 import { Leaderboard } from '@/features/statsHub/components/Leaderboard';
 import { RecentPerformanceExplorer } from '@/features/statsHub/components/RecentPerformanceExplorer';
+import { CurrentSeasonStatsMode } from '@/features/statsHub/components/CurrentSeasonStatsMode';
+import { StatsModeTabs } from '@/features/statsHub/components/StatsModeTabs';
+import { resolveStatsMode } from '@/features/statsHub/currentUrlState';
 import { getStatsErrorMessage } from '@/features/statsHub/errors';
 import { formatSeasonType } from '@/features/statsHub/presentation';
 import {
@@ -41,6 +44,15 @@ import { useCurrentUserQuery } from '@/features/users/queries';
 import { ApiError } from '@/services/api/apiClient';
 
 export const StatsPage = () => {
+  const [parameters] = useSearchParams();
+  return resolveStatsMode(parameters) === 'current' ? (
+    <CurrentSeasonStatsMode />
+  ) : (
+    <HistoricalStatsMode />
+  );
+};
+
+const HistoricalStatsMode = () => {
   const [parameters, setParameters] = useSearchParams();
   const metadataQuery = useStatsMetadataQuery();
   const queryClient = useQueryClient();
@@ -101,6 +113,7 @@ export const StatsPage = () => {
         <Typography component="h1" variant="h2">
           Stats
         </Typography>
+        <StatsModeTabs mode="historical" />
         <Typography role="status">Loading Stats Hub options…</Typography>
       </Container>
     );
@@ -112,6 +125,7 @@ export const StatsPage = () => {
         <Typography component="h1" variant="h2" sx={{ mb: 3 }}>
           Stats
         </Typography>
+        <StatsModeTabs mode="historical" />
         <Alert
           severity="error"
           action={
@@ -136,6 +150,7 @@ export const StatsPage = () => {
         <Typography component="h1" variant="h2">
           Stats
         </Typography>
+        <StatsModeTabs mode="historical" />
         <Alert severity="info" sx={{ mt: 3 }}>
           No imported statistical seasons or supported metrics are available
           yet.
@@ -239,6 +254,8 @@ export const StatsPage = () => {
             sx={{ alignSelf: 'flex-start' }}
           />
         </Stack>
+
+        <StatsModeTabs mode="historical" />
 
         <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 } }}>
           <Stack spacing={3}>

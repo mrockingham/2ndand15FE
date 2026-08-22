@@ -56,3 +56,87 @@ export interface GameListPage {
   readonly games: readonly Game[];
   readonly nextCursor: string | null;
 }
+
+export type GamePlayType =
+  | 'PASS'
+  | 'RUSH'
+  | 'PUNT'
+  | 'KICKOFF'
+  | 'FIELD_GOAL'
+  | 'SACK'
+  | 'PENALTY'
+  | 'TIMEOUT'
+  | 'INTERCEPTION'
+  | 'FUMBLE'
+  | 'END_PERIOD'
+  | 'OTHER';
+
+export interface GamePlayPosition {
+  readonly down: number | null;
+  readonly distance: number | null;
+  readonly yardLine: number | null;
+}
+
+export interface GamePlay {
+  readonly id: string;
+  readonly sequence: number;
+  readonly period: number;
+  readonly clock: string;
+  readonly possessionTeam: GameTeam | null;
+  readonly type: GamePlayType;
+  readonly description: string;
+  readonly start: GamePlayPosition;
+  readonly end: GamePlayPosition;
+  readonly flags: {
+    readonly scoring: boolean;
+    readonly penalty: boolean;
+    readonly turnover: boolean;
+  };
+}
+
+export interface GamePlaysResult {
+  readonly gameId: string;
+  readonly playCount: number;
+  readonly plays: readonly GamePlay[];
+  readonly limitations: readonly string[];
+}
+
+export interface GameTeamStats {
+  readonly teamId: string;
+  readonly firstDowns: number | null;
+  readonly totalPlays: number | null;
+  readonly totalYards: number | null;
+  readonly passingYards: number | null;
+  readonly rushingYards: number | null;
+  readonly turnovers: number | null;
+  readonly sacks: number | null;
+  readonly thirdDownConversions: number | null;
+  readonly thirdDownAttempts: number | null;
+  readonly fourthDownConversions: number | null;
+  readonly fourthDownAttempts: number | null;
+  readonly penalties: number | null;
+  readonly penaltyYards: number | null;
+  readonly possessionSeconds: number | null;
+  readonly redZoneConversions: number | null;
+  readonly redZoneAttempts: number | null;
+  readonly scoringByPeriod: {
+    readonly q1: number | null;
+    readonly q2: number | null;
+    readonly q3: number | null;
+    readonly q4: number | null;
+    readonly ot1: number | null;
+    readonly ot2: number | null;
+  };
+}
+
+export type GameStatsCoverage = 'AVAILABLE' | 'UNAVAILABLE';
+
+export interface GameStatsResult {
+  readonly gameId: string;
+  readonly coverage: GameStatsCoverage;
+  readonly teamStats: {
+    readonly home: GameTeamStats | null;
+    readonly away: GameTeamStats | null;
+  };
+  readonly limitations: readonly string[];
+}

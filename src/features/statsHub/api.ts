@@ -11,6 +11,10 @@ import type {
   WeeklyLeader,
 } from '@/features/statsHub/types';
 import type { PlayerAttribution } from '@/features/players/types';
+import type {
+  CurrentStatsFilters,
+  CurrentStatsResult,
+} from '@/features/statsHub/currentTypes';
 
 interface MetadataResponse {
   readonly data: StatsMetadata;
@@ -34,6 +38,19 @@ interface RecentResponse {
   readonly meta: Pick<RecentPerformanceResult, 'metric' | 'attribution'>;
 }
 
+interface CurrentStatsResponse {
+  readonly data: Pick<
+    CurrentStatsResult,
+    'season' | 'seasonType' | 'week' | 'games'
+  >;
+  readonly meta: {
+    readonly availableSeasons: CurrentStatsResult['availableSeasons'];
+    readonly availableSeasonTypes: CurrentStatsResult['availableSeasonTypes'];
+    readonly availableWeeks: CurrentStatsResult['availableWeeks'];
+    readonly coverageNote: string;
+  };
+}
+
 const queryString = (filters: object, cursor?: string) => {
   const parameters = new URLSearchParams();
   Object.entries({ ...filters, cursor }).forEach(([key, value]) => {
@@ -51,6 +68,18 @@ export const getStatsMetadata = async (
     signal,
   });
   return { metadata: response.data, attribution: response.meta.attribution };
+};
+
+export const getCurrentGameStats = async (
+  client: ApiClient,
+  filters: CurrentStatsFilters,
+  signal?: AbortSignal,
+): Promise<CurrentStatsResult> => {
+  const response = await client.request<CurrentStatsResponse>(
+    `/games/current-stats${queryString(filters)}`,
+    { method: 'GET', signal },
+  );
+  return { ...response.data, ...response.meta };
 };
 
 const leaderboardResult = <Row>(
