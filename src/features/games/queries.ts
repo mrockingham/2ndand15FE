@@ -7,6 +7,10 @@ import {
   listGames,
   listTeamGames,
 } from '@/features/games/api';
+import {
+  getGameCenterStaleTime,
+  getGameRefetchInterval,
+} from '@/features/games/gameCenterPolling';
 import { gameKeys } from '@/features/games/queryKeys';
 import type { GameListFilters } from '@/features/games/types';
 import { ApiError } from '@/services/api/apiClient';
@@ -50,9 +54,13 @@ export const useGameQuery = (
     queryKey: gameKeys.detail(gameId),
     queryFn: ({ signal }) => getGame(publicClient, gameId, signal),
     enabled: gameId !== '',
-    staleTime: options.staleTime ?? SCHEDULE_STALE_TIME,
+    staleTime:
+      options.staleTime ??
+      ((query) => getGameCenterStaleTime(query.state.data, 'game')),
     refetchOnMount: 'always',
-    refetchInterval: options.refetchInterval,
+    refetchInterval:
+      options.refetchInterval ??
+      ((query) => getGameRefetchInterval(query.state.data)),
     retry: retryPublicGameQuery,
   });
 };
@@ -68,7 +76,6 @@ export const useGamePlaysQuery = (
     enabled: gameId !== '',
     staleTime: options.staleTime ?? GAME_CENTER_STALE_TIME,
     refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
     refetchInterval: options.refetchInterval,
     retry: retryPublicGameQuery,
   });
@@ -85,7 +92,6 @@ export const useGameStatsQuery = (
     enabled: gameId !== '',
     staleTime: options.staleTime ?? GAME_CENTER_STALE_TIME,
     refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
     refetchInterval: options.refetchInterval,
     retry: retryPublicGameQuery,
   });

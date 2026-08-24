@@ -1,5 +1,8 @@
 import {
+  countNewPlaysSince,
   formatDownDistance,
+  formatFreshnessAge,
+  formatGameClock,
   formatYardLine,
   getGameDisplayLabel,
   getScoreboardStatusLine,
@@ -12,6 +15,10 @@ import {
   hallOfFameGameFixture,
   preseasonWeekOneFixture,
 } from '@/test/gameFixtures';
+import {
+  scoringPlayFixture,
+  turnoverPlayFixture,
+} from '@/test/gamePlaysFixtures';
 
 describe('public game labels', () => {
   it('recognizes only the reviewed Hall of Fame Game identity', () => {
@@ -103,5 +110,54 @@ describe('isFinalizedGameStatus', () => {
     expect(isFinalizedGameStatus('SUSPENDED')).toBe(true);
     expect(isFinalizedGameStatus('SCHEDULED')).toBe(false);
     expect(isFinalizedGameStatus('IN_PROGRESS')).toBe(false);
+  });
+});
+
+describe('formatGameClock', () => {
+  it('passes an already-normalized M:SS clock through untouched', () => {
+    expect(formatGameClock('14:17')).toBe('14:17');
+    expect(formatGameClock('2:00')).toBe('2:00');
+    expect(formatGameClock('0:00')).toBe('0:00');
+  });
+
+  it('converts a bare raw-seconds string instead of ever rendering it verbatim', () => {
+    expect(formatGameClock('857')).toBe('14:17');
+    expect(formatGameClock('666')).toBe('11:06');
+    expect(formatGameClock('0')).toBe('0:00');
+  });
+
+  it('hides null/empty/garbage clocks rather than rendering something ugly', () => {
+    expect(formatGameClock(null)).toBe(null);
+    expect(formatGameClock('')).toBe(null);
+    expect(formatGameClock('  ')).toBe(null);
+    expect(formatGameClock('not-a-clock')).toBe(null);
+  });
+});
+
+describe('formatFreshnessAge', () => {
+  it('describes sub-second freshness as "just now"', () => {
+    expect(formatFreshnessAge(0)).toBe('just now');
+    expect(formatFreshnessAge(500)).toBe('just now');
+  });
+
+  it('describes seconds and minutes without raw timestamps', () => {
+    expect(formatFreshnessAge(8_000)).toBe('8 sec ago');
+    expect(formatFreshnessAge(59_000)).toBe('59 sec ago');
+    expect(formatFreshnessAge(65_000)).toBe('1 min ago');
+    expect(formatFreshnessAge(150_000)).toBe('3 min ago');
+  });
+});
+
+describe('countNewPlaysSince', () => {
+  const newestFirst = [
+    { ...turnoverPlayFixture, sequence: 3 },
+    { ...scoringPlayFixture, sequence: 2 },
+    { ...scoringPlayFixture, sequence: 1 },
+  ];
+
+  it('counts only plays newer than the last-seen sequence', () => {
+    expect(countNewPlaysSince(newestFirst, 1)).toBe(2);
+    expect(countNewPlaysSince(newestFirst, 3)).toBe(0);
+    expect(countNewPlaysSince(newestFirst, 0)).toBe(3);
   });
 });

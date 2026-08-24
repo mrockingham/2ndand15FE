@@ -1,10 +1,12 @@
-import type {
-  Game,
-  GameListFilters,
-  GameListPage,
-  GamePlaysResult,
-  GameStatsResult,
-  GameTeamStats,
+import {
+  EMPTY_GAME_PLAYER_STATS,
+  type Game,
+  type GameListFilters,
+  type GameListPage,
+  type GamePlayerStatsByCategory,
+  type GamePlaysResult,
+  type GameStatsResult,
+  type GameTeamStats,
 } from '@/features/games/types';
 import { ApiError, type ApiClient } from '@/services/api/apiClient';
 
@@ -105,7 +107,10 @@ interface GameStatsResponse {
       readonly home: GameTeamStats;
       readonly away: GameTeamStats;
     };
-    readonly playerStats: unknown;
+    readonly playerStats: {
+      readonly home: GamePlayerStatsByCategory;
+      readonly away: GamePlayerStatsByCategory;
+    };
   };
   readonly meta: {
     readonly playerStatsAvailable: boolean;
@@ -128,6 +133,8 @@ export const getGameStats = async (
       gameId: response.data.gameId,
       coverage: 'AVAILABLE',
       teamStats: response.data.teamStats,
+      playerStatsAvailable: response.meta.playerStatsAvailable,
+      playerStats: response.data.playerStats,
       limitations: response.meta.limitations,
     };
   } catch (error) {
@@ -136,6 +143,11 @@ export const getGameStats = async (
         gameId,
         coverage: 'UNAVAILABLE',
         teamStats: { home: null, away: null },
+        playerStatsAvailable: false,
+        playerStats: {
+          home: EMPTY_GAME_PLAYER_STATS,
+          away: EMPTY_GAME_PLAYER_STATS,
+        },
         limitations: [],
       };
     }

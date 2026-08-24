@@ -22,14 +22,14 @@ export const GameDetailPage = () => {
   const { gameId = '' } = useParams();
   const query = useGameQuery(gameId);
 
-  if (query.isPending) {
-    return (
-      <Box sx={{ display: 'grid', minHeight: '55vh', placeItems: 'center' }}>
-        <CircularProgress aria-label="Loading game details" />
-      </Box>
-    );
-  }
-  if (query.isError) {
+  if (query.data === undefined) {
+    if (query.isPending) {
+      return (
+        <Box sx={{ display: 'grid', minHeight: '55vh', placeItems: 'center' }}>
+          <CircularProgress aria-label="Loading game details" />
+        </Box>
+      );
+    }
     const notFound =
       query.error instanceof ApiError && query.error.status === 404;
     return (
@@ -115,7 +115,7 @@ export const GameDetailPage = () => {
             </Stack>
           )}
         </Box>
-        <GameCenterContent game={game} onRefreshGame={() => query.refetch()} />
+        <GameCenterContent gameQuery={query} />
       </Stack>
     </Container>
   );

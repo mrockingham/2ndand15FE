@@ -131,12 +131,116 @@ export interface GameTeamStats {
 
 export type GameStatsCoverage = 'AVAILABLE' | 'UNAVAILABLE';
 
+export interface GamePlayerIdentity {
+  readonly id: string;
+  readonly displayName: string;
+  readonly position: string | null;
+  readonly positionGroup: string | null;
+  readonly headshotUrl: string | null;
+}
+
+export interface GamePlayerPassingStats {
+  readonly player: GamePlayerIdentity;
+  readonly completions: number | null;
+  readonly attempts: number | null;
+  readonly yards: number | null;
+  readonly touchdowns: number | null;
+  readonly interceptions: number | null;
+  readonly sacksSuffered: number | null;
+  readonly sackYardsLost: number | null;
+}
+
+export interface GamePlayerRushingStats {
+  readonly player: GamePlayerIdentity;
+  readonly attempts: number | null;
+  readonly yards: number | null;
+  readonly touchdowns: number | null;
+  readonly longest: number | null;
+}
+
+export interface GamePlayerReceivingStats {
+  readonly player: GamePlayerIdentity;
+  readonly targets: number | null;
+  readonly receptions: number | null;
+  readonly yards: number | null;
+  readonly touchdowns: number | null;
+  readonly longest: number | null;
+}
+
+export interface GamePlayerDefenseStats {
+  readonly player: GamePlayerIdentity;
+  readonly tacklesTotal: number | null;
+  readonly tacklesSolo: number | null;
+  readonly sacks: number | null;
+  readonly tacklesForLoss: number | null;
+  readonly passesDefended: number | null;
+  readonly fumbles: number | null;
+  readonly fumbleRecoveries: number | null;
+  readonly touchdowns: number | null;
+}
+
+export interface GamePlayerKickingStats {
+  readonly player: GamePlayerIdentity;
+  readonly fieldGoalsMade: number | null;
+  readonly fieldGoalsAttempted: number | null;
+  readonly longestFieldGoal: number | null;
+  readonly extraPointsMade: number | null;
+  readonly extraPointsAttempted: number | null;
+}
+
+export interface GamePlayerPuntingStats {
+  readonly player: GamePlayerIdentity;
+  readonly punts: number | null;
+  readonly yards: number | null;
+  readonly average: number | null;
+  readonly inside20: number | null;
+  readonly touchbacks: number | null;
+  readonly longest: number | null;
+}
+
+export interface GamePlayerReturnStats {
+  readonly player: GamePlayerIdentity;
+  readonly kickReturns: number | null;
+  readonly kickReturnYards: number | null;
+  readonly kickReturnTouchdowns: number | null;
+  readonly longestKickReturn: number | null;
+  readonly puntReturns: number | null;
+  readonly puntReturnYards: number | null;
+  readonly puntReturnTouchdowns: number | null;
+  readonly longestPuntReturn: number | null;
+}
+
+export interface GamePlayerStatsByCategory {
+  readonly passing: readonly GamePlayerPassingStats[];
+  readonly rushing: readonly GamePlayerRushingStats[];
+  readonly receiving: readonly GamePlayerReceivingStats[];
+  readonly defense: readonly GamePlayerDefenseStats[];
+  readonly kicking: readonly GamePlayerKickingStats[];
+  readonly punting: readonly GamePlayerPuntingStats[];
+  readonly returns: readonly GamePlayerReturnStats[];
+}
+
+export const EMPTY_GAME_PLAYER_STATS: GamePlayerStatsByCategory = {
+  passing: [],
+  rushing: [],
+  receiving: [],
+  defense: [],
+  kicking: [],
+  punting: [],
+  returns: [],
+};
+
 export interface GameStatsResult {
   readonly gameId: string;
   readonly coverage: GameStatsCoverage;
   readonly teamStats: {
     readonly home: GameTeamStats | null;
     readonly away: GameTeamStats | null;
+  };
+  readonly playerStatsAvailable: boolean;
+  readonly playerStats: {
+    readonly home: GamePlayerStatsByCategory;
+    readonly away: GamePlayerStatsByCategory;
   };
   readonly limitations: readonly string[];
 }

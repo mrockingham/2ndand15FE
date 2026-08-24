@@ -4,7 +4,10 @@ import EmojiEventsRounded from '@mui/icons-material/EmojiEventsRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
 import { Box, Chip, Stack, Typography } from '@mui/material';
 
-import { formatDownDistance } from '@/features/games/presentation';
+import {
+  formatDownDistance,
+  formatGameClock,
+} from '@/features/games/presentation';
 import type { GamePlay } from '@/features/games/types';
 
 export const PlayRow = memo(
@@ -18,6 +21,7 @@ export const PlayRow = memo(
     readonly onSelect: (playId: string) => void;
   }) => {
     const distance = formatDownDistance(play.start.down, play.start.distance);
+    const clock = formatGameClock(play.clock) ?? '—';
 
     return (
       <Box
@@ -56,7 +60,7 @@ export const PlayRow = memo(
               color="text.secondary"
               sx={{ fontVariantNumeric: 'tabular-nums' }}
             >
-              Q{play.period} · {play.clock}
+              Q{play.period} · {clock}
             </Typography>
             {play.possessionTeam === null ? null : (
               <Typography variant="caption" sx={{ fontWeight: 800 }}>

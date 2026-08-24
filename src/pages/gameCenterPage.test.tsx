@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { gameFixture } from '@/test/gameFixtures';
@@ -11,7 +11,12 @@ import {
   turnoverPlayFixture,
 } from '@/test/gamePlaysFixtures';
 import { renderApp } from '@/test/renderApp';
-import type { Game, GamePlay, GameTeamStats } from '@/features/games/types';
+import {
+  EMPTY_GAME_PLAYER_STATS,
+  type Game,
+  type GamePlay,
+  type GameTeamStats,
+} from '@/features/games/types';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -28,7 +33,10 @@ const statsBody = (away: GameTeamStats, home: GameTeamStats) => ({
   data: {
     gameId: gameFixture.id,
     teamStats: { home, away },
-    playerStats: { home: {}, away: {} },
+    playerStats: {
+      home: EMPTY_GAME_PLAYER_STATS,
+      away: EMPTY_GAME_PLAYER_STATS,
+    },
   },
   meta: {
     playerStatsAvailable: false,
@@ -262,5 +270,215 @@ describe('Game Center', () => {
       name: 'Play-by-play, newest first',
     });
     expect(within(list).getAllByRole('listitem')).toHaveLength(185);
+  });
+
+  it('polls the game and plays every 15s and stats every 30s while the game is live, with no manual refresh', async () => {
+    const live: Game = {
+      ...gameFixture,
+      status: 'IN_PROGRESS',
+      awayScore: 3,
+      homeScore: 0,
+      quarter: 1,
+      clock: '10:00',
+    };
+    const counts: FetchCounts = { game: 0, plays: 0, stats: 0 };
+
+    vi.useFakeTimers();
+    try {
+      renderApp(`/games/${live.id}`, {
+        fetchImplementation: buildFetch(live, {
+          plays: gamePlaysFixture,
+          statsResponse: json(
+            statsBody(awayTeamStatsFixture, homeTeamStatsFixture),
+          ),
+          counts,
+        }),
+      });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+      expect(
+        screen.getByRole('heading', { name: 'Game Center' }),
+      ).toBeInTheDocument();
+      expect(counts.game).toBe(1);
+      expect(counts.plays).toBe(1);
+      expect(counts.stats).toBe(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_000);
+      });
+      expect(counts.game).toBe(2);
+      expect(counts.plays).toBe(2);
+      expect(counts.stats).toBe(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_000);
+      });
+      expect(counts.game).toBe(3);
+      expect(counts.plays).toBe(3);
+      expect(counts.stats).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('does one extra plays/stats refresh at the LIVE -> FINAL transition, then stops polling', async () => {
+    let currentGame: Game = {
+      ...gameFixture,
+      status: 'IN_PROGRESS',
+      awayScore: 10,
+      homeScore: 7,
+      quarter: 4,
+      clock: '02:00',
+    };
+    const counts: FetchCounts = { game: 0, plays: 0, stats: 0 };
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith('/plays')) {
+        counts.plays += 1;
+        return Promise.resolve(json(playsBody(gamePlaysFixture)));
+      }
+      if (url.pathname.endsWith('/stats')) {
+        counts.stats += 1;
+        return Promise.resolve(
+          json(statsBody(awayTeamStatsFixture, homeTeamStatsFixture)),
+        );
+      }
+      counts.game += 1;
+      return Promise.resolve(json({ data: currentGame }));
+    });
+
+    vi.useFakeTimers();
+    try {
+      renderApp(`/games/${currentGame.id}`, { fetchImplementation });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(200);
+      });
+      expect(
+        screen.getByRole('heading', { name: 'Game Center' }),
+      ).toBeInTheDocument();
+      expect(counts.game).toBe(1);
+      expect(counts.plays).toBe(1);
+      expect(counts.stats).toBe(1);
+
+      currentGame = { ...currentGame, status: 'FINAL', clock: '0:00' };
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_000);
+      });
+      expect(counts.game).toBe(2);
+      // The regularly-scheduled 15s plays/stats interval tick and the
+      // one-time FINAL-transition refetch can coincide at this exact
+      // instant (both intervals started polling at mount); either way,
+      // both endpoints have been refetched at least once more.
+      expect(counts.plays).toBeGreaterThanOrEqual(2);
+      expect(counts.stats).toBeGreaterThanOrEqual(2);
+      const playsAtTransition = counts.plays;
+      const statsAtTransition = counts.stats;
+      expect(screen.getByText('Final')).toBeInTheDocument();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+      expect(counts.game).toBe(2);
+      expect(counts.plays).toBe(playsAtTransition);
+      expect(counts.stats).toBe(statsAtTransition);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('recovers a graceful selection after a FINAL authoritative replacement swaps every GamePlay ID', async () => {
+    const liveGame: Game = {
+      ...gameFixture,
+      status: 'IN_PROGRESS',
+      awayScore: 10,
+      homeScore: 7,
+      quarter: 4,
+      clock: '02:00',
+    };
+    const finalGame: Game = { ...liveGame, status: 'FINAL', clock: '0:00' };
+    const finalPlays = generateGamePlaysFixture(20).map((play) => ({
+      ...play,
+      id: `final-${play.id}`,
+    }));
+
+    let gameToReturn: Game = liveGame;
+    let playsToReturn: readonly GamePlay[] = gamePlaysFixture;
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith('/plays')) {
+        return Promise.resolve(json(playsBody(playsToReturn)));
+      }
+      if (url.pathname.endsWith('/stats')) {
+        return Promise.resolve(
+          json(statsBody(awayTeamStatsFixture, homeTeamStatsFixture)),
+        );
+      }
+      return Promise.resolve(json({ data: gameToReturn }));
+    });
+
+    renderApp(`/games/${liveGame.id}`, { fetchImplementation });
+    await screen.findByRole('heading', { name: 'Game Center' });
+
+    const turnoverRow = (
+      await screen.findByText(turnoverPlayFixture.description)
+    ).closest('button')!;
+    await userEvent.click(turnoverRow);
+    expect(turnoverRow).toHaveAttribute('aria-pressed', 'true');
+
+    gameToReturn = finalGame;
+    playsToReturn = finalPlays;
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+
+    expect(await screen.findByText('Final')).toBeInTheDocument();
+    const list = await screen.findByRole('list', {
+      name: 'Play-by-play, newest first',
+    });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(20);
+    expect(
+      screen.queryByText(turnoverPlayFixture.description),
+    ).not.toBeInTheDocument();
+    expect(document.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
+  });
+
+  it('keeps the scoreboard visible when a background game refetch fails after a successful load', async () => {
+    const live: Game = {
+      ...gameFixture,
+      status: 'IN_PROGRESS',
+      awayScore: 10,
+      homeScore: 7,
+      quarter: 2,
+      clock: '05:00',
+    };
+    let gameCallCount = 0;
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith('/plays')) {
+        return Promise.resolve(json(playsBody([])));
+      }
+      if (url.pathname.endsWith('/stats')) {
+        return Promise.resolve(statsNotFound());
+      }
+      gameCallCount += 1;
+      if (gameCallCount === 1) {
+        return Promise.resolve(json({ data: live }));
+      }
+      return Promise.resolve(
+        json({ error: { code: 'INVALID', message: 'Boom' } }, 400),
+      );
+    });
+
+    renderApp(`/games/${live.id}`, { fetchImplementation });
+    await screen.findByRole('heading', { name: 'Game Center' });
+    expect(screen.getByText('10')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+    await waitFor(() => expect(gameCallCount).toBeGreaterThanOrEqual(2));
+
+    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Game unavailable' }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -6,10 +6,13 @@ import {
   listGames,
   listTeamGames,
 } from '@/features/games/api';
+import { EMPTY_GAME_PLAYER_STATS } from '@/features/games/types';
 import { gameFixture } from '@/test/gameFixtures';
 import {
+  awayPlayerStatsFixture,
   awayTeamStatsFixture,
   gamePlaysFixture,
+  homePlayerStatsFixture,
   homeTeamStatsFixture,
 } from '@/test/gamePlaysFixtures';
 
@@ -153,6 +156,46 @@ describe('public games API', () => {
     );
   });
 
+  it('maps populated player stats separated by team when the backend provides them', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              gameId: gameFixture.id,
+              teamStats: {
+                home: homeTeamStatsFixture,
+                away: awayTeamStatsFixture,
+              },
+              playerStats: {
+                home: homePlayerStatsFixture,
+                away: awayPlayerStatsFixture,
+              },
+            },
+            meta: {
+              playerStatsAvailable: true,
+              playerStatsCoverage: {
+                providerRows: 44,
+                resolvedRows: 44,
+                unresolvedRows: 0,
+              },
+              limitations: [],
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    const client = createApiClient({
+      baseUrl: 'http://localhost/api/v1',
+      fetchImplementation,
+    });
+    const result = await getGameStats(client, gameFixture.id);
+    expect(result.playerStatsAvailable).toBe(true);
+    expect(result.playerStats.away).toEqual(awayPlayerStatsFixture);
+    expect(result.playerStats.home).toEqual(homePlayerStatsFixture);
+  });
+
   it('treats a 404 on stats as an unavailable-coverage result, not a thrown error', async () => {
     const fetchImplementation = vi.fn<typeof fetch>(() =>
       Promise.resolve(
@@ -171,5 +214,8 @@ describe('public games API', () => {
     const result = await getGameStats(client, gameFixture.id);
     expect(result.coverage).toBe('UNAVAILABLE');
     expect(result.teamStats).toEqual({ home: null, away: null });
+    expect(result.playerStatsAvailable).toBe(false);
+    expect(result.playerStats.home).toEqual(EMPTY_GAME_PLAYER_STATS);
+    expect(result.playerStats.away).toEqual(EMPTY_GAME_PLAYER_STATS);
   });
 });

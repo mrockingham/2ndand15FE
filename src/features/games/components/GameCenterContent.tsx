@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -11,68 +11,96 @@ import {
   Tabs,
   Typography,
 } from '@mui/material';
+import type { UseQueryResult } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 
 import { CurrentSituation } from '@/features/games/components/CurrentSituation';
 import { FieldProgress } from '@/features/games/components/FieldProgress';
+import { FreshnessIndicator } from '@/features/games/components/FreshnessIndicator';
 import { GameCenterRefreshButton } from '@/features/games/components/GameCenterRefreshButton';
 import { PlayFeed } from '@/features/games/components/PlayFeed';
+import { PlayerStatsPanel } from '@/features/games/components/PlayerStatsPanel';
 import { ScoreboardHero } from '@/features/games/components/ScoreboardHero';
 import { TeamStatsPanel } from '@/features/games/components/TeamStatsPanel';
 import { getPublicGameErrorMessage } from '@/features/games/errors';
+import {
+  getGameCenterStaleTime,
+  getPlaysRefetchInterval,
+  getStatsRefetchInterval,
+} from '@/features/games/gameCenterPolling';
+import { resolveSelectedPlayAfterRefresh } from '@/features/games/gameCenterSelection';
 import { isFinalizedGameStatus } from '@/features/games/presentation';
 import { useGamePlaysQuery, useGameStatsQuery } from '@/features/games/queries';
-import type { Game } from '@/features/games/types';
-
-const FINALIZED_STALE_TIME = 24 * 60 * 60_000;
-const LIVE_STALE_TIME = 5 * 60_000;
-
-const latestPlayWithFieldPosition = <
-  T extends {
-    readonly sequence: number;
-    readonly start: { readonly yardLine: number | null };
-    readonly end: { readonly yardLine: number | null };
-  },
->(
-  plays: readonly T[],
-) =>
-  [...plays]
-    .sort((left, right) => right.sequence - left.sequence)
-    .find(
-      (play) => play.start.yardLine !== null || play.end.yardLine !== null,
-    ) ?? null;
+import type { Game, GameStatus } from '@/features/games/types';
 
 export const GameCenterContent = ({
-  game,
-  onRefreshGame,
+  gameQuery,
 }: {
-  readonly game: Game;
-  readonly onRefreshGame: () => Promise<unknown>;
+  readonly gameQuery: UseQueryResult<Game, unknown>;
 }) => {
-  const staleTime = isFinalizedGameStatus(game.status)
-    ? FINALIZED_STALE_TIME
-    : LIVE_STALE_TIME;
-  const playsQuery = useGamePlaysQuery(game.id, { staleTime });
-  const statsQuery = useGameStatsQuery(game.id, { staleTime });
+  // GameDetailPage only renders this component once gameQuery.data is
+  // populated; a later background refetch failure keeps that data intact.
+  const game = gameQuery.data!;
+
+  const playsStaleTime = getGameCenterStaleTime(game, 'plays');
+  const statsStaleTime = getGameCenterStaleTime(game, 'stats');
+  const playsRefetchInterval = getPlaysRefetchInterval(game);
+  const statsRefetchInterval = getStatsRefetchInterval(game);
+
+  const playsQuery = useGamePlaysQuery(game.id, {
+    staleTime: playsStaleTime,
+    refetchInterval: playsRefetchInterval,
+  });
+  const statsQuery = useGameStatsQuery(game.id, {
+    staleTime: statsStaleTime,
+    refetchInterval: statsRefetchInterval,
+  });
+
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [explicitSelectedPlayId, setExplicitSelectedPlayId] = useState<
-    string | null
-  >(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const plays = useMemo(() => playsQuery.data?.plays ?? [], [playsQuery.data]);
 
-  const selectedPlayId = useMemo(() => {
-    if (
-      explicitSelectedPlayId !== null &&
-      plays.some((play) => play.id === explicitSelectedPlayId)
-    ) {
-      return explicitSelectedPlayId;
+  // Resolve the effective selection whenever the plays list changes,
+  // comparing against the previous list/selection captured in state (the
+  // React-documented way to react to a changed value during render without
+  // an effect or a ref read during render).
+  const [selectedPlayId, setSelectedPlayId] = useState<string | null>(null);
+  const [previousPlays, setPreviousPlays] = useState(plays);
+  if (plays !== previousPlays) {
+    const previousSelectedPlay =
+      previousPlays.find((play) => play.id === selectedPlayId) ?? null;
+    const resolvedId = resolveSelectedPlayAfterRefresh(
+      plays,
+      selectedPlayId,
+      previousSelectedPlay,
+    );
+    setPreviousPlays(plays);
+    if (resolvedId !== selectedPlayId) {
+      setSelectedPlayId(resolvedId);
     }
-    return latestPlayWithFieldPosition(plays)?.id ?? null;
-  }, [plays, explicitSelectedPlayId]);
-
+  }
   const selectedPlay = plays.find((play) => play.id === selectedPlayId) ?? null;
+
+  // Fires exactly once on the LIVE -> FINAL transition: the game record
+  // itself is already the fresh FINAL data that triggered this effect, so
+  // only plays/stats need an explicit one-time refetch to pick up the
+  // backend's authoritative snapshot replacement. Interval polling for all
+  // three queries already stops on its own once the status is finalized.
+  const previousStatusRef = useRef<GameStatus | null>(null);
+  useEffect(() => {
+    const previousStatus = previousStatusRef.current;
+    previousStatusRef.current = game.status;
+    if (
+      previousStatus !== null &&
+      previousStatus !== game.status &&
+      !isFinalizedGameStatus(previousStatus) &&
+      isFinalizedGameStatus(game.status)
+    ) {
+      playsQuery.refetch();
+      statsQuery.refetch();
+    }
+  }, [game.status, playsQuery, statsQuery]);
 
   const playsUnavailable = playsQuery.isSuccess && plays.length === 0;
   const statsUnavailable =
@@ -96,7 +124,7 @@ export const GameCenterContent = ({
     setIsRefreshing(true);
     try {
       await Promise.all([
-        onRefreshGame(),
+        gameQuery.refetch(),
         playsQuery.refetch(),
         statsQuery.refetch(),
       ]);
@@ -104,6 +132,19 @@ export const GameCenterContent = ({
       setIsRefreshing(false);
     }
   };
+
+  const isLive = game.status === 'IN_PROGRESS' || game.status === 'HALFTIME';
+  const freshnessTimestamps = [
+    gameQuery.dataUpdatedAt,
+    playsQuery.dataUpdatedAt,
+    statsQuery.dataUpdatedAt,
+  ].filter((timestamp) => timestamp > 0);
+  const oldestUpdatedAt =
+    freshnessTimestamps.length > 0 ? Math.min(...freshnessTimestamps) : null;
+  const isFetchingAny =
+    gameQuery.isFetching || playsQuery.isFetching || statsQuery.isFetching;
+  const hasErrorAny =
+    gameQuery.isError || playsQuery.isError || statsQuery.isError;
 
   return (
     <Card
@@ -115,6 +156,14 @@ export const GameCenterContent = ({
           isRefreshing={isRefreshing}
         />
         <ScoreboardHero game={game} />
+        {isLive ? (
+          <FreshnessIndicator
+            label={game.status === 'IN_PROGRESS' ? 'LIVE' : 'HALFTIME'}
+            updatedAt={oldestUpdatedAt}
+            isFetching={isFetchingAny}
+            hasError={hasErrorAny}
+          />
+        ) : null}
         <Divider />
 
         {activeSection === 'overview' ? (
@@ -149,25 +198,27 @@ export const GameCenterContent = ({
             ) : null}
 
             {activeSection === 'plays' ? (
-              playsQuery.isPending ? (
-                <Stack sx={{ alignItems: 'center', py: 4 }}>
-                  <CircularProgress aria-label="Loading plays" size={28} />
-                </Stack>
-              ) : playsQuery.isError ? (
-                <Alert
-                  severity="error"
-                  action={
-                    <Button
-                      color="inherit"
-                      size="small"
-                      onClick={() => playsQuery.refetch()}
-                    >
-                      Retry
-                    </Button>
-                  }
-                >
-                  {getPublicGameErrorMessage(playsQuery.error)}
-                </Alert>
+              playsQuery.data === undefined ? (
+                playsQuery.isPending ? (
+                  <Stack sx={{ alignItems: 'center', py: 4 }}>
+                    <CircularProgress aria-label="Loading plays" size={28} />
+                  </Stack>
+                ) : (
+                  <Alert
+                    severity="error"
+                    action={
+                      <Button
+                        color="inherit"
+                        size="small"
+                        onClick={() => playsQuery.refetch()}
+                      >
+                        Retry
+                      </Button>
+                    }
+                  >
+                    {getPublicGameErrorMessage(playsQuery.error)}
+                  </Alert>
+                )
               ) : (
                 <Box
                   sx={{
@@ -184,19 +235,31 @@ export const GameCenterContent = ({
                   <PlayFeed
                     plays={plays}
                     selectedPlayId={selectedPlayId}
-                    onSelectPlay={setExplicitSelectedPlayId}
+                    onSelectPlay={setSelectedPlayId}
                   />
                 </Box>
               )
             ) : null}
 
             {activeSection === 'stats' ? (
-              <TeamStatsPanel
-                awayTeam={game.awayTeam}
-                homeTeam={game.homeTeam}
-                gameStatus={game.status}
-                query={statsQuery}
-              />
+              <Stack spacing={4}>
+                <TeamStatsPanel
+                  awayTeam={game.awayTeam}
+                  homeTeam={game.homeTeam}
+                  gameStatus={game.status}
+                  query={statsQuery}
+                />
+                {statsQuery.data !== undefined &&
+                statsQuery.data.coverage === 'AVAILABLE' ? (
+                  <PlayerStatsPanel
+                    awayTeam={game.awayTeam}
+                    homeTeam={game.homeTeam}
+                    playerStatsAvailable={statsQuery.data.playerStatsAvailable}
+                    awayStats={statsQuery.data.playerStats.away}
+                    homeStats={statsQuery.data.playerStats.home}
+                  />
+                ) : null}
+              </Stack>
             ) : null}
           </>
         )}

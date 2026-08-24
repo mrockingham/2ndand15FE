@@ -171,15 +171,14 @@ export const TeamStatsPanel = ({
   readonly gameStatus: GameStatus;
   readonly query: UseQueryResult<GameStatsResult, unknown>;
 }) => {
-  if (query.isPending) {
-    return (
-      <Stack sx={{ alignItems: 'center', py: 4 }}>
-        <CircularProgress aria-label="Loading team statistics" size={28} />
-      </Stack>
-    );
-  }
-
-  if (query.isError) {
+  if (query.data === undefined) {
+    if (query.isPending) {
+      return (
+        <Stack sx={{ alignItems: 'center', py: 4 }}>
+          <CircularProgress aria-label="Loading team statistics" size={28} />
+        </Stack>
+      );
+    }
     return (
       <Alert
         severity="error"
@@ -194,6 +193,8 @@ export const TeamStatsPanel = ({
     );
   }
 
+  // A background refetch failure preserves the last-good data here rather
+  // than blanking it; the shared FreshnessIndicator communicates staleness.
   const { coverage, teamStats } = query.data;
 
   if (coverage === 'UNAVAILABLE') {

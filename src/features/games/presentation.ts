@@ -1,5 +1,10 @@
 import { formatGameDateTime } from '@/features/games/utils/dateTime';
-import type { Game, GameStatus, SeasonType } from '@/features/games/types';
+import type {
+  Game,
+  GamePlay,
+  GameStatus,
+  SeasonType,
+} from '@/features/games/types';
 
 export const HALL_OF_FAME_GAME_ID = '0768c441-16a6-457c-b50f-e7273d750d77';
 
@@ -47,12 +52,38 @@ type GameScoreboardStatusFields = Pick<
   'status' | 'quarter' | 'clock' | 'startTime' | 'week'
 >;
 
+const CLOCK_PATTERN = /^\d{1,2}:\d{2}$/;
+const RAW_SECONDS_PATTERN = /^\d+$/;
+
+/**
+ * Passes through an already-normalized "M:SS" clock untouched. Defensively
+ * converts a bare integer string (raw seconds, a Highlightly-shaped leak)
+ * into "M:SS" instead of ever rendering it verbatim; anything else is
+ * treated as unusable and hidden rather than shown malformed.
+ */
+export const formatGameClock = (clock: string | null): string | null => {
+  if (clock === null) return null;
+  const trimmed = clock.trim();
+  if (trimmed === '') return null;
+  if (CLOCK_PATTERN.test(trimmed)) return trimmed;
+  if (RAW_SECONDS_PATTERN.test(trimmed)) {
+    const totalSeconds = Number(trimmed);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  }
+  return null;
+};
+
 export const getScoreboardStatusLine = (
   game: GameScoreboardStatusFields,
 ): string | null => {
   if (game.status === 'HALFTIME') return 'Halftime';
   if (game.status === 'IN_PROGRESS') {
-    const line = [game.quarter === null ? null : `Q${game.quarter}`, game.clock]
+    const line = [
+      game.quarter === null ? null : `Q${game.quarter}`,
+      formatGameClock(game.clock),
+    ]
       .filter(Boolean)
       .join(' · ');
     return line === '' ? null : line;
@@ -85,6 +116,20 @@ export const isFinalizedGameStatus = (status: GameStatus) =>
   status === 'POSTPONED' ||
   status === 'CANCELED' ||
   status === 'SUSPENDED';
+
+export const countNewPlaysSince = (
+  newestFirst: readonly GamePlay[],
+  lastSeenSequence: number,
+): number =>
+  newestFirst.filter((play) => play.sequence > lastSeenSequence).length;
+
+export const formatFreshnessAge = (ageMs: number): string => {
+  if (ageMs < 1000) return 'just now';
+  const seconds = Math.round(ageMs / 1000);
+  if (seconds < 60) return `${seconds} sec ago`;
+  const minutes = Math.round(seconds / 60);
+  return `${minutes} min ago`;
+};
 
 export const formatYardLine = (yardLine: number) => {
   if (yardLine === 50) return '50';

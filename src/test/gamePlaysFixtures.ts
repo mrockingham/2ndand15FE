@@ -1,5 +1,10 @@
 import { awayGameTeamFixture, homeGameTeamFixture } from '@/test/gameFixtures';
-import type { GamePlay, GameTeamStats } from '@/features/games/types';
+import type {
+  GamePlay,
+  GamePlayerIdentity,
+  GamePlayerStatsByCategory,
+  GameTeamStats,
+} from '@/features/games/types';
 
 export const scoringPlayFixture: GamePlay = {
   id: '10000000-0000-4000-8000-000000000001',
@@ -137,4 +142,125 @@ export const homeTeamStatsFixture: GameTeamStats = {
   redZoneConversions: 2,
   redZoneAttempts: 3,
   scoringByPeriod: { q1: 3, q2: 7, q3: 7, q4: 0, ot1: null, ot2: null },
+};
+
+const playerFixture = (
+  overrides: Pick<
+    GamePlayerIdentity,
+    'id' | 'displayName' | 'position' | 'positionGroup'
+  >,
+): GamePlayerIdentity => ({ headshotUrl: null, ...overrides });
+
+export const awayQuarterbackFixture = playerFixture({
+  id: 'player-away-qb',
+  displayName: 'Alex Away',
+  position: 'QB',
+  positionGroup: 'QB',
+});
+
+export const homeQuarterbackFixture = playerFixture({
+  id: 'player-home-qb',
+  displayName: 'Jordan Home',
+  position: 'QB',
+  positionGroup: 'QB',
+});
+
+export const awayPlayerStatsFixture: GamePlayerStatsByCategory = {
+  passing: [
+    {
+      player: awayQuarterbackFixture,
+      completions: 24,
+      attempts: 31,
+      yards: 226,
+      touchdowns: 2,
+      interceptions: 0,
+      sacksSuffered: 2,
+      sackYardsLost: 13,
+    },
+  ],
+  rushing: [
+    {
+      player: playerFixture({
+        id: 'player-away-rb',
+        displayName: 'Sam Runner',
+        position: 'RB',
+        positionGroup: 'RB',
+      }),
+      attempts: 18,
+      yards: 74,
+      touchdowns: 1,
+      longest: 22,
+    },
+  ],
+  receiving: [
+    {
+      player: playerFixture({
+        id: 'player-away-wr',
+        displayName: 'Chris Catch',
+        position: 'WR',
+        positionGroup: 'WR',
+      }),
+      targets: 8,
+      receptions: 6,
+      yards: 88,
+      touchdowns: 1,
+      longest: 34,
+    },
+  ],
+  defense: [],
+  kicking: [],
+  punting: [],
+  returns: [],
+};
+
+export const homePlayerStatsFixture: GamePlayerStatsByCategory = {
+  passing: [
+    {
+      player: homeQuarterbackFixture,
+      completions: 21,
+      attempts: 38,
+      yards: 144,
+      touchdowns: 1,
+      interceptions: 2,
+      sacksSuffered: 4,
+      sackYardsLost: 40,
+    },
+  ],
+  rushing: [],
+  receiving: [],
+  defense: [
+    {
+      player: playerFixture({
+        id: 'player-home-lb',
+        displayName: 'Pat Tackler',
+        position: 'LB',
+        positionGroup: 'LB',
+      }),
+      tacklesTotal: 9,
+      tacklesSolo: 6,
+      sacks: 1,
+      tacklesForLoss: 2,
+      passesDefended: 1,
+      fumbles: 0,
+      fumbleRecoveries: 1,
+      touchdowns: 0,
+    },
+  ],
+  kicking: [
+    {
+      player: playerFixture({
+        id: 'player-home-k',
+        displayName: 'Kelly Kicker',
+        position: 'K',
+        positionGroup: 'K',
+      }),
+      fieldGoalsMade: 2,
+      fieldGoalsAttempted: 3,
+      longestFieldGoal: 47,
+      extraPointsMade: 1,
+      extraPointsAttempted: 1,
+    },
+  ],
+  punting: [],
+  returns: [],
 };
