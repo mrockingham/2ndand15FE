@@ -3,6 +3,7 @@ import CloseRounded from '@mui/icons-material/CloseRounded';
 import FactCheckRounded from '@mui/icons-material/FactCheckRounded';
 import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
+import MonitorHeartRounded from '@mui/icons-material/MonitorHeartRounded';
 import SportsFootballRounded from '@mui/icons-material/SportsFootballRounded';
 import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
 import ArticleRounded from '@mui/icons-material/ArticleRounded';
@@ -53,6 +54,11 @@ export const AdminLayout = () => {
       label: 'News sources',
       path: '/admin/news-sources',
       icon: RssFeedRounded,
+    },
+    {
+      label: 'Data Health',
+      path: '/admin/data-health',
+      icon: MonitorHeartRounded,
     },
     ...(role === 'ADMIN'
       ? [{ label: 'Audit log', path: '/admin/audit', icon: HistoryRounded }]

@@ -75,6 +75,9 @@ const LazyAdminImportPage = lazy(async () => ({
 const LazyAdminAuditPage = lazy(async () => ({
   default: (await import('@/pages/AdminAuditPage')).AdminAuditPage,
 }));
+const LazyAdminDataHealthPage = lazy(async () => ({
+  default: (await import('@/pages/AdminDataHealthPage')).AdminDataHealthPage,
+}));
 const LazyAdminArticlesPage = lazy(async () => ({
   default: (await import('@/pages/AdminArticlesPage')).AdminArticlesPage,
 }));
@@ -223,6 +226,10 @@ export const appRoutes: RouteObject[] = [
               {
                 path: 'news-candidates/:candidateId',
                 element: deferred(<LazyAdminNewsCandidateDetailPage />),
+              },
+              {
+                path: 'data-health',
+                element: deferred(<LazyAdminDataHealthPage />),
               },
               {
                 element: <RequireAdministrativeRole adminOnly />,
