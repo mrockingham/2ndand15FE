@@ -11,6 +11,8 @@ import {
   articleRevisionFixture,
   publicArticleDetailFixture,
   publicArticleFixture,
+  publicHighlightArticleFixture,
+  publicVideoArticleFixture,
 } from '@/test/articleFixtures';
 import {
   apiErrorResponse,
@@ -89,6 +91,70 @@ describe('public News experience', () => {
       expect(
         fetchImplementation.mock.calls.some(([input]) =>
           String(input).includes('cursor=next-article-cursor'),
+        ),
+      ).toBe(true),
+    );
+  });
+
+  it('renders a mixed ARTICLE/VIDEO/HIGHLIGHT feed and filters by content type, including with a team filter', async () => {
+    const user = userEvent.setup();
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = String(input);
+      if (url.includes('/articles/featured')) return Promise.resolve(page([]));
+      if (
+        url.includes('contentType=VIDEO') &&
+        url.includes(`teamId=${billsFixture.id}`)
+      )
+        return Promise.resolve(page([]));
+      if (url.includes('contentType=VIDEO'))
+        return Promise.resolve(page([publicVideoArticleFixture]));
+      return Promise.resolve(
+        page([
+          publicArticleFixture,
+          publicVideoArticleFixture,
+          publicHighlightArticleFixture,
+        ]),
+      );
+    });
+    renderApp('/news', {
+      currentUser: userWithFavoriteFixture,
+      restorationStatus: 'authenticated',
+      fetchImplementation,
+    });
+
+    expect(
+      await screen.findByText(publicArticleFixture.title),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(publicVideoArticleFixture.title),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(publicHighlightArticleFixture.title),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('combobox', { name: 'Content type' }));
+    await user.click(screen.getByRole('option', { name: 'Videos' }));
+    await waitFor(() =>
+      expect(
+        fetchImplementation.mock.calls.some(([input]) =>
+          String(input).includes('contentType=VIDEO'),
+        ),
+      ).toBe(true),
+    );
+    expect(
+      await screen.findByText(publicVideoArticleFixture.title),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(publicArticleFixture.title),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'My team: BUF' }));
+    await waitFor(() =>
+      expect(
+        fetchImplementation.mock.calls.some(
+          ([input]) =>
+            String(input).includes('contentType=VIDEO') &&
+            String(input).includes(`teamId=${billsFixture.id}`),
         ),
       ).toBe(true),
     );

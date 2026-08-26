@@ -32,6 +32,8 @@ import { resolveSelectedPlayAfterRefresh } from '@/features/games/gameCenterSele
 import { isFinalizedGameStatus } from '@/features/games/presentation';
 import { useGamePlaysQuery, useGameStatsQuery } from '@/features/games/queries';
 import type { Game, GameStatus } from '@/features/games/types';
+import { GameMediaSection } from '@/features/gameMedia/components/GameMediaSection';
+import { useGameMediaQuery } from '@/features/gameMedia/queries';
 
 export const GameCenterContent = ({
   gameQuery,
@@ -55,6 +57,7 @@ export const GameCenterContent = ({
     staleTime: statsStaleTime,
     refetchInterval: statsRefetchInterval,
   });
+  const gameMediaQuery = useGameMediaQuery(game.id);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -99,8 +102,9 @@ export const GameCenterContent = ({
     ) {
       playsQuery.refetch();
       statsQuery.refetch();
+      gameMediaQuery.refetch();
     }
-  }, [game.status, playsQuery, statsQuery]);
+  }, [game.status, playsQuery, statsQuery, gameMediaQuery]);
 
   const playsUnavailable = playsQuery.isSuccess && plays.length === 0;
   const statsUnavailable =
@@ -127,6 +131,7 @@ export const GameCenterContent = ({
         gameQuery.refetch(),
         playsQuery.refetch(),
         statsQuery.refetch(),
+        gameMediaQuery.refetch(),
       ]);
     } finally {
       setIsRefreshing(false);
@@ -164,6 +169,7 @@ export const GameCenterContent = ({
             hasError={hasErrorAny}
           />
         ) : null}
+        <GameMediaSection game={game} query={gameMediaQuery} />
         <Divider />
 
         {activeSection === 'overview' ? (

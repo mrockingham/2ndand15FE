@@ -5,6 +5,7 @@ import {
   formatGameClock,
   formatYardLine,
   getGameDisplayLabel,
+  getGameHighlightsDisplayState,
   getScoreboardStatusLine,
   isFinalizedGameStatus,
   isHallOfFameGame,
@@ -12,6 +13,11 @@ import {
 import { formatGameDateTime } from '@/features/games/utils/dateTime';
 import {
   gameFixture,
+  gameHighlightsAvailableFixture,
+  gameHighlightsPendingFixture,
+  gameHighlightsProviderErrorFixture,
+  gameHighlightsUnavailableFixture,
+  gameHighlightsUnknownFixture,
   hallOfFameGameFixture,
   preseasonWeekOneFixture,
 } from '@/test/gameFixtures';
@@ -159,5 +165,107 @@ describe('countNewPlaysSince', () => {
     expect(countNewPlaysSince(newestFirst, 1)).toBe(2);
     expect(countNewPlaysSince(newestFirst, 3)).toBe(0);
     expect(countNewPlaysSince(newestFirst, 0)).toBe(3);
+  });
+});
+
+describe('getGameHighlightsDisplayState', () => {
+  it('shows cards for AVAILABLE with highlights regardless of game status', () => {
+    expect(
+      getGameHighlightsDisplayState(
+        'FINAL',
+        gameHighlightsAvailableFixture,
+        false,
+      ),
+    ).toBe('cards');
+    expect(
+      getGameHighlightsDisplayState(
+        'IN_PROGRESS',
+        gameHighlightsAvailableFixture,
+        false,
+      ),
+    ).toBe('cards');
+  });
+
+  it('hides the module for any non-FINAL status without AVAILABLE highlights', () => {
+    const statuses = [
+      'SCHEDULED',
+      'PREGAME',
+      'IN_PROGRESS',
+      'HALFTIME',
+      'POSTPONED',
+      'CANCELED',
+      'SUSPENDED',
+    ] as const;
+    for (const status of statuses) {
+      expect(
+        getGameHighlightsDisplayState(
+          status,
+          gameHighlightsUnknownFixture,
+          false,
+        ),
+      ).toBe('hidden');
+      expect(
+        getGameHighlightsDisplayState(
+          status,
+          gameHighlightsPendingFixture,
+          false,
+        ),
+      ).toBe('hidden');
+    }
+  });
+
+  it('shows a checking state only for FINAL + PENDING', () => {
+    expect(
+      getGameHighlightsDisplayState(
+        'FINAL',
+        gameHighlightsPendingFixture,
+        false,
+      ),
+    ).toBe('checking');
+  });
+
+  it('hides FINAL + UNAVAILABLE and FINAL + UNKNOWN rather than showing an empty panel', () => {
+    expect(
+      getGameHighlightsDisplayState(
+        'FINAL',
+        gameHighlightsUnavailableFixture,
+        false,
+      ),
+    ).toBe('hidden');
+    expect(
+      getGameHighlightsDisplayState(
+        'FINAL',
+        gameHighlightsUnknownFixture,
+        false,
+      ),
+    ).toBe('hidden');
+  });
+
+  it('shows a sanitized unavailable state for FINAL + PROVIDER_ERROR', () => {
+    expect(
+      getGameHighlightsDisplayState(
+        'FINAL',
+        gameHighlightsProviderErrorFixture,
+        false,
+      ),
+    ).toBe('unavailable');
+  });
+
+  it('treats a FINAL query failure with no data the same as provider error', () => {
+    expect(getGameHighlightsDisplayState('FINAL', undefined, true)).toBe(
+      'unavailable',
+    );
+  });
+
+  it('hides while a FINAL query is still pending with no data and no error', () => {
+    expect(getGameHighlightsDisplayState('FINAL', undefined, false)).toBe(
+      'hidden',
+    );
+  });
+
+  it('hides a non-FINAL query failure rather than surfacing an error', () => {
+    expect(getGameHighlightsDisplayState('IN_PROGRESS', undefined, true)).toBe(
+      'hidden',
+    );
   });
 });

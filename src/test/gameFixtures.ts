@@ -1,4 +1,8 @@
-import type { Game } from '@/features/games/types';
+import type {
+  Game,
+  GameHighlight,
+  GameHighlightsResult,
+} from '@/features/games/types';
 
 export const awayGameTeamFixture = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -100,4 +104,77 @@ export const preseasonWeekOneFixture: Game = {
   venue: { name: 'Week One Stadium', city: 'Charlotte' },
   broadcastNetwork: 'ESPN',
   isNeutralSite: false,
+};
+
+export const gameHighlightFixture: GameHighlight = {
+  id: 'aaaaaaaa-1111-4aaa-8aaa-aaaaaaaaaaaa',
+  title: 'Bills vs. Dolphins | Game Highlights',
+  description: null,
+  highlightType: 'GAME',
+  thumbnailUrl: 'https://static.example.com/highlight-thumb.jpg',
+  canonicalUrl: 'https://www.youtube.com/watch?v=canonical',
+  embedUrl: 'https://www.youtube.com/embed/canonical',
+  canEmbed: true,
+  publishedAt: '2026-12-20T21:45:00.000Z',
+};
+
+export const secondGameHighlightFixture: GameHighlight = {
+  ...gameHighlightFixture,
+  id: 'aaaaaaaa-2222-4aaa-8aaa-aaaaaaaaaaaa',
+  title: 'Bills vs. Dolphins | Postgame Reaction',
+  canonicalUrl: 'https://www.youtube.com/watch?v=canonical-2',
+  embedUrl: 'https://www.youtube.com/embed/canonical-2',
+};
+
+export const thirdGameHighlightFixture: GameHighlight = {
+  ...gameHighlightFixture,
+  id: 'aaaaaaaa-3333-4aaa-8aaa-aaaaaaaaaaaa',
+  title: 'Bills vs. Dolphins | Locker Room',
+  canonicalUrl: 'https://www.youtube.com/watch?v=canonical-3',
+  embedUrl: 'https://www.youtube.com/embed/canonical-3',
+};
+
+export const nonEmbeddableGameHighlightFixture: GameHighlight = {
+  ...gameHighlightFixture,
+  id: 'aaaaaaaa-4444-4aaa-8aaa-aaaaaaaaaaaa',
+  title: 'Bills vs. Dolphins | Not Embeddable',
+  canEmbed: false,
+};
+
+export const embeddableWithoutEmbedUrlFixture: GameHighlight = {
+  ...gameHighlightFixture,
+  id: 'aaaaaaaa-5555-4aaa-8aaa-aaaaaaaaaaaa',
+  title: 'Bills vs. Dolphins | Missing Embed URL',
+  canEmbed: true,
+  embedUrl: null,
+};
+
+export const gameHighlightsAvailableFixture: GameHighlightsResult = {
+  gameId: gameFixture.id,
+  coverage: 'AVAILABLE',
+  highlights: [gameHighlightFixture],
+};
+
+export const gameHighlightsPendingFixture: GameHighlightsResult = {
+  gameId: gameFixture.id,
+  coverage: 'PENDING',
+  highlights: [],
+};
+
+export const gameHighlightsUnavailableFixture: GameHighlightsResult = {
+  gameId: gameFixture.id,
+  coverage: 'UNAVAILABLE',
+  highlights: [],
+};
+
+export const gameHighlightsUnknownFixture: GameHighlightsResult = {
+  gameId: gameFixture.id,
+  coverage: 'UNKNOWN',
+  highlights: [],
+};
+
+export const gameHighlightsProviderErrorFixture: GameHighlightsResult = {
+  gameId: gameFixture.id,
+  coverage: 'PROVIDER_ERROR',
+  highlights: [],
 };

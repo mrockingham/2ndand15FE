@@ -52,7 +52,17 @@ interface FetchCounts {
   game: number;
   plays: number;
   stats: number;
+  highlights: number;
 }
+
+const mediaNone = (game: Game) =>
+  json({
+    data: {
+      gameId: game.id,
+      displayMode: 'NONE',
+      curatedVideos: [],
+    },
+  });
 
 const buildFetch = (
   game: Game,
@@ -60,11 +70,13 @@ const buildFetch = (
     plays = [],
     statsResponse = statsNotFound(),
     playsResponse,
+    mediaResponse,
     counts,
   }: {
     readonly plays?: readonly GamePlay[];
     readonly statsResponse?: Response;
     readonly playsResponse?: Response;
+    readonly mediaResponse?: Response;
     readonly counts?: FetchCounts;
   } = {},
 ) =>
@@ -77,6 +89,10 @@ const buildFetch = (
     if (url.pathname.endsWith('/stats')) {
       if (counts) counts.stats += 1;
       return Promise.resolve(statsResponse.clone());
+    }
+    if (url.pathname.endsWith('/media')) {
+      if (counts) counts.highlights += 1;
+      return Promise.resolve((mediaResponse ?? mediaNone(game)).clone());
     }
     if (counts) counts.game += 1;
     return Promise.resolve(json({ data: game }));
@@ -215,7 +231,7 @@ describe('Game Center', () => {
       awayScore: 24,
       homeScore: 20,
     };
-    const counts: FetchCounts = { game: 0, plays: 0, stats: 0 };
+    const counts: FetchCounts = { game: 0, plays: 0, stats: 0, highlights: 0 };
     renderApp(`/games/${finalGame.id}`, {
       fetchImplementation: buildFetch(finalGame, {
         plays: gamePlaysFixture,
@@ -230,6 +246,7 @@ describe('Game Center', () => {
     await waitFor(() => expect(counts.game).toBe(1));
     await waitFor(() => expect(counts.plays).toBe(1));
     await waitFor(() => expect(counts.stats).toBe(1));
+    await waitFor(() => expect(counts.highlights).toBe(1));
 
     const turnoverRow = (
       await screen.findByText(turnoverPlayFixture.description)
@@ -241,6 +258,7 @@ describe('Game Center', () => {
     await waitFor(() => expect(counts.game).toBe(2));
     await waitFor(() => expect(counts.plays).toBe(2));
     await waitFor(() => expect(counts.stats).toBe(2));
+    await waitFor(() => expect(counts.highlights).toBe(2));
 
     const refreshedTurnoverRow = (
       await screen.findByText(turnoverPlayFixture.description)
@@ -281,7 +299,7 @@ describe('Game Center', () => {
       quarter: 1,
       clock: '10:00',
     };
-    const counts: FetchCounts = { game: 0, plays: 0, stats: 0 };
+    const counts: FetchCounts = { game: 0, plays: 0, stats: 0, highlights: 0 };
 
     vi.useFakeTimers();
     try {
@@ -303,6 +321,7 @@ describe('Game Center', () => {
       expect(counts.game).toBe(1);
       expect(counts.plays).toBe(1);
       expect(counts.stats).toBe(1);
+      expect(counts.highlights).toBe(1);
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(15_000);
@@ -310,6 +329,10 @@ describe('Game Center', () => {
       expect(counts.game).toBe(2);
       expect(counts.plays).toBe(2);
       expect(counts.stats).toBe(1);
+      // Game media never gets a live-polling interval -- it's fetched once
+      // on mount and otherwise only refetched via the manual Refresh button
+      // or the LIVE -> FINAL transition, never on a 15s/30s ticker.
+      expect(counts.highlights).toBe(1);
 
       await act(async () => {
         await vi.advanceTimersByTimeAsync(15_000);
@@ -317,6 +340,7 @@ describe('Game Center', () => {
       expect(counts.game).toBe(3);
       expect(counts.plays).toBe(3);
       expect(counts.stats).toBe(2);
+      expect(counts.highlights).toBe(1);
     } finally {
       vi.useRealTimers();
     }
@@ -331,7 +355,7 @@ describe('Game Center', () => {
       quarter: 4,
       clock: '02:00',
     };
-    const counts: FetchCounts = { game: 0, plays: 0, stats: 0 };
+    const counts: FetchCounts = { game: 0, plays: 0, stats: 0, highlights: 0 };
     const fetchImplementation = vi.fn<typeof fetch>((input) => {
       const url = new URL(String(input));
       if (url.pathname.endsWith('/plays')) {
@@ -343,6 +367,10 @@ describe('Game Center', () => {
         return Promise.resolve(
           json(statsBody(awayTeamStatsFixture, homeTeamStatsFixture)),
         );
+      }
+      if (url.pathname.endsWith('/media')) {
+        counts.highlights += 1;
+        return Promise.resolve(mediaNone(currentGame));
       }
       counts.game += 1;
       return Promise.resolve(json({ data: currentGame }));
@@ -360,6 +388,7 @@ describe('Game Center', () => {
       expect(counts.game).toBe(1);
       expect(counts.plays).toBe(1);
       expect(counts.stats).toBe(1);
+      expect(counts.highlights).toBe(1);
 
       currentGame = { ...currentGame, status: 'FINAL', clock: '0:00' };
 
@@ -373,6 +402,9 @@ describe('Game Center', () => {
       // both endpoints have been refetched at least once more.
       expect(counts.plays).toBeGreaterThanOrEqual(2);
       expect(counts.stats).toBeGreaterThanOrEqual(2);
+      // Game media has no live-polling interval, so the transition refetch
+      // is the only source of a second call -- exactly 2, never fuzzy.
+      expect(counts.highlights).toBe(2);
       const playsAtTransition = counts.plays;
       const statsAtTransition = counts.stats;
       expect(screen.getByText('Final')).toBeInTheDocument();
@@ -383,6 +415,7 @@ describe('Game Center', () => {
       expect(counts.game).toBe(2);
       expect(counts.plays).toBe(playsAtTransition);
       expect(counts.stats).toBe(statsAtTransition);
+      expect(counts.highlights).toBe(2);
     } finally {
       vi.useRealTimers();
     }

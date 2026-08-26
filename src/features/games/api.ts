@@ -1,6 +1,7 @@
 import {
   EMPTY_GAME_PLAYER_STATS,
   type Game,
+  type GameHighlightsResult,
   type GameListFilters,
   type GameListPage,
   type GamePlayerStatsByCategory,
@@ -153,4 +154,16 @@ export const getGameStats = async (
     }
     throw error;
   }
+};
+
+export const getGameHighlights = async (
+  client: ApiClient,
+  gameId: string,
+  signal?: AbortSignal,
+): Promise<GameHighlightsResult> => {
+  const response = await client.request<DataResponse<GameHighlightsResult>>(
+    `/games/${encodeURIComponent(gameId)}/highlights`,
+    { method: 'GET', signal },
+  );
+  return response.data;
 };

@@ -1,6 +1,7 @@
 import type { AdminArticleDetail } from '@/features/articles/types';
 
 export type NewsSourceKind = 'RSS' | 'ATOM' | 'MANUAL_ONLY';
+export type NewsContentType = 'ARTICLE' | 'VIDEO' | 'HIGHLIGHT';
 export type NewsSourceStatus = 'ACTIVE' | 'PAUSED' | 'DISABLED' | 'ERROR';
 export type NewsCandidateStatus =
   'NEW' | 'REVIEWING' | 'SAVED' | 'CONVERTED' | 'DISMISSED';
@@ -12,6 +13,7 @@ export interface NewsSource {
   readonly name: string;
   readonly slug: string;
   readonly kind: NewsSourceKind;
+  readonly contentType: NewsContentType;
   readonly status: NewsSourceStatus;
   readonly feedUrl: string | null;
   readonly siteUrl: string;
@@ -99,6 +101,7 @@ export interface NewsCandidateSource {
   readonly name: string;
   readonly slug: string;
   readonly publisherName: string;
+  readonly isOfficialTeam: boolean;
 }
 
 export interface SuggestedTeam {
@@ -115,6 +118,8 @@ export interface NewsCandidateListItem {
   readonly canonicalUrl: string;
   readonly headline: string;
   readonly sourceAuthor: string | null;
+  readonly contentType: NewsContentType;
+  readonly thumbnailUrl: string | null;
   readonly sourcePublishedAt: string | null;
   readonly discoveredAt: string;
   readonly status: NewsCandidateStatus;

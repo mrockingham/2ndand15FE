@@ -112,6 +112,13 @@ const LazyAdminNewsCandidateDetailPage = lazy(async () => ({
   default: (await import('@/pages/AdminNewsCandidateDetailPage'))
     .AdminNewsCandidateDetailPage,
 }));
+const LazyAdminGameMediaPage = lazy(async () => ({
+  default: (await import('@/pages/AdminGameMediaPage')).AdminGameMediaPage,
+}));
+const LazyAdminGameMediaDetailPage = lazy(async () => ({
+  default: (await import('@/pages/AdminGameMediaDetailPage'))
+    .AdminGameMediaDetailPage,
+}));
 
 const deferred = (element: ReactNode) => (
   <Suspense fallback={<RouteLoading />}>{element}</Suspense>
@@ -230,6 +237,14 @@ export const appRoutes: RouteObject[] = [
               {
                 path: 'data-health',
                 element: deferred(<LazyAdminDataHealthPage />),
+              },
+              {
+                path: 'game-media',
+                element: deferred(<LazyAdminGameMediaPage />),
+              },
+              {
+                path: 'game-media/:gameId',
+                element: deferred(<LazyAdminGameMediaDetailPage />),
               },
               {
                 element: <RequireAdministrativeRole adminOnly />,

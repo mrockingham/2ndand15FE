@@ -5,6 +5,7 @@ import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
 import MonitorHeartRounded from '@mui/icons-material/MonitorHeartRounded';
 import SportsFootballRounded from '@mui/icons-material/SportsFootballRounded';
+import VideoLibraryRounded from '@mui/icons-material/VideoLibraryRounded';
 import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
 import ArticleRounded from '@mui/icons-material/ArticleRounded';
 import InboxRounded from '@mui/icons-material/InboxRounded';
@@ -59,6 +60,11 @@ export const AdminLayout = () => {
       label: 'Data Health',
       path: '/admin/data-health',
       icon: MonitorHeartRounded,
+    },
+    {
+      label: 'Game Media',
+      path: '/admin/game-media',
+      icon: VideoLibraryRounded,
     },
     ...(role === 'ADMIN'
       ? [{ label: 'Audit log', path: '/admin/audit', icon: HistoryRounded }]

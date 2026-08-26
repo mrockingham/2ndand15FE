@@ -62,6 +62,52 @@ The manual "Refresh" button still refetches the game, plays, and stats together 
 
 `[ Plays ]` and `[ Team Stats ]` only appear together when both have content. If only one of the two has data, it renders directly with no tab control. If neither has data (e.g. tonight's pregame Eagles–Patriots matchup before kickoff), a single factual Overview message renders instead — never an empty giant box.
 
+## Highlights (M31B / M31C)
+
+`GET /games/:gameId/highlights` (`useGameHighlightsQuery`, `gameKeys.highlights(gameId)`) surfaces game-linked highlights that the backend's FINAL-reconciliation lifecycle (M31/M31A) automatically syncs from Highlightly during `FINAL_IMMEDIATE`/`FINAL_10`/`FINAL_60` — never polled by the frontend, and never called live from the browser; this endpoint only ever reads what the backend already persisted. The response DTO is provider-neutral: `{ gameId, coverage, highlights: [{ id, title, description, highlightType, thumbnailUrl, canonicalUrl, embedUrl, canEmbed, publishedAt }] }` — no provider name or provider ID is ever exposed, matching every other public game endpoint's convention.
+
+**Inline playback is entirely backend-gated (M31C).** `canEmbed` is computed server-side (HTTPS validation, host allowlist, provider geo-restriction check) and is the _only_ signal `GameHighlightCard` uses to decide between an inline player and a canonical-link-only card — `highlight.canEmbed && highlight.embedUrl !== null`. The frontend never inspects `embedUrl`'s host, parses a video ID out of `canonicalUrl`, or reconstructs an embed URL itself; a highlight with `canEmbed: false` (or, defensively, `canEmbed: true` with a null `embedUrl`) renders exactly like the original M31B canonical-only card, byte-for-byte — clicking "Watch Highlight" opens `canonicalUrl` in a new tab (`target="_blank" rel="noopener noreferrer"`).
+
+**Lazy iframe, one at a time.** An eligible card initially renders identically to a non-eligible one (thumbnail + play icon), plus a keyboard-focusable `ButtonBase` labeled `Play highlight: {title}` and a separate real link labeled `Watch on YouTube: {title}` pointing at `canonicalUrl` — no iframe exists in the DOM until the user clicks Play. Clicking it mounts `GameHighlightPlayer` (a 16:9 `<iframe src={embedUrl} title={highlight.title}>`, standard `allow`/`allowFullScreen`, no custom fullscreen or branding changes) in place of the thumbnail; the "Watch on YouTube" link stays visible throughout playback as a fallback (embed failure, browser restrictions, or user preference). `GameHighlightsSection` holds a single `activeHighlightId`, so starting a second highlight's player unmounts the first — never two iframes at once, and no player is ever pre-mounted for cards the user hasn't activated. No `<video>` element, no HLS, no stream fetching, and no YouTube page scraping anywhere in this path — the provider's own embed URL is the entire player.
+
+**No CSP change needed.** This frontend has no Content-Security-Policy anywhere (no meta tag, no host-level headers config) — the backend's `helmet()` only covers its own JSON API responses, not the served frontend page — so there was nothing to loosen for the YouTube iframe to load.
+
+**`GameHighlightsSection`** (`src/features/games/components/`), placed directly after the scoreboard/`FreshnessIndicator` and before the Plays/Stats tabs, decides what to show from `game.status` + the query's `coverage`/error state via the pure, independently-tested `getGameHighlightsDisplayState` (`presentation.ts`):
+
+| Condition                                                                      | UI                                                                                                                     |
+| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| `coverage: 'AVAILABLE'` with 1+ highlights                                     | Highlight cards (any game status — an early result before FINAL is never discarded; backend coverage is authoritative) |
+| `FINAL` + `coverage: 'PENDING'`                                                | "Highlights are being checked."                                                                                        |
+| `FINAL` + `coverage: 'PROVIDER_ERROR'`, or a query failure with no cached data | "Highlights are temporarily unavailable." (no provider name, no status code)                                           |
+| `FINAL` + `coverage: 'UNAVAILABLE'` or `'UNKNOWN'`                             | Section hidden — no large empty panel                                                                                  |
+| Not `FINAL`, and not the early-`AVAILABLE` case                                | Section hidden entirely — no "coming soon"                                                                             |
+
+`PENDING`/`PROVIDER_ERROR` are keyed on the literal `FINAL` status, not `isFinalizedGameStatus` — `POSTPONED`/`CANCELED`/`SUSPENDED` games never enter the highlight sync lifecycle at all, so they always resolve to hidden. The section renders nothing (no forever-spinner) while a `FINAL` game's highlights query is still pending with no data and no error yet.
+
+**No dedicated polling.** Highlights follows the exact plays/stats model: `refetchOnMount: 'always'`, included in the manual Refresh button's `Promise.all`, and included in the existing one-time LIVE→FINAL transition refetch — no new interval function was added to `gameCenterPolling.ts`. This is intentional: the public read is cheap (DB-only, never triggers a Highlightly call), and a user who wants the latest state during the 10/60-minute reconciliation window already has the Refresh button, same as they would for stats.
+
+**Multiple highlights.** The frontend never assumes exactly one highlight per game — `GameHighlightsSection` renders every item the backend returns, in backend order, in a responsive grid (`repeat(auto-fit, minmax(260px, 1fr))` on `sm`+, single column on mobile). No carousel.
+
+**Missing/failed thumbnail.** `GameHighlightThumbnail` falls back to the away/home `TeamHelmet` matchup (generic helmets, never official logos) plus a play icon and a real-text `HIGHLIGHT` label — never a broken-image icon — both when `thumbnailUrl` is null and when the image fails to load.
+
+**Preseason-provisional behavior.** Real current data (verified against the SEA @ TEN and PHI @ NE 2026 preseason games through both a direct DB read and the live public endpoint) returns exactly one `GAME`-type highlight per game with a null `description`, a null `publishedAt`, and `canEmbed: true` (a `www.youtube.com` embed host in both cases). Nothing in the frontend hard-codes any of this — `GameHighlightsSection` maps over an arbitrary-length array, `GameHighlightCard` only renders the description/published-time lines when they're non-null reserving no empty space, and playback eligibility is re-read from `canEmbed` per highlight rather than assumed for the whole game. Once the regular season begins, the backend may return more highlights per game, richer categories, populated descriptions/timestamps, or a mix of embeddable and non-embeddable highlights without requiring a frontend change.
+
+## Game media (curated videos, M32B)
+
+`GET /games/:gameId/media` (`useGameMediaQuery`, `gameMediaKeys.detail(gameId)`) is the single source of truth for what Game Center's media section renders. The backend-computed `displayMode` (`CURATED` | `AUTOMATIC` | `NONE`) is authoritative — the frontend never infers it from array lengths or combines curated and automatic data itself. `GameMediaSection` (`src/features/gameMedia/components/`) replaces the direct M31B/M31C `useGameHighlightsQuery` call in `GameCenterContent` and branches on `displayMode`:
+
+- `CURATED` renders `CuratedMediaPlayer`: a large 16:9 primary player (position 0, the admin-configured primary) plus a secondary selector list for the remaining videos (desktop: right-hand rail; mobile: horizontal wrapped row). With exactly one curated video, no selector rail renders at all.
+- `AUTOMATIC` renders the existing `GameHighlightsSection` completely unchanged, fed by a second, conditionally-enabled `useGameHighlightsQuery` call — the _mode decision_ still comes from `/media`, only the _rendering data_ for this branch comes from the pre-existing `/games/:gameId/highlights` endpoint.
+- `NONE` renders nothing, identical to the prior empty behavior.
+
+**Curating a game never deletes its automatic Highlightly highlight.** Removing every curated video automatically restores `AUTOMATIC` display on the next fetch — the backend, not the frontend, owns this fallback.
+
+**Viewer video selection is entirely local.** Clicking a secondary video in `CuratedMediaSelectorList` swaps the primary player for that browser session only — no backend call, no reorder request, and no change to the admin-configured primary. Only one iframe is ever mounted at a time (switching unmounts the previous one, same one-at-a-time discipline as M31C's highlight cards). The primary iframe's `src` is always the backend `embedUrl` verbatim — never parsed, reconstructed, or user-supplied.
+
+`GameMediaSection`'s query is included in the manual Refresh button's `Promise.all` and the one-time LIVE → FINAL transition refetch, exactly where the old `highlightsQuery` was.
+
+Admin curation happens at `/admin/game-media` (list, with season/season-type/week filters) and `/admin/game-media/:gameId` (detail — add/edit/remove/reorder up to 4 curated videos; see [admin-usage.md](admin-usage.md)).
+
 ## Exclusions
 
-This milestone adds no WebSockets, server-sent events, backend changes, direct Highlightly (or any other provider) calls from the frontend, player-level live stats, player tracking, exact replay, drive inference, fantasy, betting, or provider-specific code. Cross-tab synchronization (e.g. `BroadcastChannel`) is also out of scope — multiple open Game Center tabs simply poll independently.
+This milestone adds no WebSockets, server-sent events, direct Highlightly (or any other provider) calls from the frontend, in-app video playback/embedding, player-level live stats, player tracking, exact replay, drive inference, fantasy, betting, or provider-specific code. Cross-tab synchronization (e.g. `BroadcastChannel`) is also out of scope — multiple open Game Center tabs simply poll independently.

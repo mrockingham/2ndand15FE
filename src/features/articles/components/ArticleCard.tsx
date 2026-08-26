@@ -11,6 +11,13 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 
 import { ArticleHero } from '@/features/articles/components/ArticleHero';
+import { MediaThumbnail } from '@/features/articles/components/MediaThumbnail';
+import {
+  contentTypeChipColor,
+  contentTypeLabel,
+  formatPublishedAgo,
+  watchActionLabel,
+} from '@/features/articles/presentation';
 import type { PublicArticleListItem } from '@/features/articles/types';
 
 export const ArticleCard = ({
@@ -25,6 +32,8 @@ export const ArticleCard = ({
   const favorite = favoriteTeamId
     ? article.teams.some((team) => team.id === favoriteTeamId)
     : false;
+  const mediaContentType = contentTypeLabel(article.contentType);
+  const isMedia = mediaContentType !== null;
   return (
     <Card
       variant="outlined"
@@ -33,7 +42,16 @@ export const ArticleCard = ({
         borderColor: favorite ? 'primary.main' : undefined,
       }}
     >
-      <ArticleHero url={article.heroImageUrl} alt={article.heroImageAlt} />
+      {isMedia ? (
+        <MediaThumbnail
+          thumbnailUrl={article.mediaThumbnailUrl}
+          alt={article.title}
+          contentType={mediaContentType}
+          team={article.teams[0]}
+        />
+      ) : (
+        <ArticleHero url={article.heroImageUrl} alt={article.heroImageAlt} />
+      )}
       <CardContent>
         <Stack spacing={1.25}>
           <Stack
@@ -42,7 +60,18 @@ export const ArticleCard = ({
             useFlexGap
             sx={{ flexWrap: 'wrap' }}
           >
-            <Chip size="small" label={article.type} />
+            {isMedia ? (
+              <Chip
+                size="small"
+                color={contentTypeChipColor(article.contentType)}
+                label={mediaContentType}
+              />
+            ) : (
+              <Chip size="small" label={article.type} />
+            )}
+            {article.sourceIsOfficialTeam ? (
+              <Chip size="small" variant="outlined" label="Official Team" />
+            ) : null}
             {article.isFeatured ? (
               <Chip size="small" color="primary" label="Featured" />
             ) : null}
@@ -64,7 +93,9 @@ export const ArticleCard = ({
             <Typography color="text.secondary">{article.summary}</Typography>
           ) : null}
           <Typography variant="caption">
-            Published {new Date(article.publishedAt).toLocaleString()}
+            {isMedia
+              ? formatPublishedAgo(article.publishedAt)
+              : `Published ${new Date(article.publishedAt).toLocaleString()}`}
           </Typography>
           {article.teams.length ? (
             <Typography variant="body2">
@@ -73,7 +104,20 @@ export const ArticleCard = ({
           ) : (
             <Typography variant="body2">League-wide</Typography>
           )}
-          {article.type === 'CURATED' && article.sourceUrl ? (
+          {isMedia && article.sourceUrl ? (
+            <Button
+              component="a"
+              href={article.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              size="small"
+              endIcon={<LaunchRounded />}
+              sx={{ alignSelf: 'flex-start' }}
+            >
+              {watchActionLabel(mediaContentType, article.sourceName)}
+            </Button>
+          ) : null}
+          {!isMedia && article.type === 'CURATED' && article.sourceUrl ? (
             <Button
               component="a"
               href={article.sourceUrl}

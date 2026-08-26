@@ -1,6 +1,7 @@
 export type ArticleType = 'ORIGINAL' | 'CURATED' | 'ANNOUNCEMENT';
 export type ArticleStatus =
   'DRAFT' | 'SCHEDULED' | 'PUBLISHED' | 'UNPUBLISHED' | 'ARCHIVED';
+export type ArticleContentType = 'ARTICLE' | 'VIDEO' | 'HIGHLIGHT';
 
 export interface ArticleTeam {
   readonly id: string;
@@ -14,9 +15,12 @@ export interface PublicArticleListItem {
   readonly type: ArticleType;
   readonly title: string;
   readonly summary: string | null;
+  readonly contentType: ArticleContentType;
+  readonly mediaThumbnailUrl: string | null;
   readonly sourceName: string | null;
   readonly sourceUrl: string | null;
   readonly sourcePublishedAt: string | null;
+  readonly sourceIsOfficialTeam: boolean;
   readonly heroImageUrl: string | null;
   readonly heroImageAlt: string | null;
   readonly isFeatured: boolean;
@@ -40,6 +44,8 @@ export interface AdminArticleListItem {
   readonly version: number;
   readonly title: string;
   readonly summary: string | null;
+  readonly contentType: ArticleContentType;
+  readonly mediaThumbnailUrl: string | null;
   readonly isFeatured: boolean;
   readonly featuredPriority: number | null;
   readonly publishedAt: string | null;
@@ -54,6 +60,7 @@ export interface AdminArticleDetail extends AdminArticleListItem {
   readonly sourceName: string | null;
   readonly sourceUrl: string | null;
   readonly sourcePublishedAt: string | null;
+  readonly sourceIsOfficialTeam: boolean;
   readonly heroImageUrl: string | null;
   readonly heroImageAlt: string | null;
   readonly heroImageAttribution: string | null;
@@ -108,6 +115,7 @@ export interface PublicArticleFilters {
   readonly limit?: number;
   readonly cursor?: string;
   readonly type?: ArticleType;
+  readonly contentType?: ArticleContentType;
   readonly teamId?: string;
   readonly team?: string;
   readonly featured?: boolean;
@@ -120,6 +128,7 @@ export interface AdminArticleFilters {
   readonly cursor?: string;
   readonly status?: ArticleStatus;
   readonly type?: ArticleType;
+  readonly contentType?: ArticleContentType;
   readonly teamId?: string;
   readonly featured?: boolean;
   readonly authorId?: string;

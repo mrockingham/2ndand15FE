@@ -1,6 +1,7 @@
 import { formatGameDateTime } from '@/features/games/utils/dateTime';
 import type {
   Game,
+  GameHighlightsResult,
   GamePlay,
   GameStatus,
   SeasonType,
@@ -134,4 +135,35 @@ export const formatFreshnessAge = (ageMs: number): string => {
 export const formatYardLine = (yardLine: number) => {
   if (yardLine === 50) return '50';
   return yardLine < 50 ? `Own ${yardLine}` : `Opp ${100 - yardLine}`;
+};
+
+export type GameHighlightsDisplayState =
+  'cards' | 'checking' | 'unavailable' | 'hidden';
+
+/**
+ * Highlight sync only ever runs during FINAL reconciliation, so PENDING/
+ * PROVIDER_ERROR only mean anything for a FINAL game -- keyed on the literal
+ * `FINAL` status (not `isFinalizedGameStatus`), since POSTPONED/CANCELED/
+ * SUSPENDED games never enter the highlight lifecycle at all. An early
+ * AVAILABLE result (the provider responding before the game even finishes)
+ * is never discarded, regardless of status -- backend coverage is
+ * authoritative.
+ */
+export const getGameHighlightsDisplayState = (
+  status: GameStatus,
+  data: GameHighlightsResult | undefined,
+  hasQueryError: boolean,
+): GameHighlightsDisplayState => {
+  if (
+    data !== undefined &&
+    data.coverage === 'AVAILABLE' &&
+    data.highlights.length > 0
+  ) {
+    return 'cards';
+  }
+  if (status !== 'FINAL') return 'hidden';
+  if (data === undefined) return hasQueryError ? 'unavailable' : 'hidden';
+  if (data.coverage === 'PENDING') return 'checking';
+  if (data.coverage === 'PROVIDER_ERROR') return 'unavailable';
+  return 'hidden';
 };

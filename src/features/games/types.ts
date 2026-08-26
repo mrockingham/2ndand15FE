@@ -244,3 +244,26 @@ export interface GameStatsResult {
   };
   readonly limitations: readonly string[];
 }
+
+export type GameHighlightCoverage =
+  'UNKNOWN' | 'PENDING' | 'AVAILABLE' | 'UNAVAILABLE' | 'PROVIDER_ERROR';
+
+export interface GameHighlight {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string | null;
+  readonly highlightType: string;
+  readonly thumbnailUrl: string | null;
+  readonly canonicalUrl: string | null;
+  readonly embedUrl: string | null;
+  // M31C: backend-computed, authoritative inline-playback eligibility --
+  // never derived client-side from embedUrl/canonicalUrl host sniffing.
+  readonly canEmbed: boolean;
+  readonly publishedAt: string | null;
+}
+
+export interface GameHighlightsResult {
+  readonly gameId: string;
+  readonly coverage: GameHighlightCoverage;
+  readonly highlights: readonly GameHighlight[];
+}

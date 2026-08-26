@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { MediaThumbnail } from '@/features/articles/components/MediaThumbnail';
+import { contentTypeLabel } from '@/features/articles/presentation';
 import { CandidateStatusChip } from '@/features/newsInbox/components/NewsStatusChip';
 import {
   formatInboxDate,
@@ -24,11 +26,20 @@ export const CandidateCard = ({
   readonly candidate: NewsCandidateListItem;
 }) => {
   const hostname = safeHostname(candidate.canonicalUrl);
+  const mediaContentType = contentTypeLabel(candidate.contentType);
   return (
     <Card
       variant="outlined"
       sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
     >
+      {mediaContentType ? (
+        <MediaThumbnail
+          thumbnailUrl={candidate.thumbnailUrl}
+          alt={candidate.headline}
+          contentType={mediaContentType}
+          team={candidate.suggestedTeams[0]}
+        />
+      ) : null}
       <CardContent sx={{ flexGrow: 1 }}>
         <Stack
           direction="row"
@@ -36,7 +47,13 @@ export const CandidateCard = ({
           sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}
         >
           <CandidateStatusChip status={candidate.status} />
+          {mediaContentType ? (
+            <Chip size="small" label={mediaContentType} />
+          ) : null}
           <Typography variant="overline">{candidate.sourceName}</Typography>
+          {candidate.source?.isOfficialTeam ? (
+            <Chip size="small" variant="outlined" label="Official Team" />
+          ) : null}
         </Stack>
         <Typography component="h2" variant="h5" sx={{ mt: 1.5 }}>
           {candidate.headline}

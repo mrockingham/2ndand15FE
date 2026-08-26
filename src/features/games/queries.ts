@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
 import {
   getGame,
+  getGameHighlights,
   getGamePlays,
   getGameStats,
   listGames,
@@ -90,6 +91,22 @@ export const useGameStatsQuery = (
     queryKey: gameKeys.stats(gameId),
     queryFn: ({ signal }) => getGameStats(publicClient, gameId, signal),
     enabled: gameId !== '',
+    staleTime: options.staleTime ?? GAME_CENTER_STALE_TIME,
+    refetchOnMount: 'always',
+    refetchInterval: options.refetchInterval,
+    retry: retryPublicGameQuery,
+  });
+};
+
+export const useGameHighlightsQuery = (
+  gameId: string,
+  options: GameLiveQueryOptions & { readonly enabled?: boolean } = {},
+) => {
+  const { publicClient } = useApiClients();
+  return useQuery({
+    queryKey: gameKeys.highlights(gameId),
+    queryFn: ({ signal }) => getGameHighlights(publicClient, gameId, signal),
+    enabled: gameId !== '' && (options.enabled ?? true),
     staleTime: options.staleTime ?? GAME_CENTER_STALE_TIME,
     refetchOnMount: 'always',
     refetchInterval: options.refetchInterval,

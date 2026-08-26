@@ -1,12 +1,18 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { Game, GameTeam } from '@/features/games/types';
+import type {
+  Game,
+  GameHighlightsResult,
+  GameTeam,
+} from '@/features/games/types';
+import type { GameMediaResult } from '@/features/gameMedia/types';
 import type { Team } from '@/features/teams/types';
 import { currentUserFixture, eaglesFixture } from '@/test/authFixtures';
 import {
   awayGameTeamFixture,
   gameFixture,
+  gameHighlightFixture,
   hallOfFameGameFixture,
   homeGameTeamFixture,
   panthersGameTeamFixture,
@@ -49,8 +55,24 @@ const scheduleFetch = (games = [gameFixture, tbdGameFixture]) =>
     return Promise.reject(new TypeError(`Unexpected request: ${url.pathname}`));
   });
 
-const gameDetailFetch = (game: Game, gameStatus = 200) =>
-  vi.fn<typeof fetch>((input) => {
+const gameDetailFetch = (
+  game: Game,
+  gameStatus = 200,
+  highlights: GameHighlightsResult = {
+    gameId: game.id,
+    coverage: 'UNKNOWN',
+    highlights: [],
+  },
+) => {
+  const media: GameMediaResult = {
+    gameId: game.id,
+    displayMode:
+      highlights.coverage === 'AVAILABLE' && highlights.highlights.length > 0
+        ? 'AUTOMATIC'
+        : 'NONE',
+    curatedVideos: [],
+  };
+  return vi.fn<typeof fetch>((input) => {
     const url = new URL(String(input));
     if (url.pathname.endsWith('/plays'))
       return Promise.resolve(
@@ -66,8 +88,13 @@ const gameDetailFetch = (game: Game, gameStatus = 200) =>
           404,
         ),
       );
+    if (url.pathname.endsWith('/media'))
+      return Promise.resolve(json({ data: media }));
+    if (url.pathname.endsWith('/highlights'))
+      return Promise.resolve(json({ data: highlights }));
     return Promise.resolve(json({ data: game }, gameStatus));
   });
+};
 
 const homeHubResponse = (
   team: Team,
@@ -261,6 +288,100 @@ describe('public Games pages', () => {
     expect(
       await screen.findByRole('heading', { name: 'Game not found' }),
     ).toBeInTheDocument();
+  });
+
+  it('shows Highlights on a FINAL game, plays an embeddable highlight inline, and keeps the scoreboard/plays/stats regression intact', async () => {
+    const finalGame: Game = {
+      ...gameFixture,
+      status: 'FINAL',
+      awayScore: 21,
+      homeScore: 17,
+    };
+    renderApp(`/games/${gameFixture.id}`, {
+      fetchImplementation: gameDetailFetch(finalGame, 200, {
+        gameId: finalGame.id,
+        coverage: 'AVAILABLE',
+        highlights: [gameHighlightFixture],
+      }),
+    });
+    expect(
+      await screen.findByRole('heading', { name: 'Game Center' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('21')).toBeInTheDocument();
+    expect(await screen.findByText('Highlights')).toBeInTheDocument();
+    expect(screen.getByText(gameHighlightFixture.title)).toBeInTheDocument();
+    const externalLink = screen.getByRole('link', {
+      name: `Watch on YouTube: ${gameHighlightFixture.title}`,
+    });
+    expect(externalLink).toHaveAttribute(
+      'href',
+      gameHighlightFixture.canonicalUrl,
+    );
+    expect(document.querySelector('iframe')).toBeNull();
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: `Play highlight: ${gameHighlightFixture.title}`,
+      }),
+    );
+    const iframe = document.querySelector('iframe');
+    expect(iframe).toHaveAttribute('src', gameHighlightFixture.embedUrl);
+    expect(
+      screen.getByRole('link', {
+        name: `Watch on YouTube: ${gameHighlightFixture.title}`,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('keeps the rest of Game Center fully functional when the highlights request fails', async () => {
+    const finalGame: Game = {
+      ...gameFixture,
+      status: 'FINAL',
+      awayScore: 21,
+      homeScore: 17,
+    };
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith('/media'))
+        return Promise.resolve(
+          json({
+            data: {
+              gameId: finalGame.id,
+              displayMode: 'AUTOMATIC',
+              curatedVideos: [],
+            } satisfies GameMediaResult,
+          }),
+        );
+      if (url.pathname.endsWith('/highlights'))
+        return Promise.resolve(
+          json({ error: { code: 'BAD_REQUEST', message: 'boom' } }, 400),
+        );
+      if (url.pathname.endsWith('/plays'))
+        return Promise.resolve(
+          json({
+            data: { gameId: finalGame.id, playCount: 0, plays: [] },
+            meta: { limitations: [] },
+          }),
+        );
+      if (url.pathname.endsWith('/stats'))
+        return Promise.resolve(
+          json(
+            { error: { code: 'GAME_STATS_NOT_FOUND', message: 'Not found' } },
+            404,
+          ),
+        );
+      return Promise.resolve(json({ data: finalGame }));
+    });
+    renderApp(`/games/${gameFixture.id}`, { fetchImplementation });
+    expect(
+      await screen.findByRole('heading', { name: 'Game Center' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('21')).toBeInTheDocument();
+    expect(screen.getByText('17')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Highlights are temporarily unavailable.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('renders the Hall of Fame Game detail as a final neutral-site result', async () => {
