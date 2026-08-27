@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 import { AppHeader } from '@/components/navigation/AppHeader';
 import { MobileNavigation } from '@/components/navigation/MobileNavigation';
+import { SiteFooter } from '@/components/navigation/SiteFooter';
 import { GlobalScoreboardBar } from '@/features/games/components/GlobalScoreboardBar';
 
 const focusedAuthRoutes = new Set([
@@ -68,6 +69,7 @@ export const AppLayout = () => {
         <RouteFocusManager />
         <Outlet />
       </Box>
+      {usesFocusedAuthLayout ? null : <SiteFooter />}
       {usesFocusedAuthLayout ? null : <MobileNavigation />}
     </Box>
   );

@@ -11,7 +11,10 @@ import {
   hallOfFameGameFixture,
   preseasonWeekOneFixture,
 } from '@/test/gameFixtures';
-import { publicHomepageFixture } from '@/test/homepageFixtures';
+import {
+  emptyHomepageInsightsFixture,
+  publicHomepageFixture,
+} from '@/test/homepageFixtures';
 import { playerAttributionFixture } from '@/test/playerFixtures';
 import { renderApp } from '@/test/renderApp';
 import {
@@ -25,14 +28,16 @@ type FailureArea = 'ai' | 'hub' | 'news';
 const homeRequestRouter = ({
   failures = [],
   insights = weeklyInsightsFixture,
+  homepage = publicHomepageFixture,
 }: {
   readonly failures?: readonly FailureArea[];
   readonly insights?: typeof weeklyInsightsFixture;
+  readonly homepage?: typeof publicHomepageFixture;
 } = {}) =>
   vi.fn<typeof fetch>((input) => {
     const url = new URL(String(input));
     if (url.pathname.endsWith('/homepage'))
-      return Promise.resolve(jsonResponse({ data: publicHomepageFixture }));
+      return Promise.resolve(jsonResponse({ data: homepage }));
     if (url.pathname.endsWith(`/games/${hallOfFameGameFixture.id}`))
       return Promise.resolve(jsonResponse({ data: hallOfFameGameFixture }));
     if (url.pathname.endsWith('/games'))
@@ -233,12 +238,17 @@ describe('Home page states', () => {
 });
 
 describe('Home section isolation and presentation', () => {
-  it('keeps games and news available when AI Hub fails', async () => {
+  it('keeps games and news available when the homepage has no published AI Hub insights', async () => {
     renderApp('/', {
-      fetchImplementation: homeRequestRouter({ failures: ['ai'] }),
+      fetchImplementation: homeRequestRouter({
+        homepage: {
+          ...publicHomepageFixture,
+          insights: emptyHomepageInsightsFixture,
+        },
+      }),
     });
     expect(
-      await screen.findByText(/AI Hub insights are temporarily unavailable/i),
+      await screen.findByText(/No published weekly insights are available/i),
     ).toBeInTheDocument();
     expect(screen.getAllByText('Carolina Panthers').length).toBeGreaterThan(0);
     expect(
@@ -253,7 +263,7 @@ describe('Home section isolation and presentation', () => {
     expect(
       await screen.findByText(/News is temporarily unavailable/i),
     ).toBeInTheDocument();
-    expect(screen.getByText('BUF over PHI')).toBeInTheDocument();
+    expect(screen.getAllByText('LAR vs SEA').length).toBeGreaterThan(0);
   });
 
   it('isolates a Team Hub error from prediction and model performance', async () => {

@@ -1,24 +1,39 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import {
+  addHighlightPlacement,
   createHeroSlide,
   deleteHeroSlide,
+  deleteHighlightPlacement,
   getAdminHeroSlide,
   getPublicHomepage,
   listAdminHeroSlides,
+  listAdminHighlights,
   listAdminTopStories,
+  listHighlightCandidates,
   markTopStory,
   reorderHeroSlides,
+  reorderHighlightPlacements,
   reorderTopStories,
   unmarkTopStory,
   updateHeroSlide,
+  updateHighlightSettings,
 } from '@/features/homepage/api';
 import { adminHomepageKeys, homepageKeys } from '@/features/homepage/queryKeys';
 import type {
+  AddHighlightPlacementInput,
   CreateHeroSlideInput,
+  HighlightCandidateListFilters,
   ReorderHeroSlidesInput,
+  ReorderHighlightPlacementsInput,
   ReorderTopStoriesInput,
   UpdateHeroSlideInput,
+  UpdateHighlightSettingsInput,
 } from '@/features/homepage/types';
 import { articleKeys } from '@/features/articles/queryKeys';
 import { useRefreshRoleOnForbidden } from '@/features/admin/queries';
@@ -165,4 +180,94 @@ export const useReorderTopStoriesMutation = () => {
       reorderTopStories(authenticatedClient, input),
     onSuccess: invalidate,
   });
+};
+
+export const useAdminHighlightsQuery = () => {
+  const { authenticatedClient } = useApiClients();
+  const query = useQuery({
+    queryKey: adminHomepageKeys.highlights(),
+    queryFn: ({ signal }) => listAdminHighlights(authenticatedClient, signal),
+    staleTime: 15_000,
+    retry: publicRetry,
+  });
+  useRefreshRoleOnForbidden(query.error);
+  return query;
+};
+
+export const useHighlightCandidatesQuery = (
+  filters: HighlightCandidateListFilters,
+) => {
+  const { authenticatedClient } = useApiClients();
+  const query = useInfiniteQuery({
+    queryKey: adminHomepageKeys.highlightCandidates(filters),
+    queryFn: ({ signal, pageParam }) =>
+      listHighlightCandidates(authenticatedClient, filters, signal, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.nextCursor ?? undefined,
+    staleTime: 15_000,
+    retry: publicRetry,
+  });
+  useRefreshRoleOnForbidden(query.error);
+  return query;
+};
+
+const useInvalidateHighlights = () => {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({
+      queryKey: adminHomepageKeys.highlights(),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: [...adminHomepageKeys.all, 'highlight-candidates'],
+    });
+    void queryClient.invalidateQueries({ queryKey: homepageKeys.all });
+  };
+};
+
+export const useAddHighlightPlacementMutation = () => {
+  const { authenticatedClient } = useApiClients();
+  const invalidate = useInvalidateHighlights();
+  const mutation = useMutation({
+    mutationFn: (input: AddHighlightPlacementInput) =>
+      addHighlightPlacement(authenticatedClient, input),
+    onSuccess: invalidate,
+  });
+  useRefreshRoleOnForbidden(mutation.error);
+  return mutation;
+};
+
+export const useReorderHighlightPlacementsMutation = () => {
+  const { authenticatedClient } = useApiClients();
+  const invalidate = useInvalidateHighlights();
+  const mutation = useMutation({
+    mutationFn: (input: ReorderHighlightPlacementsInput) =>
+      reorderHighlightPlacements(authenticatedClient, input),
+    onSuccess: invalidate,
+  });
+  useRefreshRoleOnForbidden(mutation.error);
+  return mutation;
+};
+
+export const useUpdateHighlightSettingsMutation = () => {
+  const { authenticatedClient } = useApiClients();
+  const invalidate = useInvalidateHighlights();
+  const mutation = useMutation({
+    mutationFn: (input: UpdateHighlightSettingsInput) =>
+      updateHighlightSettings(authenticatedClient, input),
+    onSuccess: invalidate,
+  });
+  useRefreshRoleOnForbidden(mutation.error);
+  return mutation;
+};
+
+export const useDeleteHighlightPlacementMutation = () => {
+  const { authenticatedClient } = useApiClients();
+  const invalidate = useInvalidateHighlights();
+  const mutation = useMutation({
+    mutationFn: (placementId: string) =>
+      deleteHighlightPlacement(authenticatedClient, placementId),
+    onSuccess: invalidate,
+  });
+  useRefreshRoleOnForbidden(mutation.error);
+  return mutation;
 };

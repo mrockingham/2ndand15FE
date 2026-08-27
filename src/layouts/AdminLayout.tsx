@@ -10,6 +10,7 @@ import VideoLibraryRounded from '@mui/icons-material/VideoLibraryRounded';
 import UploadFileRounded from '@mui/icons-material/UploadFileRounded';
 import ArticleRounded from '@mui/icons-material/ArticleRounded';
 import InboxRounded from '@mui/icons-material/InboxRounded';
+import MailOutlineRounded from '@mui/icons-material/MailOutlineRounded';
 import RssFeedRounded from '@mui/icons-material/RssFeedRounded';
 import {
   AppBar,
@@ -67,6 +68,11 @@ export const AdminLayout = () => {
       label: 'Game Media',
       path: '/admin/game-media',
       icon: VideoLibraryRounded,
+    },
+    {
+      label: 'Contact messages',
+      path: '/admin/contact-messages',
+      icon: MailOutlineRounded,
     },
     ...(role === 'ADMIN'
       ? [{ label: 'Audit log', path: '/admin/audit', icon: HistoryRounded }]

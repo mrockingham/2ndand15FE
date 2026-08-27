@@ -28,6 +28,7 @@ import {
   AdminLoading,
 } from '@/features/admin/components/AdminRequestState';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { AdminHighlightsSection } from '@/features/homepage/components/AdminHighlightsSection';
 import { getHomepageErrorMessage } from '@/features/homepage/errors';
 import { moveOrder, sortByPosition } from '@/features/homepage/presentation';
 import {
@@ -425,11 +426,12 @@ export const AdminHomepagePage = () => (
   <>
     <AdminPageHeader
       title="Homepage"
-      description="Manage the public Home Hero carousel and Top Stories."
+      description="Manage the public Home Hero carousel, Top Stories, and Highlights."
     />
     <Stack spacing={5}>
       <HeroCarouselSection />
       <TopStoriesSection />
+      <AdminHighlightsSection />
     </Stack>
   </>
 );

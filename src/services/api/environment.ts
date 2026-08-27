@@ -1,9 +1,11 @@
 export interface AppEnvironment {
   apiBaseUrl: string;
+  passwordRecoveryEnabled: boolean;
 }
 
 interface EnvironmentInput {
   VITE_API_BASE_URL?: unknown;
+  VITE_PASSWORD_RECOVERY_ENABLED?: unknown;
 }
 
 const normalizeApiBaseUrl = (value: string) => {
@@ -42,5 +44,7 @@ export const readAppEnvironment = (
 
   return Object.freeze({
     apiBaseUrl: normalizeApiBaseUrl(apiBaseUrl.trim()),
+    passwordRecoveryEnabled:
+      environment.VITE_PASSWORD_RECOVERY_ENABLED !== 'false',
   });
 };
