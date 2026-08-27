@@ -119,6 +119,13 @@ const LazyAdminGameMediaDetailPage = lazy(async () => ({
   default: (await import('@/pages/AdminGameMediaDetailPage'))
     .AdminGameMediaDetailPage,
 }));
+const LazyAdminHomepagePage = lazy(async () => ({
+  default: (await import('@/pages/AdminHomepagePage')).AdminHomepagePage,
+}));
+const LazyAdminHeroSlideEditorPage = lazy(async () => ({
+  default: (await import('@/pages/AdminHeroSlideEditorPage'))
+    .AdminHeroSlideEditorPage,
+}));
 
 const deferred = (element: ReactNode) => (
   <Suspense fallback={<RouteLoading />}>{element}</Suspense>
@@ -188,6 +195,18 @@ export const appRoutes: RouteObject[] = [
             element: deferred(<LazyAdminLayout />),
             children: [
               { index: true, element: <Navigate to="games" replace /> },
+              {
+                path: 'homepage',
+                element: deferred(<LazyAdminHomepagePage />),
+              },
+              {
+                path: 'homepage/hero/new',
+                element: deferred(<LazyAdminHeroSlideEditorPage />),
+              },
+              {
+                path: 'homepage/hero/:slideId',
+                element: deferred(<LazyAdminHeroSlideEditorPage />),
+              },
               { path: 'games', element: deferred(<LazyAdminGamesPage />) },
               {
                 path: 'games/new',

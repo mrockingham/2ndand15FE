@@ -11,6 +11,7 @@ import {
   hallOfFameGameFixture,
   preseasonWeekOneFixture,
 } from '@/test/gameFixtures';
+import { publicHomepageFixture } from '@/test/homepageFixtures';
 import { playerAttributionFixture } from '@/test/playerFixtures';
 import { renderApp } from '@/test/renderApp';
 import {
@@ -30,6 +31,8 @@ const homeRequestRouter = ({
 } = {}) =>
   vi.fn<typeof fetch>((input) => {
     const url = new URL(String(input));
+    if (url.pathname.endsWith('/homepage'))
+      return Promise.resolve(jsonResponse({ data: publicHomepageFixture }));
     if (url.pathname.endsWith(`/games/${hallOfFameGameFixture.id}`))
       return Promise.resolve(jsonResponse({ data: hallOfFameGameFixture }));
     if (url.pathname.endsWith('/games'))
@@ -123,7 +126,7 @@ describe('Home page states', () => {
       await screen.findByRole('heading', { name: /AI Hub snapshot/i }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole('heading', { name: /2025 leaders/i }),
+      await screen.findByRole('heading', { name: /league leaders/i }),
     ).toBeInTheDocument();
     expect(
       fetchImplementation.mock.calls.some(([input]) =>

@@ -25,7 +25,11 @@ import { useGameQuery, useGamesQuery } from '@/features/games/queries';
 import { HomeAiSnapshot } from '@/features/home/components/HomeAiPanels';
 import { HomeGamesGrid } from '@/features/home/components/HomeGamesPanels';
 import { HomePublicNews } from '@/features/home/components/HomeNewsPanels';
-import { HomeStatsLeaders } from '@/features/home/components/HomeStatsLeaders';
+import { HomepageHeroCarousel } from '@/features/homepage/components/HomepageHeroCarousel';
+import { HomepageHighlightsSection } from '@/features/homepage/components/HomepageHighlightsSection';
+import { HomepageLeadersSection } from '@/features/homepage/components/HomepageLeadersSection';
+import { TopStoriesSection } from '@/features/homepage/components/TopStoriesSection';
+import { useHomepageQuery } from '@/features/homepage/queries';
 
 const weeklyFilters = {
   season: 2026,
@@ -208,6 +212,27 @@ const PersonalizationCallout = ({
   </Card>
 );
 
+const ExploreTeamsCard = () => (
+  <Card component="section" sx={{ p: { xs: 2.5, md: 3 }, alignSelf: 'end' }}>
+    <Stack spacing={1.5}>
+      <AutoAwesomeRounded color="primary" aria-hidden="true" />
+      <Typography component="h2" variant="h3">
+        Explore every team
+      </Typography>
+      <Typography color="text.secondary">
+        Browse all 32 team hubs for schedules, published news, and clearly
+        labeled historical coverage.
+      </Typography>
+      <Button component={RouterLink} to="/teams" variant="outlined">
+        Explore Teams
+      </Button>
+      <Typography variant="caption" color="text.secondary">
+        Current 2026 standings are not available, so Home does not invent them.
+      </Typography>
+    </Stack>
+  </Card>
+);
+
 export const PublicHomeContent = ({
   chooseTeam = false,
   showPersonalizationCallout = true,
@@ -218,12 +243,26 @@ export const PublicHomeContent = ({
   const gamesQuery = useGamesQuery({ limit: 4 });
   const newsQuery = useFeaturedArticlesQuery({ limit: 3 });
   const insightsQuery = useWeeklyInsightsQuery(weeklyFilters);
+  // `GET /homepage` composes Hero slides, Top Stories, Highlights, and
+  // League Leaders in one request -- never fetched separately. A request
+  // failure falls back to the pre-CMS static Hero and simply omits the
+  // other CMS sections rather than breaking Home.
+  const homepageQuery = useHomepageQuery();
+  const homepage = homepageQuery.data;
+  const activeHeroSlides = homepage?.heroSlides ?? [];
 
   return (
     <Stack spacing={{ xs: 4, md: 5 }}>
-      <PublicHero chooseTeam={chooseTeam} />
+      {activeHeroSlides.length > 0 ? (
+        <HomepageHeroCarousel slides={activeHeroSlides} />
+      ) : (
+        <PublicHero chooseTeam={chooseTeam} />
+      )}
       {chooseTeam ? <PersonalizationCallout chooseTeam /> : null}
       <HomeGamesGrid query={gamesQuery} />
+      {homepage ? (
+        <HomepageHighlightsSection highlights={homepage.highlights} />
+      ) : null}
       <Box
         sx={{
           display: 'grid',
@@ -234,43 +273,30 @@ export const PublicHomeContent = ({
           },
         }}
       >
-        <HomePublicNews query={newsQuery} />
+        {homepage && homepage.topStories.length > 0 ? (
+          <TopStoriesSection stories={homepage.topStories} />
+        ) : (
+          <HomePublicNews query={newsQuery} />
+        )}
         <HomeAiSnapshot query={insightsQuery} />
       </Box>
-      <Box
-        sx={{
-          display: 'grid',
-          gap: 3,
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: 'minmax(0, 1.35fr) minmax(300px, 0.65fr)',
-          },
-        }}
-      >
-        <HomeStatsLeaders />
-        <Card
-          component="section"
-          sx={{ p: { xs: 2.5, md: 3 }, alignSelf: 'end' }}
+      {homepage ? (
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 3,
+            gridTemplateColumns: {
+              xs: '1fr',
+              lg: 'minmax(0, 1.35fr) minmax(300px, 0.65fr)',
+            },
+          }}
         >
-          <Stack spacing={1.5}>
-            <AutoAwesomeRounded color="primary" aria-hidden="true" />
-            <Typography component="h2" variant="h3">
-              Explore every team
-            </Typography>
-            <Typography color="text.secondary">
-              Browse all 32 team hubs for schedules, published news, and clearly
-              labeled historical coverage.
-            </Typography>
-            <Button component={RouterLink} to="/teams" variant="outlined">
-              Explore Teams
-            </Button>
-            <Typography variant="caption" color="text.secondary">
-              Current 2026 standings are not available, so Home does not invent
-              them.
-            </Typography>
-          </Stack>
-        </Card>
-      </Box>
+          <HomepageLeadersSection leaders={homepage.leaders} />
+          <ExploreTeamsCard />
+        </Box>
+      ) : (
+        <ExploreTeamsCard />
+      )}
       {chooseTeam || !showPersonalizationCallout ? null : (
         <PersonalizationCallout chooseTeam={false} />
       )}

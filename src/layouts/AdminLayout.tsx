@@ -3,6 +3,7 @@ import CloseRounded from '@mui/icons-material/CloseRounded';
 import FactCheckRounded from '@mui/icons-material/FactCheckRounded';
 import HistoryRounded from '@mui/icons-material/HistoryRounded';
 import MenuRounded from '@mui/icons-material/MenuRounded';
+import WebRounded from '@mui/icons-material/WebRounded';
 import MonitorHeartRounded from '@mui/icons-material/MonitorHeartRounded';
 import SportsFootballRounded from '@mui/icons-material/SportsFootballRounded';
 import VideoLibraryRounded from '@mui/icons-material/VideoLibraryRounded';
@@ -39,6 +40,7 @@ export const AdminLayout = () => {
   const location = useLocation();
   const role = useCurrentUserQuery().data?.role ?? 'USER';
   const items = [
+    { label: 'Homepage', path: '/admin/homepage', icon: WebRounded },
     { label: 'Games', path: '/admin/games', icon: SportsFootballRounded },
     {
       label: 'Import schedule',

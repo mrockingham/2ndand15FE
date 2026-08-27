@@ -5,6 +5,9 @@ import {
   Card,
   CardActionArea,
   CardContent,
+  Checkbox,
+  FormControlLabel,
+  Link,
   MenuItem,
   Paper,
   Stack,
@@ -15,6 +18,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
@@ -28,7 +32,50 @@ import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { ArticleStatusChip } from '@/features/articles/components/ArticleStatusChip';
 import { useAdminArticlesQuery } from '@/features/articles/queries';
 import type { ArticleStatus, ArticleType } from '@/features/articles/types';
+import {
+  useAdminTopStoriesQuery,
+  useMarkTopStoryMutation,
+  useUnmarkTopStoryMutation,
+} from '@/features/homepage/queries';
+import { MAX_TOP_STORIES } from '@/features/homepage/types';
 import { useTeamsQuery } from '@/features/teams/queries';
+
+const TopStoryToggle = ({
+  articleId,
+  isTopStory,
+  atCap,
+}: {
+  readonly articleId: string;
+  readonly isTopStory: boolean;
+  readonly atCap: boolean;
+}) => {
+  const mark = useMarkTopStoryMutation();
+  const unmark = useUnmarkTopStoryMutation();
+  const isPending = mark.isPending || unmark.isPending;
+  const disabled = isPending || (!isTopStory && atCap);
+  const checkbox = (
+    <Checkbox
+      size="small"
+      checked={isTopStory}
+      disabled={disabled}
+      onClick={(event) => event.stopPropagation()}
+      onChange={(event) => {
+        if (event.target.checked) mark.mutate(articleId);
+        else unmark.mutate(articleId);
+      }}
+      slotProps={{ input: { 'aria-label': 'Top Story' } }}
+    />
+  );
+  return !isTopStory && atCap ? (
+    <Tooltip
+      title={`The homepage may have at most ${String(MAX_TOP_STORIES)} Top Stories.`}
+    >
+      <span>{checkbox}</span>
+    </Tooltip>
+  ) : (
+    checkbox
+  );
+};
 
 export const AdminArticlesPage = () => {
   const [parameters, setParameters] = useSearchParams();
@@ -47,6 +94,11 @@ export const AdminArticlesPage = () => {
     search: searchValue.trim().length >= 2 ? searchValue.trim() : undefined,
   };
   const query = useAdminArticlesQuery(filters);
+  const topStoriesQuery = useAdminTopStoriesQuery();
+  const topStoryArticleIds = new Set(
+    topStoriesQuery.data?.map((story) => story.article.id) ?? [],
+  );
+  const atTopStoryCap = (topStoriesQuery.data?.length ?? 0) >= MAX_TOP_STORIES;
   const update = (key: string, value: string) => {
     const next = new URLSearchParams(parameters);
     if (value) next.set(key, value);
@@ -160,6 +212,7 @@ export const AdminArticlesPage = () => {
                   <TableCell>Status</TableCell>
                   <TableCell>Teams</TableCell>
                   <TableCell>Featured</TableCell>
+                  <TableCell>Top Story</TableCell>
                   <TableCell>Publication</TableCell>
                   <TableCell>Updated</TableCell>
                   <TableCell>Version</TableCell>
@@ -167,14 +220,17 @@ export const AdminArticlesPage = () => {
               </TableHead>
               <TableBody>
                 {query.data.articles.map((article) => (
-                  <TableRow
-                    key={article.id}
-                    component={RouterLink}
-                    to={`/admin/articles/${article.id}`}
-                    hover
-                    sx={{ textDecoration: 'none' }}
-                  >
-                    <TableCell>{article.title}</TableCell>
+                  <TableRow key={article.id} hover>
+                    <TableCell>
+                      <Link
+                        component={RouterLink}
+                        to={`/admin/articles/${article.id}`}
+                        underline="hover"
+                        color="inherit"
+                      >
+                        {article.title}
+                      </Link>
+                    </TableCell>
                     <TableCell>{article.type}</TableCell>
                     <TableCell>
                       <ArticleStatusChip status={article.status} />
@@ -188,6 +244,13 @@ export const AdminArticlesPage = () => {
                       {article.isFeatured
                         ? `Yes · ${article.featuredPriority ?? 'default'}`
                         : 'No'}
+                    </TableCell>
+                    <TableCell>
+                      <TopStoryToggle
+                        articleId={article.id}
+                        isTopStory={topStoryArticleIds.has(article.id)}
+                        atCap={atTopStoryCap}
+                      />
                     </TableCell>
                     <TableCell>
                       {article.scheduledFor
@@ -228,6 +291,18 @@ export const AdminArticlesPage = () => {
                     </Typography>
                   </CardContent>
                 </CardActionArea>
+                <CardContent sx={{ pt: 0 }}>
+                  <FormControlLabel
+                    control={
+                      <TopStoryToggle
+                        articleId={article.id}
+                        isTopStory={topStoryArticleIds.has(article.id)}
+                        atCap={atTopStoryCap}
+                      />
+                    }
+                    label="Top Story"
+                  />
+                </CardContent>
               </Card>
             ))}
           </Stack>

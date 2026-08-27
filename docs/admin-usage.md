@@ -25,6 +25,11 @@ These frontend checks improve navigation only. Every administrative request is a
 | `/admin/data-health`                  | Current-season game data coverage and diagnosis  | Editor or admin               |
 | `/admin/game-media`                   | Game Center curated video list                   | Editor or admin               |
 | `/admin/game-media/:gameId`           | Curated video management for one game            | Editor (view), admin (manage) |
+| `/admin/homepage`                     | Hero carousel and Top Stories management         | Editor or admin               |
+| `/admin/homepage/hero/new`            | Hero slide creation                              | Editor or admin               |
+| `/admin/homepage/hero/:slideId`       | Hero slide editing                               | Editor or admin               |
+
+Homepage CMS management (M35B) does not follow the editor-view/admin-manage split used by Game Media — both `EDITOR` and `ADMIN` may create, edit, delete, and reorder Hero slides and Top Stories, matching the backend's `MANAGE_HOMEPAGE_CMS` capability grant. See [homepage-usage.md](homepage-usage.md) for the full Homepage CMS contract, including how a Top Story is marked from the Articles list.
 
 ## Games and ownership
 
