@@ -338,4 +338,73 @@ describe('password recovery', () => {
       await screen.findByText(/reset link is invalid or has expired/i),
     ).toBeInTheDocument();
   });
+
+  it('rejects a token outside the 32-512 character bounds without a request', () => {
+    const fetchImplementation = vi.fn<typeof fetch>();
+    renderApp('/reset-password?token=tooshort', { fetchImplementation });
+
+    expect(
+      screen.getByRole('heading', { name: /request a fresh link/i }),
+    ).toBeInTheDocument();
+    expect(fetchImplementation).not.toHaveBeenCalled();
+  });
+
+  it('shows a friendly message when forgot-password is rate limited', async () => {
+    const user = userEvent.setup();
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        apiErrorResponse(
+          'RATE_LIMIT_EXCEEDED',
+          'Too many reset requests.',
+          429,
+        ),
+      );
+    renderApp('/forgot-password', { fetchImplementation });
+
+    await user.type(screen.getByLabelText('Email'), 'fan@example.com');
+    await user.click(
+      screen.getByRole('button', { name: /send reset instructions/i }),
+    );
+
+    expect(await screen.findByText(/too many attempts/i)).toBeInTheDocument();
+  });
+
+  it('shows a friendly message when reset-password is rate limited', async () => {
+    const user = userEvent.setup();
+    const fetchImplementation = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        apiErrorResponse('RATE_LIMIT_EXCEEDED', 'Too many attempts.', 429),
+      );
+    renderApp(`/reset-password?token=${'a'.repeat(32)}`, {
+      fetchImplementation,
+    });
+
+    await user.type(
+      screen.getByLabelText('New password'),
+      'new secure password',
+    );
+    await user.type(
+      screen.getByLabelText('Confirm new password'),
+      'new secure password',
+    );
+    await user.click(screen.getByRole('button', { name: 'Reset password' }));
+
+    expect(await screen.findByText(/too many attempts/i)).toBeInTheDocument();
+  });
+
+  it('shows an unavailable notice instead of the form when password recovery is disabled', () => {
+    vi.stubEnv('VITE_PASSWORD_RECOVERY_ENABLED', 'false');
+    const fetchImplementation = vi.fn<typeof fetch>();
+    renderApp('/forgot-password', { fetchImplementation });
+
+    expect(
+      screen.getByRole('heading', {
+        name: /password recovery is temporarily unavailable/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument();
+    expect(fetchImplementation).not.toHaveBeenCalled();
+  });
 });

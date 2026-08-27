@@ -1,4 +1,5 @@
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
+import MailLockRounded from '@mui/icons-material/MailLockRounded';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
@@ -24,10 +25,12 @@ import {
   forgotPasswordFormSchema,
   type ForgotPasswordFormValues,
 } from '@/features/auth/schemas';
+import { readAppEnvironment } from '@/services/api/environment';
 import { useApiClients } from '@/services/api/useApiClients';
 
 export const ForgotPasswordPage = () => {
   const { publicClient } = useApiClients();
+  const { passwordRecoveryEnabled } = readAppEnvironment(import.meta.env);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const {
@@ -54,6 +57,35 @@ export const ForgotPasswordPage = () => {
       setSubmissionError(getAuthErrorMessage(error, 'forgot'));
     }
   });
+
+  if (!passwordRecoveryEnabled) {
+    return (
+      <AuthPageShell
+        eyebrow="ACCOUNT RECOVERY"
+        title="Password recovery is temporarily unavailable"
+        description="We're unable to send reset emails right now. Please contact support if you need help accessing your account."
+        footer={
+          <Typography sx={{ textAlign: 'center' }}>
+            <Link component={RouterLink} to="/login">
+              Back to sign in
+            </Link>
+          </Typography>
+        }
+      >
+        <Stack spacing={2.5} sx={{ alignItems: 'center', textAlign: 'center' }}>
+          <MailLockRounded color="disabled" sx={{ fontSize: 54 }} />
+          <Typography color="text.secondary">
+            Password reset by email isn't available yet. Check back soon, or
+            reach out through the{' '}
+            <Link component={RouterLink} to="/contact">
+              contact page
+            </Link>
+            .
+          </Typography>
+        </Stack>
+      </AuthPageShell>
+    );
+  }
 
   return (
     <AuthPageShell

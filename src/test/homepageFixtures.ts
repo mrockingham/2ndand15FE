@@ -2,10 +2,16 @@ import { awayGameTeamFixture, homeGameTeamFixture } from '@/test/gameFixtures';
 import type {
   AdminHeroList,
   AdminHeroSlide,
+  AdminHomepageHighlight,
   AdminTopStory,
+  HomepageAiHubSnapshot,
   HomepageHighlight,
+  HomepageHighlightCandidate,
+  HomepageHighlightSettings,
+  HomepageInsights,
   HomepageLeader,
   HomepageLeaders,
+  HomepageWeeklyLeaders,
   PublicHeroSlide,
   PublicHomepage,
   PublicTopStory,
@@ -139,6 +145,7 @@ export const highlightFixture: HomepageHighlight = {
   awayTeam: awayGameTeamFixture,
   homeTeam: homeGameTeamFixture,
   gameDate: '2026-08-20T23:00:00.000Z',
+  homepageSelection: 'AUTOMATIC',
 };
 
 export const passingLeaderFixture: HomepageLeader = {
@@ -179,9 +186,119 @@ export const leadersFixture: HomepageLeaders = {
   receiving: [],
 };
 
+export const insightPickFixture = {
+  game: {
+    gameId: '88888888-8888-4888-8888-888888888888',
+    startTime: '2026-09-14T17:00:00.000Z',
+    homeTeam: {
+      id: '66666666-6666-4666-8666-666666666666',
+      fullName: 'Los Angeles Rams',
+      abbreviation: 'LAR',
+    },
+    awayTeam: {
+      id: '99999999-9999-4999-8999-999999999999',
+      fullName: 'Seattle Seahawks',
+      abbreviation: 'SEA',
+    },
+  },
+  favoriteTeam: {
+    id: '66666666-6666-4666-8666-666666666666',
+    fullName: 'Los Angeles Rams',
+    abbreviation: 'LAR',
+  },
+  favoriteProbability: 0.68,
+  projectedScore: { home: 27, away: 20 },
+  projectedTotal: 47,
+};
+
+export const aiHubSnapshotFixture: HomepageAiHubSnapshot = {
+  season: 2026,
+  week: 3,
+  seasonType: 'REG',
+  strongestPick: insightPickFixture,
+  closestMatchup: insightPickFixture,
+  highestProjectedTotal: insightPickFixture,
+};
+
+export const weeklyLeadersFixture: HomepageWeeklyLeaders = {
+  season: 2026,
+  week: 3,
+  seasonType: 'REG',
+  passing: {
+    playerId: '55555555-5555-4555-8555-555555555555',
+    playerName: 'Matthew Stafford',
+    team: 'LAR',
+    value: 312,
+    metric: 'passing_yards',
+    week: 3,
+    season: 2026,
+  },
+  rushing: {
+    playerId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    playerName: 'Kyren Williams',
+    team: 'LAR',
+    value: 128,
+    metric: 'rushing_yards',
+    week: 3,
+    season: 2026,
+  },
+  receiving: {
+    playerId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    playerName: 'Puka Nacua',
+    team: 'LAR',
+    value: 142,
+    metric: 'receiving_yards',
+    week: 3,
+    season: 2026,
+  },
+};
+
+export const homepageInsightsFixture: HomepageInsights = {
+  aiHub: aiHubSnapshotFixture,
+  weeklyLeaders: weeklyLeadersFixture,
+};
+
+export const emptyHomepageInsightsFixture: HomepageInsights = {
+  aiHub: null,
+  weeklyLeaders: null,
+};
+
 export const publicHomepageFixture: PublicHomepage = {
   heroSlides: [],
   topStories: [],
   highlights: [highlightFixture],
   leaders: leadersFixture,
+  insights: homepageInsightsFixture,
+};
+
+export const highlightCandidateFixture: HomepageHighlightCandidate = {
+  sourceType: 'GAME_HIGHLIGHT',
+  sourceId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+  gameId: highlightFixture.gameId,
+  matchup: { awayTeam: awayGameTeamFixture, homeTeam: homeGameTeamFixture },
+  title: highlightFixture.title,
+  thumbnailUrl: highlightFixture.thumbnailUrl,
+  gameDate: highlightFixture.gameDate,
+  isSelected: false,
+};
+
+export const adminHighlightFixture: AdminHomepageHighlight = {
+  id: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+  position: 0,
+  sourceType: 'GAME_HIGHLIGHT',
+  sourceId: highlightCandidateFixture.sourceId,
+  gameId: highlightFixture.gameId,
+  matchup: { awayTeam: awayGameTeamFixture, homeTeam: homeGameTeamFixture },
+  gameDate: highlightFixture.gameDate,
+  preview: {
+    title: highlightFixture.title,
+    thumbnailUrl: highlightFixture.thumbnailUrl,
+  },
+  createdAt: '2026-08-20T00:00:00.000Z',
+  updatedAt: '2026-08-20T00:00:00.000Z',
+};
+
+export const highlightSettingsFixture: HomepageHighlightSettings = {
+  displayLimit: 5,
+  fillWithAutomatic: true,
 };

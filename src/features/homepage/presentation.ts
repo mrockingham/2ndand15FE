@@ -1,8 +1,11 @@
 import type {
   AdminHeroSlide,
   HeroContentSlot,
+  HomepageInsightPick,
+  HomepageInsightTeam,
   HomepageLeader,
   HomepageLeaderCategory,
+  HomepageWeeklyLeader,
   PublicHeroSlide,
 } from '@/features/homepage/types';
 
@@ -89,3 +92,28 @@ export const leaderAccessibleLabel = (
   `Rank ${String(leader.rank)}, ${leaderCategoryLabel[category]}: ${leader.player.displayName}${
     leader.team ? `, ${leader.team.fullName}` : ''
   }, ${formatLeaderValue(leader.value)}`;
+
+export const insightPickOpponent = (
+  pick: HomepageInsightPick,
+): HomepageInsightTeam =>
+  pick.favoriteTeam.id === pick.game.homeTeam.id
+    ? pick.game.awayTeam
+    : pick.game.homeTeam;
+
+export const insightPickMatchupLabel = (pick: HomepageInsightPick) =>
+  `${pick.favoriteTeam.abbreviation} vs ${insightPickOpponent(pick).abbreviation}`;
+
+export const weeklyLeaderMetricLabel: Readonly<Record<string, string>> = {
+  passing_yards: 'Passing Yards',
+  rushing_yards: 'Rushing Yards',
+  receiving_yards: 'Receiving Yards',
+};
+
+export const formatWeeklyLeaderValue = (leader: HomepageWeeklyLeader) =>
+  `${leader.value.toLocaleString('en-US')} YDS`;
+
+export const weeklyLeaderAccessibleLabel = (
+  leader: HomepageWeeklyLeader,
+  categoryLabel: string,
+) =>
+  `${categoryLabel}: ${leader.playerName}, ${leader.team}, ${formatWeeklyLeaderValue(leader)}`;

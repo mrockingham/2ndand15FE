@@ -14,7 +14,6 @@ import { alpha } from '@mui/material/styles';
 import { Link as RouterLink } from 'react-router-dom';
 
 import hallOfFameHero from '@/images/hall-of-fame-game-hero.jpg';
-import { useWeeklyInsightsQuery } from '@/features/aiHub/queries';
 import { useFeaturedArticlesQuery } from '@/features/articles/queries';
 import {
   HALL_OF_FAME_GAME_ID,
@@ -22,21 +21,14 @@ import {
   isScoreStatus,
 } from '@/features/games/presentation';
 import { useGameQuery, useGamesQuery } from '@/features/games/queries';
-import { HomeAiSnapshot } from '@/features/home/components/HomeAiPanels';
 import { HomeGamesGrid } from '@/features/home/components/HomeGamesPanels';
 import { HomePublicNews } from '@/features/home/components/HomeNewsPanels';
 import { HomepageHeroCarousel } from '@/features/homepage/components/HomepageHeroCarousel';
 import { HomepageHighlightsSection } from '@/features/homepage/components/HomepageHighlightsSection';
 import { HomepageLeadersSection } from '@/features/homepage/components/HomepageLeadersSection';
+import { InsightRail } from '@/features/homepage/components/InsightRail';
 import { TopStoriesSection } from '@/features/homepage/components/TopStoriesSection';
 import { useHomepageQuery } from '@/features/homepage/queries';
-
-const weeklyFilters = {
-  season: 2026,
-  seasonType: 'PRE' as const,
-  week: 1,
-  top: 3,
-};
 
 const PublicHero = ({ chooseTeam }: { readonly chooseTeam: boolean }) => {
   const gameQuery = useGameQuery(HALL_OF_FAME_GAME_ID);
@@ -242,7 +234,6 @@ export const PublicHomeContent = ({
 }) => {
   const gamesQuery = useGamesQuery({ limit: 4 });
   const newsQuery = useFeaturedArticlesQuery({ limit: 3 });
-  const insightsQuery = useWeeklyInsightsQuery(weeklyFilters);
   // `GET /homepage` composes Hero slides, Top Stories, Highlights, and
   // League Leaders in one request -- never fetched separately. A request
   // failure falls back to the pre-CMS static Hero and simply omits the
@@ -278,7 +269,7 @@ export const PublicHomeContent = ({
         ) : (
           <HomePublicNews query={newsQuery} />
         )}
-        <HomeAiSnapshot query={insightsQuery} />
+        <InsightRail homepageQuery={homepageQuery} />
       </Box>
       {homepage ? (
         <Box

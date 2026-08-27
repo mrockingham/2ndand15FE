@@ -30,6 +30,9 @@ const LazyAdminLayout = lazy(async () => ({
 const LazyNewsPage = lazy(async () => ({
   default: (await import('@/pages/NewsPage')).NewsPage,
 }));
+const LazyContactPage = lazy(async () => ({
+  default: (await import('@/pages/ContactPage')).ContactPage,
+}));
 const LazyGamesPage = lazy(async () => ({
   default: (await import('@/pages/GamesPage')).GamesPage,
 }));
@@ -126,6 +129,14 @@ const LazyAdminHeroSlideEditorPage = lazy(async () => ({
   default: (await import('@/pages/AdminHeroSlideEditorPage'))
     .AdminHeroSlideEditorPage,
 }));
+const LazyAdminContactMessagesPage = lazy(async () => ({
+  default: (await import('@/pages/AdminContactMessagesPage'))
+    .AdminContactMessagesPage,
+}));
+const LazyAdminContactMessageDetailPage = lazy(async () => ({
+  default: (await import('@/pages/AdminContactMessageDetailPage'))
+    .AdminContactMessageDetailPage,
+}));
 
 const deferred = (element: ReactNode) => (
   <Suspense fallback={<RouteLoading />}>{element}</Suspense>
@@ -141,6 +152,7 @@ export const appRoutes: RouteObject[] = [
       { path: 'games/:gameId', element: deferred(<LazyGameDetailPage />) },
       { path: 'news', element: deferred(<LazyNewsPage />) },
       { path: 'news/:slug', element: deferred(<LazyArticleDetailPage />) },
+      { path: 'contact', element: deferred(<LazyContactPage />) },
       { path: 'players', element: deferred(<LazyPlayersPage />) },
       { path: 'players/compare', element: deferred(<LazyPlayerComparePage />) },
       {
@@ -264,6 +276,14 @@ export const appRoutes: RouteObject[] = [
               {
                 path: 'game-media/:gameId',
                 element: deferred(<LazyAdminGameMediaDetailPage />),
+              },
+              {
+                path: 'contact-messages',
+                element: deferred(<LazyAdminContactMessagesPage />),
+              },
+              {
+                path: 'contact-messages/:messageId',
+                element: deferred(<LazyAdminContactMessageDetailPage />),
               },
               {
                 element: <RequireAdministrativeRole adminOnly />,

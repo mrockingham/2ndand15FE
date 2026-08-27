@@ -139,6 +139,7 @@ export interface HomepageHighlight {
   readonly awayTeam: GameTeam;
   readonly homeTeam: GameTeam;
   readonly gameDate: string | null;
+  readonly homepageSelection: HomepageHighlightMediaType;
 }
 
 export interface HomepageLeaderPlayer {
@@ -172,11 +173,71 @@ export interface HomepageLeaders {
   readonly receiving: readonly HomepageLeader[];
 }
 
+export interface HomepageInsightTeam {
+  readonly id: string;
+  readonly fullName: string;
+  readonly abbreviation: string;
+}
+
+export interface HomepageInsightGame {
+  readonly gameId: string;
+  readonly startTime: string | null;
+  readonly homeTeam: HomepageInsightTeam;
+  readonly awayTeam: HomepageInsightTeam;
+}
+
+export interface HomepageInsightPick {
+  readonly game: HomepageInsightGame;
+  readonly favoriteTeam: HomepageInsightTeam;
+  readonly favoriteProbability: number;
+  readonly projectedScore: {
+    readonly home: number;
+    readonly away: number;
+  } | null;
+  readonly projectedTotal: number | null;
+}
+
+export type HomepageInsightSeasonType = 'PRE' | 'REG' | 'POST';
+
+export interface HomepageAiHubSnapshot {
+  readonly season: number;
+  readonly week: number;
+  readonly seasonType: HomepageInsightSeasonType;
+  readonly strongestPick: HomepageInsightPick | null;
+  readonly closestMatchup: HomepageInsightPick | null;
+  readonly highestProjectedTotal: HomepageInsightPick | null;
+}
+
+export interface HomepageWeeklyLeader {
+  readonly playerId: string;
+  readonly playerName: string;
+  readonly team: string;
+  readonly value: number;
+  readonly metric: string;
+  readonly week: number;
+  readonly season: number;
+}
+
+export interface HomepageWeeklyLeaders {
+  readonly season: number;
+  readonly week: number;
+  readonly seasonType: 'REG' | 'POST';
+  readonly passing: HomepageWeeklyLeader | null;
+  readonly rushing: HomepageWeeklyLeader | null;
+  readonly receiving: HomepageWeeklyLeader | null;
+}
+
+export interface HomepageInsights {
+  readonly aiHub: HomepageAiHubSnapshot | null;
+  readonly weeklyLeaders: HomepageWeeklyLeaders | null;
+}
+
 export interface PublicHomepage {
   readonly heroSlides: readonly PublicHeroSlide[];
   readonly topStories: readonly PublicTopStory[];
   readonly highlights: readonly HomepageHighlight[];
   readonly leaders: HomepageLeaders;
+  readonly insights: HomepageInsights;
 }
 
 export interface HeroContentBlockInput {
@@ -232,3 +293,76 @@ export const MAX_HERO_SLIDES = 10;
 export const MIN_ACTIVE_HERO_SLIDES_FOR_PUBLISH = 3;
 export const MAX_HERO_CTAS_PER_SLIDE = 2;
 export const MAX_TOP_STORIES = 6;
+
+export type HighlightSourceType = 'GAME_HIGHLIGHT' | 'CURATED_GAME_VIDEO';
+
+export interface HomepageHighlightCandidate {
+  readonly sourceType: HighlightSourceType;
+  readonly sourceId: string;
+  readonly gameId: string;
+  readonly matchup: {
+    readonly awayTeam: GameTeam;
+    readonly homeTeam: GameTeam;
+  };
+  readonly title: string;
+  readonly thumbnailUrl: string | null;
+  readonly gameDate: string | null;
+  readonly isSelected: boolean;
+}
+
+export interface HighlightCandidatePage {
+  readonly candidates: readonly HomepageHighlightCandidate[];
+  readonly nextCursor: string | null;
+}
+
+export interface HighlightCandidateListFilters {
+  readonly gameId?: string;
+  readonly dateFrom?: string;
+  readonly dateTo?: string;
+  readonly mediaType?: HighlightSourceType;
+  readonly limit?: number;
+}
+
+export interface AdminHomepageHighlight {
+  readonly id: string;
+  readonly position: number;
+  readonly sourceType: HighlightSourceType;
+  readonly sourceId: string;
+  readonly gameId: string;
+  readonly matchup: {
+    readonly awayTeam: GameTeam;
+    readonly homeTeam: GameTeam;
+  };
+  readonly gameDate: string | null;
+  readonly preview: {
+    readonly title: string;
+    readonly thumbnailUrl: string | null;
+  } | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface HomepageHighlightSettings {
+  readonly displayLimit: number;
+  readonly fillWithAutomatic: boolean;
+}
+
+export interface AdminHomepageHighlightList {
+  readonly placements: readonly AdminHomepageHighlight[];
+  readonly settings: HomepageHighlightSettings;
+}
+
+export interface AddHighlightPlacementInput {
+  readonly sourceType: HighlightSourceType;
+  readonly sourceId: string;
+}
+
+export interface ReorderHighlightPlacementsInput {
+  readonly placementIds: readonly string[];
+}
+
+export type UpdateHighlightSettingsInput = Partial<HomepageHighlightSettings>;
+
+export const MAX_HOMEPAGE_HIGHLIGHT_PLACEMENTS = 10;
+export const MIN_HOMEPAGE_HIGHLIGHT_DISPLAY_LIMIT = 3;
+export const MAX_HOMEPAGE_HIGHLIGHT_DISPLAY_LIMIT = 10;

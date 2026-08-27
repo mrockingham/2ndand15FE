@@ -31,4 +31,5 @@ afterEach(() => {
   });
   useThemePreferences.setState({ mode: 'dark' });
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });

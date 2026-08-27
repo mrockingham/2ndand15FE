@@ -1,7 +1,7 @@
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import LinkOffRounded from '@mui/icons-material/LinkOffRounded';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Button, Stack, Typography } from '@mui/material';
+import { Alert, Button, Link, Stack, Typography } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -36,12 +36,11 @@ export const ResetPasswordPage = () => {
     defaultValues: { confirmPassword: '', password: '' },
   });
   const mutation = useMutation({
-    mutationFn: (values: ResetPasswordFormValues) => {
-      if (!tokenHasValidShape) {
-        throw new Error('Reset token is missing or malformed.');
-      }
-      return resetPassword(publicClient, { token, password: values.password });
-    },
+    mutationFn: (values: ResetPasswordFormValues) =>
+      resetPassword(publicClient, {
+        token: token as string,
+        password: values.password,
+      }),
   });
 
   const onSubmit = handleSubmit(async (values) => {
@@ -92,6 +91,15 @@ export const ResetPasswordPage = () => {
         successMessage === null
           ? 'Set a new password for your account. Every existing session will be signed out.'
           : 'Your old sessions have been revoked. Sign in again with your new password.'
+      }
+      footer={
+        successMessage === null ? (
+          <Typography sx={{ textAlign: 'center' }}>
+            <Link component={RouterLink} to="/login">
+              Back to sign in
+            </Link>
+          </Typography>
+        ) : undefined
       }
     >
       {successMessage === null ? (
