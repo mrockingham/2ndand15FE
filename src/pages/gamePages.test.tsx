@@ -1,11 +1,7 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type {
-  Game,
-  GameHighlightsResult,
-  GameTeam,
-} from '@/features/games/types';
+import type { Game, GameTeam } from '@/features/games/types';
 import type { GameMediaResult } from '@/features/gameMedia/types';
 import type { Team } from '@/features/teams/types';
 import { currentUserFixture, eaglesFixture } from '@/test/authFixtures';
@@ -58,19 +54,17 @@ const scheduleFetch = (games = [gameFixture, tbdGameFixture]) =>
 const gameDetailFetch = (
   game: Game,
   gameStatus = 200,
-  highlights: GameHighlightsResult = {
-    gameId: game.id,
-    coverage: 'UNKNOWN',
-    highlights: [],
-  },
+  mediaOverrides: Partial<GameMediaResult> = {},
 ) => {
   const media: GameMediaResult = {
     gameId: game.id,
-    displayMode:
-      highlights.coverage === 'AVAILABLE' && highlights.highlights.length > 0
-        ? 'AUTOMATIC'
-        : 'NONE',
+    displayMode: 'NONE',
     curatedVideos: [],
+    highlights: [],
+    globalVideo: null,
+    displayVideos: [],
+    coverage: 'UNKNOWN',
+    ...mediaOverrides,
   };
   return vi.fn<typeof fetch>((input) => {
     const url = new URL(String(input));
@@ -90,8 +84,6 @@ const gameDetailFetch = (
       );
     if (url.pathname.endsWith('/media'))
       return Promise.resolve(json({ data: media }));
-    if (url.pathname.endsWith('/highlights'))
-      return Promise.resolve(json({ data: highlights }));
     return Promise.resolve(json({ data: game }, gameStatus));
   });
 };
@@ -181,7 +173,7 @@ describe('public Games pages', () => {
       document.querySelector('[data-team-helmet="ARI"]'),
     ).toBeInTheDocument();
     const gameRequest = fetchImplementation.mock.calls.find(([input]) =>
-      String(input).includes('/games?'),
+      String(input).includes('/games?season='),
     );
     expect(String(gameRequest?.[0])).toContain(
       '/games?season=2026&seasonType=PRE&limit=100',
@@ -299,41 +291,46 @@ describe('public Games pages', () => {
     };
     renderApp(`/games/${gameFixture.id}`, {
       fetchImplementation: gameDetailFetch(finalGame, 200, {
-        gameId: finalGame.id,
-        coverage: 'AVAILABLE',
+        displayMode: 'AUTOMATIC',
         highlights: [gameHighlightFixture],
+        coverage: 'AVAILABLE',
+        displayVideos: [
+          {
+            id: gameHighlightFixture.id,
+            mediaType: 'AUTOMATIC',
+            title: gameHighlightFixture.title,
+            embedUrl: gameHighlightFixture.embedUrl,
+            canonicalUrl: gameHighlightFixture.canonicalUrl,
+            thumbnailUrl: gameHighlightFixture.thumbnailUrl,
+            sourceLabel: null,
+            canEmbed: gameHighlightFixture.canEmbed,
+          },
+        ],
       }),
     });
     expect(
       await screen.findByRole('heading', { name: 'Game Center' }),
     ).toBeInTheDocument();
     expect(screen.getByText('21')).toBeInTheDocument();
-    expect(await screen.findByText('Highlights')).toBeInTheDocument();
-    expect(screen.getByText(gameHighlightFixture.title)).toBeInTheDocument();
+    expect(
+      await screen.findByText(gameHighlightFixture.title),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Game Highlight')).toBeInTheDocument();
+    // The primary item embeds immediately -- no click required -- since it
+    // is backend-authoritative canEmbed: true, unlike the old lazy-play card.
+    const iframe = document.querySelector('iframe');
+    expect(iframe).toHaveAttribute('src', gameHighlightFixture.embedUrl);
+    expect(iframe).toHaveAttribute('title', gameHighlightFixture.title);
     const externalLink = screen.getByRole('link', {
-      name: `Watch on YouTube: ${gameHighlightFixture.title}`,
+      name: `Watch externally: ${gameHighlightFixture.title}`,
     });
     expect(externalLink).toHaveAttribute(
       'href',
       gameHighlightFixture.canonicalUrl,
     );
-    expect(document.querySelector('iframe')).toBeNull();
-
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: `Play highlight: ${gameHighlightFixture.title}`,
-      }),
-    );
-    const iframe = document.querySelector('iframe');
-    expect(iframe).toHaveAttribute('src', gameHighlightFixture.embedUrl);
-    expect(
-      screen.getByRole('link', {
-        name: `Watch on YouTube: ${gameHighlightFixture.title}`,
-      }),
-    ).toBeInTheDocument();
   });
 
-  it('keeps the rest of Game Center fully functional when the highlights request fails', async () => {
+  it('keeps the rest of Game Center fully functional when the media request fails', async () => {
     const finalGame: Game = {
       ...gameFixture,
       status: 'FINAL',
@@ -343,16 +340,6 @@ describe('public Games pages', () => {
     const fetchImplementation = vi.fn<typeof fetch>((input) => {
       const url = new URL(String(input));
       if (url.pathname.endsWith('/media'))
-        return Promise.resolve(
-          json({
-            data: {
-              gameId: finalGame.id,
-              displayMode: 'AUTOMATIC',
-              curatedVideos: [],
-            } satisfies GameMediaResult,
-          }),
-        );
-      if (url.pathname.endsWith('/highlights'))
         return Promise.resolve(
           json({ error: { code: 'BAD_REQUEST', message: 'boom' } }, 400),
         );
@@ -414,6 +401,8 @@ describe('public Games pages', () => {
       const url = new URL(String(input));
       if (url.pathname.endsWith('/teams'))
         return Promise.resolve(json({ data: teams }));
+      if (url.searchParams.has('startDate'))
+        return Promise.resolve(json({ data: [], meta: { nextCursor: null } }));
       if (url.pathname.endsWith('/games')) {
         gameRequests += 1;
         return Promise.resolve(

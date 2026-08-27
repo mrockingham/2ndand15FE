@@ -14,7 +14,14 @@ import type {
   CuratedVideoInput,
 } from '@/features/gameMedia/types';
 
-const defaults = (video?: CuratedVideo): CuratedVideoFormValues => ({
+// Widened so the same form works for both a per-game curated video and the
+// single global video -- both share this exact field shape.
+type VideoFieldsInput = Pick<
+  CuratedVideo,
+  'title' | 'embedUrl' | 'canonicalUrl' | 'thumbnailUrl' | 'sourceLabel'
+>;
+
+const defaults = (video?: VideoFieldsInput): CuratedVideoFormValues => ({
   title: video?.title ?? '',
   embedUrl: video?.embedUrl ?? '',
   canonicalUrl: video?.canonicalUrl ?? '',
@@ -34,12 +41,14 @@ const toInput = (values: CuratedVideoFormValues): CuratedVideoInput => ({
 
 export const CuratedVideoForm = ({
   video,
+  itemLabel = 'video',
   error,
   isSubmitting,
   onSubmit,
   onCancel,
 }: {
-  readonly video?: CuratedVideo;
+  readonly video?: VideoFieldsInput;
+  readonly itemLabel?: string;
   readonly error?: unknown;
   readonly isSubmitting: boolean;
   readonly onSubmit: (input: CuratedVideoInput) => Promise<void> | void;
@@ -132,7 +141,11 @@ export const CuratedVideoForm = ({
         />
         <Stack direction="row" spacing={1.5}>
           <Button type="submit" variant="contained" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : video ? 'Save video' : 'Add video'}
+            {isSubmitting
+              ? 'Saving…'
+              : video
+                ? `Save ${itemLabel}`
+                : `Add ${itemLabel}`}
           </Button>
           <Button onClick={onCancel} disabled={isSubmitting}>
             Cancel

@@ -159,12 +159,17 @@ describe('public player pages', () => {
   });
 
   it('rejects an invalid player URL without requesting player data', async () => {
-    const fetchImplementation = vi.fn<typeof fetch>();
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.reject(new TypeError('Unexpected test request')),
+    );
     renderApp('/players/not-a-uuid', { fetchImplementation });
     expect(
       await screen.findByRole('heading', { name: 'Player not found' }),
     ).toBeInTheDocument();
-    expect(fetchImplementation).not.toHaveBeenCalled();
+    expect(fetchImplementation).not.toHaveBeenCalledWith(
+      expect.stringContaining('/players/'),
+      expect.anything(),
+    );
   });
 
   it('compares two URL-selected players without declaring an overall winner', async () => {

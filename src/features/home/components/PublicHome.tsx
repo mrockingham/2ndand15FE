@@ -208,70 +208,82 @@ const PersonalizationCallout = ({
   </Card>
 );
 
-export const PublicHome = ({
+export const PublicHomeContent = ({
   chooseTeam = false,
+  showPersonalizationCallout = true,
 }: {
   readonly chooseTeam?: boolean;
+  readonly showPersonalizationCallout?: boolean;
 }) => {
   const gamesQuery = useGamesQuery({ limit: 4 });
   const newsQuery = useFeaturedArticlesQuery({ limit: 3 });
   const insightsQuery = useWeeklyInsightsQuery(weeklyFilters);
 
   return (
-    <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
-      <Stack spacing={{ xs: 4, md: 5 }}>
-        <PublicHero chooseTeam={chooseTeam} />
-        {chooseTeam ? <PersonalizationCallout chooseTeam /> : null}
-        <HomeGamesGrid query={gamesQuery} />
-        <Box
-          sx={{
-            display: 'grid',
-            gap: { xs: 4, lg: 3 },
-            gridTemplateColumns: {
-              xs: '1fr',
-              lg: 'minmax(0, 1.35fr) minmax(340px, 0.65fr)',
-            },
-          }}
+    <Stack spacing={{ xs: 4, md: 5 }}>
+      <PublicHero chooseTeam={chooseTeam} />
+      {chooseTeam ? <PersonalizationCallout chooseTeam /> : null}
+      <HomeGamesGrid query={gamesQuery} />
+      <Box
+        sx={{
+          display: 'grid',
+          gap: { xs: 4, lg: 3 },
+          gridTemplateColumns: {
+            xs: '1fr',
+            lg: 'minmax(0, 1.35fr) minmax(340px, 0.65fr)',
+          },
+        }}
+      >
+        <HomePublicNews query={newsQuery} />
+        <HomeAiSnapshot query={insightsQuery} />
+      </Box>
+      <Box
+        sx={{
+          display: 'grid',
+          gap: 3,
+          gridTemplateColumns: {
+            xs: '1fr',
+            lg: 'minmax(0, 1.35fr) minmax(300px, 0.65fr)',
+          },
+        }}
+      >
+        <HomeStatsLeaders />
+        <Card
+          component="section"
+          sx={{ p: { xs: 2.5, md: 3 }, alignSelf: 'end' }}
         >
-          <HomePublicNews query={newsQuery} />
-          <HomeAiSnapshot query={insightsQuery} />
-        </Box>
-        <Box
-          sx={{
-            display: 'grid',
-            gap: 3,
-            gridTemplateColumns: {
-              xs: '1fr',
-              lg: 'minmax(0, 1.35fr) minmax(300px, 0.65fr)',
-            },
-          }}
-        >
-          <HomeStatsLeaders />
-          <Card
-            component="section"
-            sx={{ p: { xs: 2.5, md: 3 }, alignSelf: 'end' }}
-          >
-            <Stack spacing={1.5}>
-              <AutoAwesomeRounded color="primary" aria-hidden="true" />
-              <Typography component="h2" variant="h3">
-                Explore every team
-              </Typography>
-              <Typography color="text.secondary">
-                Browse all 32 team hubs for schedules, published news, and
-                clearly labeled historical coverage.
-              </Typography>
-              <Button component={RouterLink} to="/teams" variant="outlined">
-                Explore Teams
-              </Button>
-              <Typography variant="caption" color="text.secondary">
-                Current 2026 standings are not available, so Home does not
-                invent them.
-              </Typography>
-            </Stack>
-          </Card>
-        </Box>
-        {chooseTeam ? null : <PersonalizationCallout chooseTeam={false} />}
-      </Stack>
-    </Container>
+          <Stack spacing={1.5}>
+            <AutoAwesomeRounded color="primary" aria-hidden="true" />
+            <Typography component="h2" variant="h3">
+              Explore every team
+            </Typography>
+            <Typography color="text.secondary">
+              Browse all 32 team hubs for schedules, published news, and clearly
+              labeled historical coverage.
+            </Typography>
+            <Button component={RouterLink} to="/teams" variant="outlined">
+              Explore Teams
+            </Button>
+            <Typography variant="caption" color="text.secondary">
+              Current 2026 standings are not available, so Home does not invent
+              them.
+            </Typography>
+          </Stack>
+        </Card>
+      </Box>
+      {chooseTeam || !showPersonalizationCallout ? null : (
+        <PersonalizationCallout chooseTeam={false} />
+      )}
+    </Stack>
   );
 };
+
+export const PublicHome = ({
+  chooseTeam = false,
+}: {
+  readonly chooseTeam?: boolean;
+}) => (
+  <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+    <PublicHomeContent chooseTeam={chooseTeam} />
+  </Container>
+);

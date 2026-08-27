@@ -537,7 +537,9 @@ describe('public Team Hub page', () => {
   });
 
   it('renders invalid and unknown team identifiers with the existing not-found experience', async () => {
-    const invalidFetch = vi.fn<typeof fetch>();
+    const invalidFetch = vi.fn<typeof fetch>(() =>
+      Promise.reject(new TypeError('Unexpected test request')),
+    );
     const invalid = renderApp('/teams/not-a-uuid', {
       fetchImplementation: invalidFetch,
     });
@@ -546,7 +548,10 @@ describe('public Team Hub page', () => {
         name: 'This route missed the mark.',
       }),
     ).toBeInTheDocument();
-    expect(invalidFetch).not.toHaveBeenCalled();
+    expect(invalidFetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/teams/'),
+      expect.anything(),
+    );
     invalid.unmount();
 
     renderApp(`/teams/${billsFixture.id}`, {

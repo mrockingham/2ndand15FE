@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import {
   getGame,
@@ -11,6 +12,7 @@ import {
 import {
   getGameCenterStaleTime,
   getGameRefetchInterval,
+  getScoreboardRefetchInterval,
 } from '@/features/games/gameCenterPolling';
 import { gameKeys } from '@/features/games/queryKeys';
 import type { GameListFilters } from '@/features/games/types';
@@ -43,6 +45,32 @@ export const useGamesQuery = (filters: GameListFilters, enabled = true) => {
     staleTime: SCHEDULE_STALE_TIME,
     refetchOnMount: isCurrentSchedule(filters.season) ? 'always' : true,
     retry: retryPublicGameQuery,
+  });
+};
+
+const SCOREBOARD_WINDOW_DAYS_BEFORE = 2;
+const SCOREBOARD_WINDOW_DAYS_AFTER = 7;
+const toDateOnly = (date: Date) => date.toISOString().slice(0, 10);
+
+export const useScoreboardGamesQuery = () => {
+  const { publicClient } = useApiClients();
+  const [filters] = useState<GameListFilters>(() => ({
+    startDate: toDateOnly(
+      new Date(Date.now() - SCOREBOARD_WINDOW_DAYS_BEFORE * 24 * 60 * 60_000),
+    ),
+    endDate: toDateOnly(
+      new Date(Date.now() + SCOREBOARD_WINDOW_DAYS_AFTER * 24 * 60 * 60_000),
+    ),
+    limit: 100,
+  }));
+  return useQuery({
+    queryKey: gameKeys.list(filters),
+    queryFn: ({ signal }) => listGames(publicClient, filters, signal),
+    staleTime: SCHEDULE_STALE_TIME,
+    refetchOnMount: 'always',
+    refetchInterval: (query) =>
+      getScoreboardRefetchInterval(query.state.data?.games),
+    retry: false,
   });
 };
 

@@ -64,6 +64,15 @@ describe('curatedVideoFormSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('rejects the oEmbed check URL pasted in place of the actual embed URL', () => {
+    const result = curatedVideoFormSchema.safeParse({
+      ...validValues,
+      embedUrl:
+        'https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=xWr-cyWMdJ4',
+    });
+    expect(result.success).toBe(false);
+  });
+
   it('enforces the title length cap', () => {
     const result = curatedVideoFormSchema.safeParse({
       ...validValues,

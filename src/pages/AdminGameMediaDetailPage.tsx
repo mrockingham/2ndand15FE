@@ -217,6 +217,18 @@ export const AdminGameMediaDetailPage = () => {
         />
       </Box>
 
+      {detail.globalVideo ? (
+        <Box sx={{ mt: 3 }}>
+          <Typography color="text.secondary">
+            {detail.displayMode === 'GLOBAL'
+              ? `Global video "${detail.globalVideo.title}" is primary here because this game has no curated or automatic media.`
+              : `Global video "${detail.globalVideo.title}" is active and appears as a secondary video on this game's Game Center.`}{' '}
+            Manage it from the{' '}
+            <RouterLink to="/admin/game-media">Game Media</RouterLink> page.
+          </Typography>
+        </Box>
+      ) : null}
+
       <Dialog
         open={formMode !== null}
         onClose={() => setFormMode(null)}

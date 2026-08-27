@@ -7,6 +7,8 @@ import type {
   CuratedVideoInput,
   CuratedVideoUpdateInput,
   GameMediaResult,
+  GlobalVideo,
+  GlobalVideoInput,
   ReorderVideosInput,
 } from '@/features/gameMedia/types';
 import type { ApiClient } from '@/services/api/apiClient';
@@ -97,6 +99,39 @@ export const deleteCuratedVideo = (client: ApiClient, videoId: string) =>
     `/admin/game-media/videos/${encodeURIComponent(videoId)}`,
     { authenticated: true, method: 'DELETE' },
   );
+
+// Live-verified: GET returns { data: null } (200) when no global video is
+// configured, never a 404.
+export const getGlobalVideo = async (client: ApiClient, signal?: AbortSignal) =>
+  (
+    await client.request<DataResponse<GlobalVideo | null>>(
+      '/admin/game-media/global-video',
+      { authenticated: true, method: 'GET', signal },
+    )
+  ).data;
+
+// PUT is a live-verified upsert -- same body/response shape creates or
+// replaces the single global video record (confirmed: same `id` returned
+// across repeated PUTs, only `updatedAt` changes).
+export const putGlobalVideo = async (
+  client: ApiClient,
+  input: GlobalVideoInput,
+) =>
+  (
+    await client.request<DataResponse<GlobalVideo>>(
+      '/admin/game-media/global-video',
+      { authenticated: true, method: 'PUT', body: input },
+    )
+  ).data;
+
+// Live-verified: returns the deleted record in { data }, not void/204.
+export const deleteGlobalVideo = async (client: ApiClient) =>
+  (
+    await client.request<DataResponse<GlobalVideo>>(
+      '/admin/game-media/global-video',
+      { authenticated: true, method: 'DELETE' },
+    )
+  ).data;
 
 export const getGameMedia = async (
   client: ApiClient,

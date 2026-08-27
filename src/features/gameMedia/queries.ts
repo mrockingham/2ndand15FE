@@ -5,9 +5,12 @@ import { useRefreshRoleOnForbidden } from '@/features/admin/queries';
 import {
   createCuratedVideo,
   deleteCuratedVideo,
+  deleteGlobalVideo,
   getAdminGameMediaDetail,
   getGameMedia,
+  getGlobalVideo,
   listAdminGameMedia,
+  putGlobalVideo,
   reorderCuratedVideos,
   updateCuratedVideo,
 } from '@/features/gameMedia/api';
@@ -20,6 +23,8 @@ import type {
   AdminGameMediaListFilters,
   CuratedVideoInput,
   CuratedVideoUpdateInput,
+  GlobalVideo,
+  GlobalVideoInput,
   ReorderVideosInput,
 } from '@/features/gameMedia/types';
 import { ApiError } from '@/services/api/apiClient';
@@ -154,6 +159,59 @@ export const useDeleteCuratedVideoMutation = (
   const mutation = useMutation({
     mutationFn: () => deleteCuratedVideo(authenticatedClient, videoId),
     onSuccess,
+  });
+  useRefreshRoleOnForbidden(mutation.error);
+  return mutation;
+};
+
+export const useGlobalVideoQuery = () => {
+  const { authenticatedClient } = useApiClients();
+  const query = useQuery({
+    queryKey: adminGameMediaKeys.globalVideo(),
+    queryFn: ({ signal }) => getGlobalVideo(authenticatedClient, signal),
+    staleTime: 15_000,
+    retry: adminRetry,
+  });
+  useRefreshRoleOnForbidden(query.error);
+  return query;
+};
+
+// The global video affects every game's public media and every game's
+// admin list/detail entry (hasGlobalVideo/displayMode), so its mutations
+// invalidate broadly rather than a single gameId's keys.
+const useGlobalVideoSuccess = () => {
+  const queryClient = useQueryClient();
+  return (video: GlobalVideo | null) => {
+    queryClient.setQueryData(adminGameMediaKeys.globalVideo(), video);
+    void queryClient.invalidateQueries({
+      queryKey: adminGameMediaKeys.lists(),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: adminGameMediaKeys.details(),
+    });
+    void queryClient.invalidateQueries({ queryKey: gameMediaKeys.all });
+    void queryClient.invalidateQueries({ queryKey: adminAuditKeys.all });
+  };
+};
+
+export const useSaveGlobalVideoMutation = () => {
+  const { authenticatedClient } = useApiClients();
+  const onSuccess = useGlobalVideoSuccess();
+  const mutation = useMutation({
+    mutationFn: (input: GlobalVideoInput) =>
+      putGlobalVideo(authenticatedClient, input),
+    onSuccess,
+  });
+  useRefreshRoleOnForbidden(mutation.error);
+  return mutation;
+};
+
+export const useDeleteGlobalVideoMutation = () => {
+  const { authenticatedClient } = useApiClients();
+  const onSuccess = useGlobalVideoSuccess();
+  const mutation = useMutation({
+    mutationFn: () => deleteGlobalVideo(authenticatedClient),
+    onSuccess: () => onSuccess(null),
   });
   useRefreshRoleOnForbidden(mutation.error);
   return mutation;

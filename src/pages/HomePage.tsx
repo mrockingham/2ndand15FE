@@ -1,6 +1,6 @@
 import { Alert, Box, Button, Container, Skeleton, Stack } from '@mui/material';
 
-import { PersonalizedHome } from '@/features/home/components/PersonalizedHome';
+import { AuthenticatedHome } from '@/features/home/components/AuthenticatedHome';
 import { PublicHome } from '@/features/home/components/PublicHome';
 import { useCurrentUserQuery } from '@/features/users/queries';
 import { useAuthStore } from '@/stores/authStore';
@@ -57,7 +57,7 @@ export const HomePage = () => {
   if (user.favoriteTeam === null) return <PublicHome chooseTeam />;
 
   return (
-    <PersonalizedHome
+    <AuthenticatedHome
       displayName={user.displayName?.trim() || 'NFL fan'}
       favoriteTeam={user.favoriteTeam}
     />

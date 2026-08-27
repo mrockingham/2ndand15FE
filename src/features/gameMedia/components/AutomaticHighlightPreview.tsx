@@ -20,9 +20,9 @@ export const AutomaticHighlightPreview = ({
     );
   }
   const statusMessage =
-    displayMode === 'CURATED'
-      ? 'Preserved — currently hidden in Game Center because curated media is active.'
-      : 'Currently shown in Game Center.';
+    displayMode === 'AUTOMATIC'
+      ? 'Currently shown in Game Center.'
+      : 'Preserved — currently not the primary Game Center media.';
 
   return (
     <Typography color="text.secondary">

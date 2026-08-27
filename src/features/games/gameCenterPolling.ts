@@ -68,6 +68,19 @@ export const getStatsRefetchInterval = (
   }
 };
 
+export const SCOREBOARD_LIVE_REFETCH_MS = 20_000;
+export const SCOREBOARD_IDLE_REFETCH_MS = 5 * 60_000;
+
+export const getScoreboardRefetchInterval = (
+  games: readonly Game[] | undefined,
+): number | false => {
+  if (games === undefined) return false;
+  const hasLive = games.some(
+    (game) => game.status === 'IN_PROGRESS' || game.status === 'HALFTIME',
+  );
+  return hasLive ? SCOREBOARD_LIVE_REFETCH_MS : SCOREBOARD_IDLE_REFETCH_MS;
+};
+
 export type GameCenterQueryKind = 'game' | 'plays' | 'stats';
 
 const REFETCH_INTERVAL_BY_KIND: Readonly<

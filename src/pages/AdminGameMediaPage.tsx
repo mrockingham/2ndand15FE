@@ -12,8 +12,10 @@ import {
   type GameMediaFilterValue,
 } from '@/features/gameMedia/components/GameMediaFilters';
 import { GameMediaGameCard } from '@/features/gameMedia/components/GameMediaGameCard';
+import { GlobalVideoPanel } from '@/features/gameMedia/components/GlobalVideoPanel';
 import { useAdminGameMediaListQuery } from '@/features/gameMedia/queries';
 import type { SeasonType } from '@/features/games/types';
+import { useCurrentUserQuery } from '@/features/users/queries';
 
 const CURRENT_SEASON = 2026;
 const seasonTypes: readonly SeasonType[] = ['PRE', 'REG', 'POST'];
@@ -44,6 +46,7 @@ export const AdminGameMediaPage = () => {
 
   const query = useAdminGameMediaListQuery(value);
   const games = query.data?.games ?? [];
+  const isAdmin = useCurrentUserQuery().data?.role === 'ADMIN';
 
   return (
     <>
@@ -51,6 +54,7 @@ export const AdminGameMediaPage = () => {
         title="Game Media"
         description="Curate embedded video content shown inside Game Center."
       />
+      <GlobalVideoPanel isAdmin={isAdmin} />
       <GameMediaFilters
         value={value}
         onChange={onChange}

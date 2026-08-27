@@ -61,6 +61,10 @@ const mediaNone = (game: Game) =>
       gameId: game.id,
       displayMode: 'NONE',
       curatedVideos: [],
+      highlights: [],
+      globalVideo: null,
+      displayVideos: [],
+      coverage: 'UNKNOWN',
     },
   });
 
@@ -93,6 +97,9 @@ const buildFetch = (
     if (url.pathname.endsWith('/media')) {
       if (counts) counts.highlights += 1;
       return Promise.resolve((mediaResponse ?? mediaNone(game)).clone());
+    }
+    if (url.pathname.endsWith('/games')) {
+      return Promise.resolve(json({ data: [], meta: { nextCursor: null } }));
     }
     if (counts) counts.game += 1;
     return Promise.resolve(json({ data: game }));
@@ -372,6 +379,9 @@ describe('Game Center', () => {
         counts.highlights += 1;
         return Promise.resolve(mediaNone(currentGame));
       }
+      if (url.pathname.endsWith('/games')) {
+        return Promise.resolve(json({ data: [], meta: { nextCursor: null } }));
+      }
       counts.game += 1;
       return Promise.resolve(json({ data: currentGame }));
     });
@@ -492,6 +502,9 @@ describe('Game Center', () => {
       }
       if (url.pathname.endsWith('/stats')) {
         return Promise.resolve(statsNotFound());
+      }
+      if (url.pathname.endsWith('/games')) {
+        return Promise.resolve(json({ data: [], meta: { nextCursor: null } }));
       }
       gameCallCount += 1;
       if (gameCallCount === 1) {

@@ -1,5 +1,6 @@
 import type {
   CuratedVideo,
+  GameDisplayVideo,
   GameMediaDisplayMode,
 } from '@/features/gameMedia/types';
 
@@ -7,8 +8,19 @@ export const displayModeLabel: Readonly<Record<GameMediaDisplayMode, string>> =
   {
     CURATED: 'Curated media',
     AUTOMATIC: 'Automatic highlight',
+    GLOBAL: 'Global video',
     NONE: 'No media',
   };
+
+// Viewer-facing label for a display item's origin -- never expose the raw
+// backend `mediaType` enum directly in the UI.
+export const mediaTypeLabel: Readonly<
+  Record<GameDisplayVideo['mediaType'], string>
+> = {
+  CURATED: 'Game Video',
+  AUTOMATIC: 'Game Highlight',
+  GLOBAL: 'Featured Video',
+};
 
 export const MAX_CURATED_VIDEOS = 4;
 

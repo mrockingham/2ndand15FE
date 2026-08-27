@@ -14,6 +14,7 @@ export const adminGameMediaKeys = {
   details: () => [...adminGameMediaKeys.all, 'detail'] as const,
   detail: (gameId: string) =>
     [...adminGameMediaKeys.details(), gameId] as const,
+  globalVideo: () => [...adminGameMediaKeys.all, 'global-video'] as const,
 };
 
 export const gameMediaKeys = {

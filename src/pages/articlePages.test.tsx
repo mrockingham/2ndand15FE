@@ -164,7 +164,9 @@ describe('public News experience', () => {
     const detailRender = renderApp(`/news/${publicArticleFixture.slug}`, {
       fetchImplementation: vi
         .fn<typeof fetch>()
-        .mockResolvedValue(jsonResponse({ data: publicArticleDetailFixture })),
+        .mockImplementation(() =>
+          Promise.resolve(jsonResponse({ data: publicArticleDetailFixture })),
+        ),
     });
     expect(
       await screen.findByRole('heading', {
@@ -177,8 +179,10 @@ describe('public News experience', () => {
     renderApp('/news/unavailable-story', {
       fetchImplementation: vi
         .fn<typeof fetch>()
-        .mockResolvedValue(
-          apiErrorResponse('ARTICLE_NOT_FOUND', 'Internal detail', 404),
+        .mockImplementation(() =>
+          Promise.resolve(
+            apiErrorResponse('ARTICLE_NOT_FOUND', 'Internal detail', 404),
+          ),
         ),
     });
     expect(

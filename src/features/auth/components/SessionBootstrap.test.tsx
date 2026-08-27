@@ -40,11 +40,13 @@ describe('startup session restoration', () => {
   it('continues signed out after an expected invalid refresh session', async () => {
     const fetchImplementation = vi
       .fn<typeof fetch>()
-      .mockResolvedValue(
-        apiErrorResponse(
-          'INVALID_REFRESH_TOKEN',
-          'The refresh session is invalid or expired.',
-          401,
+      .mockImplementation(() =>
+        Promise.resolve(
+          apiErrorResponse(
+            'INVALID_REFRESH_TOKEN',
+            'The refresh session is invalid or expired.',
+            401,
+          ),
         ),
       );
     renderApp('/', { fetchImplementation, restorationStatus: 'pending' });

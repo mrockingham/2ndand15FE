@@ -81,7 +81,7 @@ describe('team catalog and selection', () => {
     renderApp('/choose-team', {
       fetchImplementation: vi
         .fn<typeof fetch>()
-        .mockResolvedValue(jsonResponse({ data: [] })),
+        .mockImplementation(() => Promise.resolve(jsonResponse({ data: [] }))),
       restorationStatus: 'authenticated',
     });
     expect(
@@ -91,15 +91,20 @@ describe('team catalog and selection', () => {
 
   it('shows a catalog error and retries successfully', async () => {
     const user = userEvent.setup();
-    const fetchImplementation = vi
-      .fn<typeof fetch>()
-      .mockResolvedValueOnce(
-        apiErrorResponse('INTERNAL_SERVER_ERROR', 'No', 500),
-      )
-      .mockResolvedValueOnce(
-        apiErrorResponse('INTERNAL_SERVER_ERROR', 'No', 500),
-      )
-      .mockResolvedValueOnce(teamListResponse());
+    let teamCatalogCalls = 0;
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      if (String(input).includes('/games')) {
+        return Promise.resolve(
+          jsonResponse({ data: [], meta: { nextCursor: null } }),
+        );
+      }
+      teamCatalogCalls += 1;
+      return Promise.resolve(
+        teamCatalogCalls <= 2
+          ? apiErrorResponse('INTERNAL_SERVER_ERROR', 'No', 500)
+          : teamListResponse(),
+      );
+    });
     renderApp('/choose-team', {
       fetchImplementation,
       restorationStatus: 'authenticated',

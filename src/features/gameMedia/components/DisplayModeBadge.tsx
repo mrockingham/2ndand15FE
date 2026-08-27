@@ -7,6 +7,7 @@ import type { GameMediaDisplayMode } from '@/features/gameMedia/types';
 const colorFor = (mode: GameMediaDisplayMode): ChipProps['color'] => {
   if (mode === 'CURATED') return 'success';
   if (mode === 'AUTOMATIC') return 'primary';
+  if (mode === 'GLOBAL') return 'secondary';
   return 'default';
 };
 

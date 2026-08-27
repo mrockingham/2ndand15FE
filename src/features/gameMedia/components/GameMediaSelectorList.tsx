@@ -2,9 +2,10 @@ import MovieRounded from '@mui/icons-material/MovieRounded';
 import { Box, ButtonBase, Card, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 
-import type { CuratedVideo } from '@/features/gameMedia/types';
+import { mediaTypeLabel } from '@/features/gameMedia/presentation';
+import type { GameDisplayVideo } from '@/features/gameMedia/types';
 
-const SelectorThumbnail = ({ video }: { readonly video: CuratedVideo }) => {
+const SelectorThumbnail = ({ video }: { readonly video: GameDisplayVideo }) => {
   const [failed, setFailed] = useState(false);
   const showImage = video.thumbnailUrl !== null && !failed;
   return (
@@ -37,19 +38,28 @@ const SelectorThumbnail = ({ video }: { readonly video: CuratedVideo }) => {
   );
 };
 
-export const CuratedMediaSelectorList = ({
+// Every item after the primary/selected one in the backend's displayVideos
+// order becomes a selector, regardless of whether it originated as a
+// curated, automatic, or global video -- the rail doesn't care.
+export const GameMediaSelectorList = ({
   videos,
   selectedVideoId,
   onSelect,
 }: {
-  readonly videos: readonly CuratedVideo[];
+  readonly videos: readonly GameDisplayVideo[];
   readonly selectedVideoId: string | null;
   readonly onSelect: (videoId: string) => void;
 }) => (
   <Stack
     direction={{ xs: 'row', md: 'column' }}
     spacing={1.5}
-    sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }}
+    sx={{
+      flexWrap: { xs: 'nowrap', md: 'nowrap' },
+      overflowX: { xs: 'auto', md: 'visible' },
+      overflowY: { xs: 'visible', md: 'auto' },
+      maxHeight: { md: 420 },
+      pb: { xs: 1, md: 0 },
+    }}
   >
     {videos.map((video) => {
       const selected = video.id === selectedVideoId;
@@ -60,6 +70,7 @@ export const CuratedMediaSelectorList = ({
           sx={{
             borderColor: selected ? 'primary.main' : undefined,
             borderWidth: selected ? 2 : 1,
+            flexShrink: 0,
           }}
         >
           <ButtonBase
@@ -77,14 +88,12 @@ export const CuratedMediaSelectorList = ({
           >
             <SelectorThumbnail video={video} />
             <Box sx={{ minWidth: 0 }}>
+              <Typography variant="caption" color="text.secondary">
+                {mediaTypeLabel[video.mediaType]}
+              </Typography>
               <Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
                 {video.title}
               </Typography>
-              {video.sourceLabel ? (
-                <Typography variant="caption" color="text.secondary" noWrap>
-                  {video.sourceLabel}
-                </Typography>
-              ) : null}
             </Box>
           </ButtonBase>
         </Card>

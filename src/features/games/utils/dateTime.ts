@@ -41,6 +41,18 @@ export const formatGameTime = (
   }).format(date);
 };
 
+export const formatGameWeekday = (
+  startTime: string | null,
+  options: FormatOptions = {},
+) => {
+  const date = parseGameDate(startTime);
+  if (date === null) return null;
+  return new Intl.DateTimeFormat(options.locale, {
+    weekday: 'short',
+    ...(options.timeZone === undefined ? {} : { timeZone: options.timeZone }),
+  }).format(date);
+};
+
 export const formatGameDateTime = (
   game: Pick<Game, 'startTime' | 'week'>,
   options: FormatOptions = {},
