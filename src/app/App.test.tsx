@@ -10,11 +10,16 @@ describe('application routing', () => {
       screen.getByRole('link', { name: '2nd & 15 home' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /see the game/i }),
+      screen.getByRole('heading', { name: /your front row to football/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('navigation', { name: 'Primary navigation' }),
     ).toBeInTheDocument();
+    expect(
+      screen
+        .getByRole('navigation', { name: 'Primary navigation' })
+        .querySelector('[aria-current="page"]'),
+    ).toHaveAttribute('aria-current', 'page');
     expect(screen.getByTestId('mobile-navigation')).toBeInTheDocument();
   });
 

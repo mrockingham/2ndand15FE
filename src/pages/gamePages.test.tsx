@@ -1,13 +1,18 @@
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { GameTeam } from '@/features/games/types';
+import type { Game, GameTeam } from '@/features/games/types';
+import type { GameMediaResult } from '@/features/gameMedia/types';
 import type { Team } from '@/features/teams/types';
-import { currentUserFixture } from '@/test/authFixtures';
+import { currentUserFixture, eaglesFixture } from '@/test/authFixtures';
 import {
   awayGameTeamFixture,
   gameFixture,
+  gameHighlightFixture,
+  hallOfFameGameFixture,
   homeGameTeamFixture,
+  panthersGameTeamFixture,
+  preseasonWeekOneFixture,
   tbdGameFixture,
 } from '@/test/gameFixtures';
 import { renderApp } from '@/test/renderApp';
@@ -46,6 +51,70 @@ const scheduleFetch = (games = [gameFixture, tbdGameFixture]) =>
     return Promise.reject(new TypeError(`Unexpected request: ${url.pathname}`));
   });
 
+const gameDetailFetch = (
+  game: Game,
+  gameStatus = 200,
+  mediaOverrides: Partial<GameMediaResult> = {},
+) => {
+  const media: GameMediaResult = {
+    gameId: game.id,
+    displayMode: 'NONE',
+    curatedVideos: [],
+    highlights: [],
+    globalVideo: null,
+    displayVideos: [],
+    coverage: 'UNKNOWN',
+    ...mediaOverrides,
+  };
+  return vi.fn<typeof fetch>((input) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith('/plays'))
+      return Promise.resolve(
+        json({
+          data: { gameId: game.id, playCount: 0, plays: [] },
+          meta: { limitations: [] },
+        }),
+      );
+    if (url.pathname.endsWith('/stats'))
+      return Promise.resolve(
+        json(
+          { error: { code: 'GAME_STATS_NOT_FOUND', message: 'Not found' } },
+          404,
+        ),
+      );
+    if (url.pathname.endsWith('/media'))
+      return Promise.resolve(json({ data: media }));
+    return Promise.resolve(json({ data: game }, gameStatus));
+  });
+};
+
+const homeHubResponse = (
+  team: Team,
+  upcoming: readonly Game[],
+  recent: readonly Game[] = [],
+) => ({
+  data: {
+    team,
+    schedule: { season: 2026, upcoming, recent },
+    news: { articles: [] },
+    historicalData: {
+      defaultSeason: null,
+      rosterSeasons: [],
+      statSeasons: [],
+      positions: [],
+      positionGroups: [],
+      coverageNotes: [],
+    },
+  },
+  meta: {
+    attribution: {
+      source: 'nflverse',
+      license: 'CC BY 4.0',
+      url: 'https://github.com/nflverse/nflverse-data',
+    },
+  },
+});
+
 describe('public Games pages', () => {
   it('lazy-loads the real schedule, requests the selected week, and renders nullable kickoffs safely', async () => {
     const fetchImplementation = scheduleFetch();
@@ -65,6 +134,79 @@ describe('public Games pages', () => {
         expect.anything(),
       ),
     );
+  });
+
+  it('renders the reviewed null-week preseason result in the all-preseason view', async () => {
+    const fetchImplementation = scheduleFetch([
+      preseasonWeekOneFixture,
+      hallOfFameGameFixture,
+    ]);
+    renderApp('/games?season=2026&type=PRE', { fetchImplementation });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Preseason · All games',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Week')).toHaveTextContent('All Preseason');
+    const hallOfFameLabel = await screen.findByText('Hall of Fame Game');
+    const weekOneLabel = await screen.findByText('Preseason Week 1');
+    expect(
+      hallOfFameLabel.compareDocumentPosition(weekOneLabel) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.queryByText(/Week (?:null|0)/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText('Carolina Panthers')).toHaveLength(2);
+    expect(screen.getAllByText('Arizona Cardinals')).toHaveLength(2);
+    expect(screen.getByText('33')).toBeInTheDocument();
+    expect(screen.getByText('30')).toBeInTheDocument();
+    expect(screen.getByText('Final')).toBeInTheDocument();
+    expect(screen.getByText('Neutral site')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Tom Benson Hall of Fame Stadium/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('NBC')).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-team-helmet="CAR"]'),
+    ).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-team-helmet="ARI"]'),
+    ).toBeInTheDocument();
+    const gameRequest = fetchImplementation.mock.calls.find(([input]) =>
+      String(input).includes('/games?season='),
+    );
+    expect(String(gameRequest?.[0])).toContain(
+      '/games?season=2026&seasonType=PRE&limit=100',
+    );
+    expect(String(gameRequest?.[0])).not.toContain('week=');
+  });
+
+  it('keeps matchup helmets local when global accents use another favorite', async () => {
+    const cowboys = {
+      ...homeGameTeamFixture,
+      fullName: 'Dallas Cowboys',
+      abbreviation: 'DAL',
+    };
+    renderApp('/games?type=REG&week=16', {
+      restorationStatus: 'authenticated',
+      currentUser: { ...currentUserFixture, favoriteTeam: eaglesFixture },
+      fetchImplementation: scheduleFetch([
+        { ...gameFixture, homeTeam: cowboys },
+      ]),
+    });
+
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-team-helmet="DAL"]'),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('team-visual-theme-root')).toHaveAttribute(
+      'data-team-visual',
+      'PHI',
+    );
+    expect(
+      document.querySelector('[data-team-helmet="PHI"]'),
+    ).not.toBeInTheDocument();
   });
 
   it('keeps season type, week, and team in the URL while navigating', async () => {
@@ -110,23 +252,17 @@ describe('public Games pages', () => {
   });
 
   it('renders a detail page using only resolved public fields and handles a 404', async () => {
-    const successFetch = vi.fn<typeof fetch>(() =>
-      Promise.resolve(
-        json({
-          data: {
-            ...gameFixture,
-            status: 'FINAL',
-            awayScore: 21,
-            homeScore: 17,
-          },
-        }),
-      ),
-    );
+    const finalGame: Game = {
+      ...gameFixture,
+      status: 'FINAL',
+      awayScore: 21,
+      homeScore: 17,
+    };
     renderApp(`/games/${gameFixture.id}`, {
-      fetchImplementation: successFetch,
+      fetchImplementation: gameDetailFetch(finalGame),
     });
     expect(
-      await screen.findByRole('heading', { name: 'Game details' }),
+      await screen.findByRole('heading', { name: 'Game Center' }),
     ).toBeInTheDocument();
     expect(screen.getByText('21')).toBeInTheDocument();
     expect(
@@ -146,22 +282,174 @@ describe('public Games pages', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows Highlights on a FINAL game, plays an embeddable highlight inline, and keeps the scoreboard/plays/stats regression intact', async () => {
+    const finalGame: Game = {
+      ...gameFixture,
+      status: 'FINAL',
+      awayScore: 21,
+      homeScore: 17,
+    };
+    renderApp(`/games/${gameFixture.id}`, {
+      fetchImplementation: gameDetailFetch(finalGame, 200, {
+        displayMode: 'AUTOMATIC',
+        highlights: [gameHighlightFixture],
+        coverage: 'AVAILABLE',
+        displayVideos: [
+          {
+            id: gameHighlightFixture.id,
+            mediaType: 'AUTOMATIC',
+            title: gameHighlightFixture.title,
+            embedUrl: gameHighlightFixture.embedUrl,
+            canonicalUrl: gameHighlightFixture.canonicalUrl,
+            thumbnailUrl: gameHighlightFixture.thumbnailUrl,
+            sourceLabel: null,
+            canEmbed: gameHighlightFixture.canEmbed,
+          },
+        ],
+      }),
+    });
+    expect(
+      await screen.findByRole('heading', { name: 'Game Center' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('21')).toBeInTheDocument();
+    expect(
+      await screen.findByText(gameHighlightFixture.title),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Game Highlight')).toBeInTheDocument();
+    // The primary item embeds immediately -- no click required -- since it
+    // is backend-authoritative canEmbed: true, unlike the old lazy-play card.
+    const iframe = document.querySelector('iframe');
+    expect(iframe).toHaveAttribute('src', gameHighlightFixture.embedUrl);
+    expect(iframe).toHaveAttribute('title', gameHighlightFixture.title);
+    const externalLink = screen.getByRole('link', {
+      name: `Watch externally: ${gameHighlightFixture.title}`,
+    });
+    expect(externalLink).toHaveAttribute(
+      'href',
+      gameHighlightFixture.canonicalUrl,
+    );
+  });
+
+  it('keeps the rest of Game Center fully functional when the media request fails', async () => {
+    const finalGame: Game = {
+      ...gameFixture,
+      status: 'FINAL',
+      awayScore: 21,
+      homeScore: 17,
+    };
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith('/media'))
+        return Promise.resolve(
+          json({ error: { code: 'BAD_REQUEST', message: 'boom' } }, 400),
+        );
+      if (url.pathname.endsWith('/plays'))
+        return Promise.resolve(
+          json({
+            data: { gameId: finalGame.id, playCount: 0, plays: [] },
+            meta: { limitations: [] },
+          }),
+        );
+      if (url.pathname.endsWith('/stats'))
+        return Promise.resolve(
+          json(
+            { error: { code: 'GAME_STATS_NOT_FOUND', message: 'Not found' } },
+            404,
+          ),
+        );
+      return Promise.resolve(json({ data: finalGame }));
+    });
+    renderApp(`/games/${gameFixture.id}`, { fetchImplementation });
+    expect(
+      await screen.findByRole('heading', { name: 'Game Center' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('21')).toBeInTheDocument();
+    expect(screen.getByText('17')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Highlights are temporarily unavailable.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('renders the Hall of Fame Game detail as a final neutral-site result', async () => {
+    renderApp(`/games/${hallOfFameGameFixture.id}`, {
+      fetchImplementation: gameDetailFetch(hallOfFameGameFixture),
+    });
+
+    expect(
+      await screen.findByText(/2026 · Hall of Fame Game/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Carolina Panthers')).toBeInTheDocument();
+    expect(screen.getByText('Arizona Cardinals')).toBeInTheDocument();
+    expect(screen.getByText('33')).toBeInTheDocument();
+    expect(screen.getByText('30')).toBeInTheDocument();
+    expect(screen.getByText('Final')).toBeInTheDocument();
+    expect(screen.getByText('Neutral site')).toBeInTheDocument();
+    expect(
+      screen.getByText('Tom Benson Hall of Fame Stadium · Canton, Ohio'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('NBC')).toBeInTheDocument();
+    expect(screen.queryByText(/Quarter 4|Q4|4 · 0/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/passing|rushing|receiving|box score/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it('refetches a fresh current-season schedule cache on remount', async () => {
+    let gameRequests = 0;
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith('/teams'))
+        return Promise.resolve(json({ data: teams }));
+      if (url.searchParams.has('startDate'))
+        return Promise.resolve(json({ data: [], meta: { nextCursor: null } }));
+      if (url.pathname.endsWith('/games')) {
+        gameRequests += 1;
+        return Promise.resolve(
+          json({
+            data: [
+              gameRequests === 1
+                ? {
+                    ...hallOfFameGameFixture,
+                    status: 'SCHEDULED',
+                    awayScore: null,
+                    homeScore: null,
+                  }
+                : hallOfFameGameFixture,
+            ],
+            meta: { nextCursor: null },
+          }),
+        );
+      }
+      return Promise.reject(
+        new TypeError(`Unexpected request: ${url.pathname}`),
+      );
+    });
+    const first = renderApp('/games?season=2026&type=PRE', {
+      fetchImplementation,
+    });
+    await screen.findByText('Scheduled');
+    first.unmount();
+
+    renderApp('/games?season=2026&type=PRE', {
+      fetchImplementation,
+      queryClient: first.queryClient,
+    });
+    expect(await screen.findByText('33')).toBeInTheDocument();
+    expect(gameRequests).toBe(2);
+  });
+
   it('renders the favorite-team next game on Home and isolates schedule failures', async () => {
     const favoriteTeam = teams[0]!;
     const fetchImplementation = vi.fn<typeof fetch>((input) => {
       const url = new URL(String(input));
-      if (url.pathname.includes(`/teams/${favoriteTeam.id}/games`)) {
+      if (url.pathname.endsWith(`/teams/${favoriteTeam.id}/hub`))
         return Promise.resolve(
-          json({ data: [tbdGameFixture], meta: { nextCursor: null } }),
+          json(homeHubResponse(favoriteTeam, [tbdGameFixture])),
         );
-      }
-      if (
-        url.pathname.endsWith('/articles/featured') ||
-        url.pathname.endsWith('/articles')
-      ) {
-        return Promise.resolve(json({ data: [], meta: { nextCursor: null } }));
-      }
-      return Promise.reject(new TypeError('schedule unavailable'));
+      return Promise.resolve(
+        json({ error: { code: 'NOT_AVAILABLE', message: 'Unavailable' } }, 404),
+      );
     });
     renderApp('/', {
       restorationStatus: 'authenticated',
@@ -169,9 +457,40 @@ describe('public Games pages', () => {
       fetchImplementation,
     });
     await screen.findByText('NEXT GAME');
-    expect(screen.getByText('Week 16 · Time TBD')).toBeInTheDocument();
+    expect(screen.getByText(/Time TBD/)).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /Welcome back/ }),
+      screen.getByRole('heading', { name: 'Buffalo Bills' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('team-visual-theme-root')).toHaveAttribute(
+      'data-team-visual',
+      'BUF',
+    );
+    expect(
+      screen.getAllByRole('img', { name: 'Buffalo Bills helmet' })[0],
+    ).toBeInTheDocument();
+  });
+
+  it('does not keep a final null-week game in the Home next-game card', async () => {
+    const favoriteTeam = teamFromGame(panthersGameTeamFixture);
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = new URL(String(input));
+      if (url.pathname.endsWith(`/teams/${favoriteTeam.id}/hub`))
+        return Promise.resolve(
+          json(homeHubResponse(favoriteTeam, [], [hallOfFameGameFixture])),
+        );
+      return Promise.resolve(
+        json({ error: { code: 'NOT_AVAILABLE', message: 'Unavailable' } }, 404),
+      );
+    });
+    renderApp('/', {
+      restorationStatus: 'authenticated',
+      currentUser: { ...currentUserFixture, favoriteTeam },
+      fetchImplementation,
+    });
+
+    expect(await screen.findByText('LAST GAME')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Hall of Fame Game' }),
     ).toBeInTheDocument();
   });
 });

@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 import { AppHeader } from '@/components/navigation/AppHeader';
 import { MobileNavigation } from '@/components/navigation/MobileNavigation';
+import { GlobalScoreboardBar } from '@/features/games/components/GlobalScoreboardBar';
 
 const focusedAuthRoutes = new Set([
   '/login',
@@ -53,6 +54,7 @@ export const AppLayout = () => {
         Skip to content
       </Box>
       <AppHeader />
+      {usesFocusedAuthLayout ? null : <GlobalScoreboardBar />}
       <Box
         component="main"
         id="main-content"

@@ -97,16 +97,16 @@ export const GameScheduleList = ({
 }) => {
   const sections: readonly StatusSection[] = [
     {
+      title: 'Completed games',
+      games: games.filter((game) => game.status === 'FINAL'),
+    },
+    {
       title: 'Upcoming and active games',
       games: games.filter((game) =>
         ['SCHEDULED', 'PREGAME', 'IN_PROGRESS', 'HALFTIME'].includes(
           game.status,
         ),
       ),
-    },
-    {
-      title: 'Completed games',
-      games: games.filter((game) => game.status === 'FINAL'),
     },
     {
       title: 'Schedule exceptions',

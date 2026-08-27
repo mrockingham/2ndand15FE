@@ -8,20 +8,28 @@ These frontend checks improve navigation only. Every administrative request is a
 
 ## Routes
 
-| Route                                 | Purpose                                          | Role            |
-| ------------------------------------- | ------------------------------------------------ | --------------- |
-| `/admin`                              | Redirect to Games                                | Editor or admin |
-| `/admin/games`                        | Bounded schedule list                            | Editor or admin |
-| `/admin/games/new`                    | Manual game creation                             | Editor or admin |
-| `/admin/games/:gameId`                | Detail, edit, override, verification, game audit | Editor or admin |
-| `/admin/import`                       | Validate and write a schedule CSV                | Editor or admin |
-| `/admin/audit`                        | Complete sanitized audit log                     | Admin           |
-| `/admin/news-sources`                 | Source registry, health, test, and ingest        | Editor or admin |
-| `/admin/news-sources/new`             | Source creation                                  | Admin           |
-| `/admin/news-sources/:sourceId`       | Source detail and admin-only editing             | Editor or admin |
-| `/admin/news-candidates`              | Editorial candidate inbox                        | Editor or admin |
-| `/admin/news-candidates/manual`       | Manual metadata submission                       | Editor or admin |
-| `/admin/news-candidates/:candidateId` | Candidate review and draft conversion            | Editor or admin |
+| Route                                 | Purpose                                          | Role                          |
+| ------------------------------------- | ------------------------------------------------ | ----------------------------- |
+| `/admin`                              | Redirect to Games                                | Editor or admin               |
+| `/admin/games`                        | Bounded schedule list                            | Editor or admin               |
+| `/admin/games/new`                    | Manual game creation                             | Editor or admin               |
+| `/admin/games/:gameId`                | Detail, edit, override, verification, game audit | Editor or admin               |
+| `/admin/import`                       | Validate and write a schedule CSV                | Editor or admin               |
+| `/admin/audit`                        | Complete sanitized audit log                     | Admin                         |
+| `/admin/news-sources`                 | Source registry, health, test, and ingest        | Editor or admin               |
+| `/admin/news-sources/new`             | Source creation                                  | Admin                         |
+| `/admin/news-sources/:sourceId`       | Source detail and admin-only editing             | Editor or admin               |
+| `/admin/news-candidates`              | Editorial candidate inbox                        | Editor or admin               |
+| `/admin/news-candidates/manual`       | Manual metadata submission                       | Editor or admin               |
+| `/admin/news-candidates/:candidateId` | Candidate review and draft conversion            | Editor or admin               |
+| `/admin/data-health`                  | Current-season game data coverage and diagnosis  | Editor or admin               |
+| `/admin/game-media`                   | Game Center curated video list                   | Editor or admin               |
+| `/admin/game-media/:gameId`           | Curated video management for one game            | Editor (view), admin (manage) |
+| `/admin/homepage`                     | Hero carousel and Top Stories management         | Editor or admin               |
+| `/admin/homepage/hero/new`            | Hero slide creation                              | Editor or admin               |
+| `/admin/homepage/hero/:slideId`       | Hero slide editing                               | Editor or admin               |
+
+Homepage CMS management (M35B) does not follow the editor-view/admin-manage split used by Game Media — both `EDITOR` and `ADMIN` may create, edit, delete, and reorder Hero slides and Top Stories, matching the backend's `MANAGE_HOMEPAGE_CMS` capability grant. See [homepage-usage.md](homepage-usage.md) for the full Homepage CMS contract, including how a Top Story is marked from the Articles list.
 
 ## Games and ownership
 
@@ -66,6 +74,18 @@ Changing content clears the validation result. Buttons are disabled while reques
 
 Admins can filter the complete audit log by the backend-supported action, entity type, and entity ID fields and page by cursor. Editors can see only game-scoped events on game detail where the backend permits it. Before/after snapshots are flattened into changed fields, sensitive-key patterns are suppressed again in the UI, and no raw arbitrary JSON or HTML is rendered.
 
+## Game Media
+
+Operators curate up to 4 manually embedded videos per game, plus one globally-configured video, at `/admin/game-media`. A **Global Game Center Video** panel sits above the season/season-type/week filters — it shows the currently active global video (thumbnail, title, source, canonical link) or a "No global video configured" empty state, with Add/Edit/Remove for `ADMIN` and a read-only view for `EDITOR`. The global video is shown on every Game Center: first (primary) when a game has no curated video and no available automatic highlight, second (a selector) when other media exists. It is one database record, never copied per game, and never counts against a game's 4-curated-video cap.
+
+Below the filters, each game row shows curated/automatic counts and a friendly display-mode badge ("Curated media" / "Automatic highlight" / "Global video" / "No media" — the raw backend enum is never shown). "Manage Media" opens `/admin/game-media/:gameId`, which now also shows a small read-only note when a global video is active, explaining whether it's currently primary or secondary for that game — global video management itself stays on the top-level list page, never duplicated into per-game detail.
+
+Both the per-game curated-video form and the global-video form share the same fields and component: title and embed URL are required; canonical URL, thumbnail URL, and source label are optional. The embed-URL field's helper text always reads "Paste the embed URL, not the iframe code" — the form rejects pasted `<iframe>`/HTML markup and non-HTTPS URLs client-side, but does not duplicate the backend's embed-host allowlist; a rejected host (the same `GAME_CURATED_VIDEO_HOST_NOT_ALLOWED` code covers both curated and global videos) or duplicate embed URL is reported back from the backend's error response. Both forms also offer the YouTube oEmbed checker: paste a normal watch link, confirm it allows embedding, and use the result to fill in the embed URL/canonical URL/title/thumbnail for review before saving.
+
+Position 0 is always primary for per-game curated videos (the backend also returns an explicit `isPrimary` flag). Reordering uses Move Up/Move Down buttons (no drag-and-drop) and calls the backend's order endpoint directly; the first item after any reorder is the new primary. Removing a curated video shows a confirmation explaining that the automatic Highlightly highlight, if any, is preserved and unaffected, and that removing the last curated video restores automatic display in Game Center. Removing the global video shows a matching confirmation: games with their own media keep it, games with no other media return to having no video. The Automatic Highlight section on the game detail page remains read-only informational display only — Highlightly data cannot be edited or deleted from Game Media.
+
+Add/Edit/Remove/Reorder controls (both per-game and global) are `ADMIN`-only, matching the mutating-action gating used elsewhere in Admin (e.g. News Sources pause/resume/edit); `EDITOR` accounts see the identical read-only list, detail, and global-video panel with no action buttons.
+
 ## Known limitations and exclusions
 
 - Backend list filters are currently limited to season, limit, and cursor.
@@ -74,4 +94,4 @@ Admins can filter the complete audit log by the backend-supported action, entity
 - There is no role-management UI, provider configuration UI, rich-text/HTML editing, multipart upload, live polling, WebSocket, play-by-play, or deployment change. Public schedule behavior is documented in [public-games-usage.md](public-games-usage.md), and the separate Markdown-based article CMS is documented in [editorial-cms-usage.md](editorial-cms-usage.md).
 - Highlightly remains evaluation-only. No Highlightly synchronization was added.
 
-News-source and candidate operating guidance lives in [news-inbox-usage.md](news-inbox-usage.md). Ingestion is explicit and creates only private candidates; it never publishes an article.
+News-source and candidate operating guidance lives in [news-inbox-usage.md](news-inbox-usage.md). Ingestion is explicit and creates only private candidates; it never publishes an article. Data Health coverage/diagnosis semantics and the explicit, quota-consuming Highlightly probe live in [data-health-usage.md](data-health-usage.md).

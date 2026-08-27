@@ -14,7 +14,7 @@ import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { isNavigationPathActive, navigationItems } from '@/app/navigation';
 import { BrandMark } from '@/components/navigation/BrandMark';
 import { ThemeToggle } from '@/components/navigation/ThemeToggle';
-import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
+import { TeamHelmet } from '@/components/team/TeamHelmet';
 import { useCurrentUserQuery } from '@/features/users/queries';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -58,6 +58,8 @@ export const AppHeader = () => {
                 location.pathname,
                 item.path,
               );
+              const futureDestination =
+                item.path === '/ai' || item.path === '/fantasy';
 
               return (
                 <Button
@@ -68,10 +70,14 @@ export const AppHeader = () => {
                   color={isActive ? 'primary' : 'inherit'}
                   sx={{
                     position: 'relative',
+                    display: {
+                      md: futureDestination ? 'none' : 'inline-flex',
+                      lg: 'inline-flex',
+                    },
                     minWidth: 0,
                     px: { md: 1.25, lg: 1.75 },
                     borderRadius: 0,
-                    color: isActive ? 'primary.light' : 'text.secondary',
+                    color: isActive ? 'var(--team-primary)' : 'text.secondary',
                     fontSize: { md: '0.78rem', lg: '0.86rem' },
                     '&::after': {
                       position: 'absolute',
@@ -80,7 +86,7 @@ export const AppHeader = () => {
                       left: 12,
                       height: 2,
                       borderRadius: 4,
-                      backgroundColor: 'primary.main',
+                      backgroundColor: 'var(--team-primary)',
                       content: isActive ? '""' : 'none',
                     },
                     '&:hover': {
@@ -134,7 +140,11 @@ export const AppHeader = () => {
               sx={{ display: { xs: 'inline-flex', sm: 'none' } }}
             >
               {isAuthenticated && favoriteTeam !== null ? (
-                <TeamIdentity decorative team={favoriteTeam} size={30} />
+                <TeamHelmet
+                  decorative
+                  team={favoriteTeam.abbreviation}
+                  size="xs"
+                />
               ) : isAuthenticated ? (
                 <PersonRounded />
               ) : (
@@ -148,7 +158,11 @@ export const AppHeader = () => {
               size="small"
               startIcon={
                 isAuthenticated && favoriteTeam !== null ? (
-                  <TeamIdentity decorative team={favoriteTeam} size={26} />
+                  <TeamHelmet
+                    decorative
+                    team={favoriteTeam.abbreviation}
+                    size="xs"
+                  />
                 ) : isAuthenticated ? (
                   <PersonRounded />
                 ) : (

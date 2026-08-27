@@ -32,7 +32,16 @@ import {
   usePlayerQuery,
   usePlayerSeasonsQuery,
 } from '@/features/players/queries';
-import type { PlayerSeasonStat } from '@/features/players/types';
+import type {
+  PlayerSeasonStat,
+  PlayerSummaryType,
+} from '@/features/players/types';
+
+const summaryTypePreference: readonly PlayerSummaryType[] = [
+  'REG_POST',
+  'REG',
+  'POST',
+];
 
 export const PlayerComparePage = () => {
   const [parameters, setParameters] = useSearchParams();
@@ -61,21 +70,53 @@ export const PlayerComparePage = () => {
     requestedSeason && commonSeasons.includes(requestedSeason)
       ? requestedSeason
       : commonSeasons[0];
-  const leftSummary = selectSummary(leftSeasons.data?.seasons ?? [], season);
-  const rightSummary = selectSummary(rightSeasons.data?.seasons ?? [], season);
+  const sharedSummaryTypes = findSharedSummaryTypes(
+    leftSeasons.data?.seasons ?? [],
+    rightSeasons.data?.seasons ?? [],
+    season,
+  );
+  const requestedSummaryType = parseSummaryType(parameters.get('type'));
+  const summaryType =
+    requestedSummaryType && sharedSummaryTypes.includes(requestedSummaryType)
+      ? requestedSummaryType
+      : sharedSummaryTypes[0];
+  const leftSummary = findSummary(
+    leftSeasons.data?.seasons ?? [],
+    season,
+    summaryType,
+  );
+  const rightSummary = findSummary(
+    rightSeasons.data?.seasons ?? [],
+    season,
+    summaryType,
+  );
+  const summariesReady =
+    leftPlayer.data !== undefined &&
+    rightPlayer.data !== undefined &&
+    leftSeasons.isSuccess &&
+    rightSeasons.isSuccess;
 
   useEffect(() => {
-    if (season === undefined || requestedSeason === season) return;
+    if (!summariesReady) return;
     const next = new URLSearchParams(parameters);
-    next.set('season', String(season));
+    if (season === undefined) {
+      next.delete('season');
+      next.delete('type');
+    } else {
+      next.set('season', String(season));
+      if (summaryType) next.set('type', summaryType);
+      else next.delete('type');
+    }
+    if (next.toString() === parameters.toString()) return;
     setParameters(next, { replace: true });
-  }, [parameters, requestedSeason, season, setParameters]);
+  }, [parameters, season, setParameters, summariesReady, summaryType]);
 
   const updatePlayer = (side: 'left' | 'right', playerId: string | null) => {
     const next = new URLSearchParams(parameters);
     if (playerId) next.set(side, playerId);
     else next.delete(side);
     next.delete('season');
+    next.delete('type');
     setParameters(next);
   };
 
@@ -171,25 +212,56 @@ export const PlayerComparePage = () => {
             cannot be compared.
           </Alert>
         ) : null}
+        {summariesReady &&
+        season !== undefined &&
+        sharedSummaryTypes.length === 0 ? (
+          <Alert severity="info">
+            These players both have summary data for {season}, but they do not
+            share a directly equivalent summary type. A comparison is not
+            available for this season.
+          </Alert>
+        ) : null}
         {left && right && season && leftSummary && rightSummary ? (
           <>
-            <TextField
-              select
-              label="Comparison season"
-              value={season}
-              onChange={(event) => {
-                const next = new URLSearchParams(parameters);
-                next.set('season', event.target.value);
-                setParameters(next);
-              }}
-              sx={{ maxWidth: 240 }}
-            >
-              {commonSeasons.map((value) => (
-                <MenuItem key={value} value={value}>
-                  {value}
-                </MenuItem>
-              ))}
-            </TextField>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+              <TextField
+                select
+                label="Comparison season"
+                value={season}
+                onChange={(event) => {
+                  const next = new URLSearchParams(parameters);
+                  next.set('season', event.target.value);
+                  next.delete('type');
+                  setParameters(next);
+                }}
+                sx={{ minWidth: 220 }}
+              >
+                {commonSeasons.map((value) => (
+                  <MenuItem key={value} value={value}>
+                    {value}
+                  </MenuItem>
+                ))}
+              </TextField>
+              {sharedSummaryTypes.length > 1 ? (
+                <TextField
+                  select
+                  label="Summary type"
+                  value={summaryType}
+                  onChange={(event) => {
+                    const next = new URLSearchParams(parameters);
+                    next.set('type', event.target.value);
+                    setParameters(next);
+                  }}
+                  sx={{ minWidth: 280 }}
+                >
+                  {sharedSummaryTypes.map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {summaryTypeLabel[type]}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              ) : null}
+            </Stack>
             <Paper variant="outlined" sx={{ p: 2.5 }}>
               <Typography component="h2" variant="h3">
                 {season} comparison
@@ -220,18 +292,36 @@ export const PlayerComparePage = () => {
   );
 };
 
-const selectSummary = (
-  rows: readonly PlayerSeasonStat[],
+const findSharedSummaryTypes = (
+  leftRows: readonly PlayerSeasonStat[],
+  rightRows: readonly PlayerSeasonStat[],
   season: number | undefined,
 ) => {
-  if (season === undefined) return undefined;
-  const seasonRows = rows.filter((row) => row.season === season);
-  return (
-    seasonRows.find((row) => row.summaryType === 'REG_POST') ??
-    seasonRows.find((row) => row.summaryType === 'REG') ??
-    seasonRows.find((row) => row.summaryType === 'POST')
+  if (season === undefined) return [];
+  const leftTypes = new Set(
+    leftRows
+      .filter((row) => row.season === season)
+      .map((row) => row.summaryType),
+  );
+  const rightTypes = new Set(
+    rightRows
+      .filter((row) => row.season === season)
+      .map((row) => row.summaryType),
+  );
+  return summaryTypePreference.filter(
+    (type) => leftTypes.has(type) && rightTypes.has(type),
   );
 };
+
+const findSummary = (
+  rows: readonly PlayerSeasonStat[],
+  season: number | undefined,
+  summaryType: PlayerSummaryType | undefined,
+) =>
+  rows.find((row) => row.season === season && row.summaryType === summaryType);
+
+const parseSummaryType = (value: string | null) =>
+  summaryTypePreference.find((type) => type === value);
 
 const ComparisonTable = ({
   leftName,

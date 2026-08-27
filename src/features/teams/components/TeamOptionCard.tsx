@@ -1,9 +1,12 @@
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import { Box, ButtonBase, Card, Stack, Typography } from '@mui/material';
-import { alpha } from '@mui/material/styles';
 
-import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
-import { safeTeamColor } from '@/features/teams/teamPresentation';
+import { TeamHelmet } from '@/components/team/TeamHelmet';
+import { getTeamVisualConfig } from '@/features/teamVisualIdentity/teamVisualConfigs';
+import {
+  getTeamThemeTokens,
+  getTeamVisualCssVariables,
+} from '@/features/teamVisualIdentity/teamTheme';
 import type { Team } from '@/features/teams/types';
 
 interface TeamOptionCardProps {
@@ -21,17 +24,19 @@ export const TeamOptionCard = ({
 }: TeamOptionCardProps) => (
   <Card
     sx={(theme) => {
-      const accent = safeTeamColor(
-        team.primaryColor,
-        theme.palette.primary.main,
+      const tokens = getTeamThemeTokens(
+        getTeamVisualConfig(team.abbreviation),
+        theme.palette.mode,
       );
       return {
+        ...getTeamVisualCssVariables(tokens),
         height: '100%',
         overflow: 'hidden',
-        borderColor: selected ? accent : 'appSurfaces.border',
-        boxShadow: selected
-          ? `0 0 0 2px ${alpha(accent, 0.35)}, 0 20px 48px ${alpha(accent, 0.18)}`
+        borderColor: selected ? tokens.subtleBorder : 'appSurfaces.border',
+        backgroundImage: selected
+          ? `linear-gradient(135deg, ${tokens.subtleBackgroundStrong}, transparent 70%)`
           : undefined,
+        boxShadow: selected ? `0 0 0 2px ${tokens.subtleBorder}` : undefined,
       };
     }}
   >
@@ -60,7 +65,7 @@ export const TeamOptionCard = ({
         spacing={2}
         sx={{ width: '100%', alignItems: 'center' }}
       >
-        <TeamIdentity team={team} size={62} />
+        <TeamHelmet team={team.abbreviation} size="md" />
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography variant="h4" component="span" sx={{ display: 'block' }}>
             {team.fullName}
@@ -70,7 +75,7 @@ export const TeamOptionCard = ({
           </Typography>
           <Typography
             variant="overline"
-            color={selected ? 'primary.light' : 'text.secondary'}
+            color={selected ? 'var(--team-primary)' : 'text.secondary'}
             sx={{ display: 'block', mt: 1 }}
           >
             {selected ? 'SELECTED' : team.abbreviation}

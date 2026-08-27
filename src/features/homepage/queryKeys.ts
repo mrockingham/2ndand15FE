@@ -1,0 +1,11 @@
+export const homepageKeys = {
+  all: ['homepage', 'public'] as const,
+};
+
+export const adminHomepageKeys = {
+  all: ['homepage', 'admin'] as const,
+  hero: () => [...adminHomepageKeys.all, 'hero'] as const,
+  heroDetail: (slideId: string) =>
+    [...adminHomepageKeys.hero(), slideId] as const,
+  topStories: () => [...adminHomepageKeys.all, 'top-stories'] as const,
+};

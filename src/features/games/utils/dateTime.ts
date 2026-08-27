@@ -41,6 +41,18 @@ export const formatGameTime = (
   }).format(date);
 };
 
+export const formatGameWeekday = (
+  startTime: string | null,
+  options: FormatOptions = {},
+) => {
+  const date = parseGameDate(startTime);
+  if (date === null) return null;
+  return new Intl.DateTimeFormat(options.locale, {
+    weekday: 'short',
+    ...(options.timeZone === undefined ? {} : { timeZone: options.timeZone }),
+  }).format(date);
+};
+
 export const formatGameDateTime = (
   game: Pick<Game, 'startTime' | 'week'>,
   options: FormatOptions = {},
@@ -90,9 +102,9 @@ const seasonOrder = { PRE: 0, REG: 1, POST: 2 } as const;
 
 export const compareGamesForNext = (left: Game, right: Game) =>
   seasonOrder[left.seasonType] - seasonOrder[right.seasonType] ||
+  compareGames(left, right) ||
   (left.week ?? Number.MAX_SAFE_INTEGER) -
-    (right.week ?? Number.MAX_SAFE_INTEGER) ||
-  compareGames(left, right);
+    (right.week ?? Number.MAX_SAFE_INTEGER);
 
 export const isGameUpcoming = (game: Game, now = new Date()) => {
   if (game.status === 'PREGAME') return true;

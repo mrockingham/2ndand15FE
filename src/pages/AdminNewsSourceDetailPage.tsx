@@ -73,7 +73,7 @@ export const AdminNewsSourceDetailPage = () => {
     <>
       <AdminPageHeader
         title={source.name}
-        description={`${source.publisherName} · ${sourceKindLabel[source.kind]}`}
+        description={`${source.publisherName} · ${sourceKindLabel[source.kind]} · ${source.contentType}`}
         action={
           <Button component={RouterLink} to="/admin/news-sources">
             All sources

@@ -36,3 +36,7 @@ Conversion requires an original summary and may include original Markdown commen
 Backend evaluation found the ESPN NFL RSS feed technically parseable. ESPN is not hardcoded and no default source is inserted. The proposed NFL.com `?format=rss` URL returned oversized HTML and was rejected; no team-feed URL is inferred.
 
 There is no cron job, scheduler, queue, Redis worker, webhook, automatic ingestion, automatic publication, scraping, headless browser, article-body extraction, social ingestion, AI summary/writing, image fetching, or image upload in this milestone.
+
+## Content type and thumbnail preview (M30C)
+
+Each source and candidate carries a deterministic `contentType` (`ARTICLE`/`VIDEO`/`HIGHLIGHT`, set on the source configuration, never inferred per item) and, for VIDEO/HIGHLIGHT, a feed-provided `mediaThumbnailUrl`. The candidate list and detail pages now show both: a content-type chip next to the status chip, an "Official Team" chip when `candidate.source.isOfficialTeam` is true, and — where a thumbnail exists — the same thumbnail-with-fallback component the public news cards use, so operators reviewing the mostly-`PAUSED` official-team sources can see exactly what a converted article would look like before it's published. Converting a candidate carries its `contentType`, `mediaThumbnailUrl`, and source official-team provenance onto the resulting curated article; see `docs/news-usage.md` for the public-facing presentation.

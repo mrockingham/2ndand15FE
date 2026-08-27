@@ -5,6 +5,7 @@ import { createAppQueryClient } from '@/app/queryClient';
 import { createConfiguredApiClients } from '@/app/createConfiguredApiClients';
 import { ApplicationErrorBoundary } from '@/components/feedback/ApplicationErrorBoundary';
 import { SessionBootstrap } from '@/features/auth/components/SessionBootstrap';
+import { TeamVisualThemeProvider } from '@/features/teamVisualIdentity/TeamVisualThemeProvider';
 import type { ApiClients } from '@/services/api/apiClients';
 import { ApiClientsProvider } from '@/services/api/ApiClientsProvider';
 import { AppThemeProvider } from '@/theme/ThemeProvider';
@@ -30,7 +31,9 @@ export const AppProviders = ({
       <ApplicationErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <ApiClientsProvider clients={apiClients}>
-            <SessionBootstrap>{children}</SessionBootstrap>
+            <SessionBootstrap>
+              <TeamVisualThemeProvider>{children}</TeamVisualThemeProvider>
+            </SessionBootstrap>
           </ApiClientsProvider>
         </QueryClientProvider>
       </ApplicationErrorBoundary>

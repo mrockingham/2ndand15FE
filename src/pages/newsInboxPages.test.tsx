@@ -9,6 +9,7 @@ import {
   jsonResponse,
 } from '@/test/authFixtures';
 import {
+  chicagoHighlightCandidateFixture,
   ingestionRunFixture,
   newsCandidateFixture,
   newsSourceDetailFixture,
@@ -196,6 +197,62 @@ describe('editorial candidate inbox', () => {
         ),
       ).toBe(true),
     );
+  });
+
+  it('shows content-type badges and a media preview for a HIGHLIGHT candidate', async () => {
+    const listFetch = vi.fn<typeof fetch>((input) => {
+      const url = String(input);
+      if (url.includes('/admin/news-sources?'))
+        return Promise.resolve(page([newsSourceFixture]));
+      if (url.endsWith('/teams')) return Promise.resolve(page([billsFixture]));
+      if (url.includes('/admin/news-candidates?'))
+        return Promise.resolve(
+          page([newsCandidateFixture, chicagoHighlightCandidateFixture]),
+        );
+      return Promise.reject(new TypeError(`Unexpected ${url}`));
+    });
+    const listView = renderApp('/admin/news-candidates', {
+      currentUser: editor,
+      restorationStatus: 'authenticated',
+      fetchImplementation: listFetch,
+    });
+    expect(
+      await screen.findAllByText(chicagoHighlightCandidateFixture.headline),
+    ).not.toHaveLength(0);
+    expect(screen.getAllByText('HIGHLIGHT').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Official Team').length).toBeGreaterThan(0);
+    listView.unmount();
+
+    const detailFetch = vi.fn<typeof fetch>((input) => {
+      const url = String(input);
+      if (url.endsWith('/teams')) return Promise.resolve(page([billsFixture]));
+      if (
+        url.endsWith(
+          `/admin/news-candidates/${chicagoHighlightCandidateFixture.id}`,
+        )
+      )
+        return Promise.resolve(
+          jsonResponse({ data: chicagoHighlightCandidateFixture }),
+        );
+      return Promise.reject(new TypeError(`Unexpected ${url}`));
+    });
+    renderApp(`/admin/news-candidates/${chicagoHighlightCandidateFixture.id}`, {
+      currentUser: editor,
+      restorationStatus: 'authenticated',
+      fetchImplementation: detailFetch,
+    });
+    expect(
+      await screen.findByRole('heading', { name: 'Media preview' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('img', {
+        name: chicagoHighlightCandidateFixture.headline,
+      }),
+    ).toHaveAttribute(
+      'src',
+      chicagoHighlightCandidateFixture.thumbnailUrl ?? undefined,
+    );
+    expect(screen.getAllByText('Official Team').length).toBeGreaterThan(0);
   });
 
   it('keeps publisher copy plain, supports transitions, and starts conversion summary empty', async () => {

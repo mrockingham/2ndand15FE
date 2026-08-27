@@ -2,7 +2,7 @@
 
 ## Coverage and routes
 
-Frontend Milestone 12 exposes the backend’s configured current-season schedule at `/games` and resolved game detail at `/games/:gameId`. The development dataset contains all 32 active NFL teams, 48 preseason games, and 272 regular-season games for 2026. It has 17 regular-season games and one valid bye per team. The Hall of Fame Game is omitted because it is not present in the imported schedule. Postseason navigation is intentionally absent until records exist.
+Frontend Milestone 12 exposes the backend’s configured current-season schedule at `/games` and resolved game detail at `/games/:gameId`. Milestone 22F additionally supports the backend’s reviewed 2026 Hall of Fame Game, whose preseason `week` is intentionally `null`. The development dataset contains all 32 active NFL teams, the reviewed special event, the remaining preseason schedule, and 272 regular-season games for 2026. It has 17 regular-season games and one valid bye per team. Postseason navigation is intentionally absent until records exist.
 
 The imported schedule is verified-source data but remains editorially unverified until an authorized editor or administrator reviews it. The public UI displays the backend’s resolved game DTO only. Provider mappings, provenance, verification actors, base/override separation, internal notes, and audit history never enter the public model.
 
@@ -10,7 +10,9 @@ The imported schedule is verified-source data but remains editorially unverified
 
 The Games route stores `type`, `week`, and an optional internal team UUID in the URL. A valid optional `season` parameter preserves the backend’s supported historical access. Changing the week preserves the other filters. Requests include one selected week and a limit of 100, which safely bounds a normal NFL week; a returned cursor is exposed through Load more rather than ignored.
 
-When `type` or `week` is absent, the frontend makes one bounded unfiltered request. The backend applies its configured current season and 14-day upcoming window. The frontend chooses an active game first, then the next scheduled or pregame game, then a returned final, and falls back to Regular Season Week 1. This uses returned records rather than calendar week math and does not request a full season. Supplying a season type without a week defaults to Week 1 for that type.
+When `type` or a required regular-season `week` is absent, the frontend makes one bounded unfiltered request. The backend applies its configured current season and 14-day upcoming window. The frontend chooses an active game first, then the next scheduled or pregame game, then a returned final, and falls back to Regular Season Week 1. This uses returned records rather than calendar week math and does not request a full season. Supplying Regular Season without a week defaults to Week 1. Supplying Preseason without a week is the explicit All Preseason view so the null-week Hall of Fame Game remains visible alongside numbered preseason weeks. The week selector never invents Week 0 or assigns the special event to Week 1.
+
+The reviewed game UUID `0768c441-16a6-457c-b50f-e7273d750d77` is labeled `Hall of Fame Game` only when its 2026 preseason/null-week and Carolina-at-Arizona identity also match. Other future null-week preseason records receive the safe generic `Preseason` label until a separate contract is reviewed.
 
 The team selector reuses the 24-hour active team catalog and sends application-owned UUIDs only. Signed-in users with a favorite team receive a My Team shortcut, but league-wide games remain the default. Signed-out and no-favorite states do not render a broken shortcut.
 
@@ -36,6 +38,6 @@ A successful empty 2026 regular-season team/week response displays `Bye week`. L
 
 ## Caching and exclusions
 
-Public week, detail, and team queries use deterministic `['games', ...]` keys, pass abort signals, remain stale for five minutes, and never persist to Zustand or local storage. Administrative schedule writes invalidate the public game family along with the narrow admin families. Manual refresh is available; `refetchInterval` is not configured.
+Public week, detail, and team queries use deterministic `['games', ...]` keys, pass abort signals, remain stale for five minutes, and never persist to Zustand or local storage. Current-season lists, details, and team schedules refetch on mount so a recently synchronized final result replaces a fresh scheduled cache entry without a hard reload. Historical reads retain ordinary stale-time behavior. Team Hub overview refetches on mount for the same current-schedule reason; its historical roster and leader caches remain unchanged. Administrative schedule writes invalidate the public game family along with the narrow admin families. Manual refresh is available; `refetchInterval` is not configured.
 
 This milestone adds no live polling, WebSockets, server-sent events, provider synchronization, play-by-play, drives, statistics, standings, injuries, betting, predictions, fantasy tools, calendar export, scraping, or postseason placeholders.

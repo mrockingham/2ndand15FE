@@ -17,6 +17,8 @@ import {
   AdminLoading,
 } from '@/features/admin/components/AdminRequestState';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
+import { MediaThumbnail } from '@/features/articles/components/MediaThumbnail';
+import { contentTypeLabel } from '@/features/articles/presentation';
 import { CandidateConversionForm } from '@/features/newsInbox/components/CandidateConversionForm';
 import { DismissCandidateDialog } from '@/features/newsInbox/components/DismissCandidateDialog';
 import { CandidateStatusChip } from '@/features/newsInbox/components/NewsStatusChip';
@@ -45,6 +47,7 @@ export const AdminNewsCandidateDetailPage = () => {
     );
   const candidate = query.data;
   const actionable = ['NEW', 'REVIEWING', 'SAVED'].includes(candidate.status);
+  const mediaContentType = contentTypeLabel(candidate.contentType);
   const transitionError = review.error ?? save.error;
   return (
     <>
@@ -72,7 +75,15 @@ export const AdminNewsCandidateDetailPage = () => {
               alignItems: { sm: 'center' },
             }}
           >
-            <CandidateStatusChip status={candidate.status} />
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <CandidateStatusChip status={candidate.status} />
+              {mediaContentType ? (
+                <Chip size="small" label={mediaContentType} />
+              ) : null}
+              {candidate.source?.isOfficialTeam ? (
+                <Chip size="small" variant="outlined" label="Official Team" />
+              ) : null}
+            </Stack>
             {actionable ? (
               <Stack
                 direction="row"
@@ -141,6 +152,24 @@ export const AdminNewsCandidateDetailPage = () => {
               value={formatInboxDate(candidate.reviewedAt)}
             />
           </Box>
+          {mediaContentType ? (
+            <div>
+              <Typography component="h2" variant="h5">
+                Media preview
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                The feed-provided thumbnail; no video is fetched or embedded.
+              </Typography>
+              <Box sx={{ mt: 1, maxWidth: 480 }}>
+                <MediaThumbnail
+                  thumbnailUrl={candidate.thumbnailUrl}
+                  alt={candidate.headline}
+                  contentType={mediaContentType}
+                  team={candidate.suggestedTeams[0]}
+                />
+              </Box>
+            </div>
+          ) : null}
           <div>
             <Typography component="h2" variant="h5">
               Publisher-provided description

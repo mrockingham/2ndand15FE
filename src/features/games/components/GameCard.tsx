@@ -11,8 +11,12 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { TeamHelmet } from '@/components/team/TeamHelmet';
 import { GameStatusChip } from '@/features/games/components/GameStatusChip';
-import { isScoreStatus, seasonTypeLabel } from '@/features/games/presentation';
+import {
+  getGameDisplayLabel,
+  isScoreStatus,
+} from '@/features/games/presentation';
 import type { Game, GameTeam } from '@/features/games/types';
 import {
   formatGameDate,
@@ -20,7 +24,6 @@ import {
   parseGameDate,
   TIME_TBD,
 } from '@/features/games/utils/dateTime';
-import { TeamIdentity } from '@/features/teams/components/TeamIdentity';
 
 interface TeamRowProps {
   readonly label: 'Away' | 'Home';
@@ -36,7 +39,7 @@ const TeamRow = ({ label, score, team, winner }: TeamRowProps) => (
     sx={{ alignItems: 'center', minWidth: 0 }}
     aria-label={`${label} team ${team.fullName}${score === null ? '' : `, ${score} points`}`}
   >
-    <TeamIdentity team={team} decorative size={42} />
+    <TeamHelmet team={team.abbreviation} decorative size="sm" />
     <Box sx={{ flex: 1, minWidth: 0 }}>
       <Typography variant="caption" color="text.secondary">
         {label}
@@ -106,8 +109,7 @@ export const GameCard = ({ game }: { readonly game: Game }) => {
               color="text.secondary"
               sx={{ textAlign: 'right' }}
             >
-              {seasonTypeLabel[game.seasonType]}
-              {game.week === null ? '' : ` · Week ${game.week}`}
+              {getGameDisplayLabel(game)}
             </Typography>
           </Stack>
 

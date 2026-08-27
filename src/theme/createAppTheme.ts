@@ -144,8 +144,8 @@ export const createAppTheme = (mode: PaletteMode) => {
             minHeight: '100vh',
           },
           '::selection': {
-            color: '#FFFFFF',
-            backgroundColor: '#5B37EE',
+            color: 'var(--team-on-primary, #FFFFFF)',
+            backgroundColor: 'var(--team-primary, #5B37EE)',
           },
           '@media (prefers-reduced-motion: reduce)': {
             '*, *::before, *::after': {
@@ -180,15 +180,23 @@ export const createAppTheme = (mode: PaletteMode) => {
             paddingInline: 18,
             transition: 'transform 160ms ease, background-color 160ms ease',
             '&:focus-visible': {
-              outline: `3px solid ${alpha(appSurfaces.accentSecondary, 0.5)}`,
+              outline: `3px solid var(--team-focus, ${alpha(appSurfaces.accentSecondary, 0.5)})`,
               outlineOffset: 2,
             },
-          },
-          contained: {
-            backgroundImage: 'linear-gradient(115deg, #5122E9, #7654FF)',
-            '&:hover': {
-              backgroundImage: 'linear-gradient(115deg, #4520C7, #6948F2)',
-              transform: 'translateY(-1px)',
+            '&.MuiButton-containedPrimary': {
+              color: 'var(--team-on-primary, #FFFFFF)',
+              backgroundColor: 'var(--team-primary, #5B37EE)',
+              backgroundImage:
+                'linear-gradient(115deg, var(--team-primary, #5122E9), var(--team-accent, #7654FF))',
+              '&:hover': {
+                backgroundColor: 'var(--team-primary, #5B37EE)',
+                backgroundImage:
+                  'linear-gradient(115deg, var(--team-primary, #4520C7), var(--team-secondary, #6948F2))',
+                transform: 'translateY(-1px)',
+              },
+              '&.Mui-disabled': {
+                backgroundImage: 'none',
+              },
             },
           },
           outlined: {
@@ -249,7 +257,7 @@ export const createAppTheme = (mode: PaletteMode) => {
             minWidth: 56,
             color: appSurfaces.muted,
             '&.Mui-selected': {
-              color: isDark ? '#A78BFA' : '#5B37EE',
+              color: 'var(--team-primary, #5B37EE)',
             },
             '&:focus-visible': {
               outline: `3px solid ${alpha(appSurfaces.accentSecondary, 0.45)}`,
@@ -261,6 +269,73 @@ export const createAppTheme = (mode: PaletteMode) => {
             fontWeight: 700,
             '&.Mui-selected': {
               fontSize: '0.68rem',
+            },
+          },
+        },
+      },
+      MuiTabs: {
+        styleOverrides: {
+          indicator: {
+            backgroundColor: 'var(--team-primary, #5B37EE)',
+          },
+        },
+      },
+      MuiTab: {
+        styleOverrides: {
+          root: {
+            '&.Mui-selected': {
+              color: 'var(--team-primary, #5B37EE)',
+            },
+            '&:focus-visible': {
+              outline: '3px solid var(--team-focus, rgba(42, 212, 255, 0.5))',
+              outlineOffset: -3,
+            },
+          },
+        },
+      },
+      MuiChip: {
+        styleOverrides: {
+          root: {
+            '&.MuiChip-colorPrimary': {
+              color: 'var(--team-selected-text, #FFFFFF)',
+              backgroundColor: 'var(--team-selected-bg, #5B37EE)',
+            },
+          },
+        },
+      },
+      MuiToggleButton: {
+        styleOverrides: {
+          root: {
+            '&.Mui-selected': {
+              color: 'var(--team-selected-text, #FFFFFF)',
+              backgroundColor: 'var(--team-selected-bg, #5B37EE)',
+              '&:hover': {
+                backgroundColor: 'var(--team-primary, #5B37EE)',
+              },
+            },
+          },
+        },
+      },
+      MuiLinearProgress: {
+        styleOverrides: {
+          colorPrimary: {
+            '& .MuiLinearProgress-bar': {
+              backgroundColor: 'var(--team-primary, #5B37EE)',
+            },
+          },
+        },
+      },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: {
+            '&.Mui-selected': {
+              backgroundColor: 'var(--team-subtle, rgba(91, 55, 238, 0.1))',
+              '&::before': {
+                width: 3,
+                alignSelf: 'stretch',
+                backgroundColor: 'var(--team-primary, #5B37EE)',
+                content: '""',
+              },
             },
           },
         },

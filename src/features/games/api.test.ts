@@ -1,6 +1,20 @@
 import { createApiClient } from '@/services/api/apiClient';
-import { getGame, listGames, listTeamGames } from '@/features/games/api';
+import {
+  getGame,
+  getGamePlays,
+  getGameStats,
+  listGames,
+  listTeamGames,
+} from '@/features/games/api';
+import { EMPTY_GAME_PLAYER_STATS } from '@/features/games/types';
 import { gameFixture } from '@/test/gameFixtures';
+import {
+  awayPlayerStatsFixture,
+  awayTeamStatsFixture,
+  gamePlaysFixture,
+  homePlayerStatsFixture,
+  homeTeamStatsFixture,
+} from '@/test/gamePlaysFixtures';
 
 describe('public games API', () => {
   it('sends only supported filters and the abort signal', async () => {
@@ -68,5 +82,140 @@ describe('public games API', () => {
     expect(fetchImplementation.mock.calls[1]?.[0]).toBe(
       `http://localhost/api/v1/games/${gameFixture.id}`,
     );
+  });
+
+  it('fetches structured plays and maps the envelope', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              gameId: gameFixture.id,
+              playCount: gamePlaysFixture.length,
+              plays: gamePlaysFixture,
+            },
+            meta: {
+              limitations: ['Structured play-by-play has not been imported.'],
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    const client = createApiClient({
+      baseUrl: 'http://localhost/api/v1',
+      fetchImplementation,
+    });
+    const result = await getGamePlays(client, gameFixture.id);
+    expect(result.plays).toEqual(gamePlaysFixture);
+    expect(result.limitations).toEqual([
+      'Structured play-by-play has not been imported.',
+    ]);
+    expect(fetchImplementation).toHaveBeenCalledWith(
+      `http://localhost/api/v1/games/${gameFixture.id}/plays`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('fetches team stats and maps the envelope', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              gameId: gameFixture.id,
+              teamStats: {
+                home: homeTeamStatsFixture,
+                away: awayTeamStatsFixture,
+              },
+              playerStats: { home: {}, away: {} },
+            },
+            meta: {
+              playerStatsAvailable: false,
+              playerStatsCoverage: null,
+              limitations: [],
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    const client = createApiClient({
+      baseUrl: 'http://localhost/api/v1',
+      fetchImplementation,
+    });
+    const result = await getGameStats(client, gameFixture.id);
+    expect(result.coverage).toBe('AVAILABLE');
+    expect(result.teamStats).toEqual({
+      home: homeTeamStatsFixture,
+      away: awayTeamStatsFixture,
+    });
+    expect(fetchImplementation).toHaveBeenCalledWith(
+      `http://localhost/api/v1/games/${gameFixture.id}/stats`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('maps populated player stats separated by team when the backend provides them', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            data: {
+              gameId: gameFixture.id,
+              teamStats: {
+                home: homeTeamStatsFixture,
+                away: awayTeamStatsFixture,
+              },
+              playerStats: {
+                home: homePlayerStatsFixture,
+                away: awayPlayerStatsFixture,
+              },
+            },
+            meta: {
+              playerStatsAvailable: true,
+              playerStatsCoverage: {
+                providerRows: 44,
+                resolvedRows: 44,
+                unresolvedRows: 0,
+              },
+              limitations: [],
+            },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    const client = createApiClient({
+      baseUrl: 'http://localhost/api/v1',
+      fetchImplementation,
+    });
+    const result = await getGameStats(client, gameFixture.id);
+    expect(result.playerStatsAvailable).toBe(true);
+    expect(result.playerStats.away).toEqual(awayPlayerStatsFixture);
+    expect(result.playerStats.home).toEqual(homePlayerStatsFixture);
+  });
+
+  it('treats a 404 on stats as an unavailable-coverage result, not a thrown error', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            error: { code: 'GAME_STATS_NOT_FOUND', message: 'Not found' },
+          }),
+          { status: 404, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    const client = createApiClient({
+      baseUrl: 'http://localhost/api/v1',
+      fetchImplementation,
+    });
+    const result = await getGameStats(client, gameFixture.id);
+    expect(result.coverage).toBe('UNAVAILABLE');
+    expect(result.teamStats).toEqual({ home: null, away: null });
+    expect(result.playerStatsAvailable).toBe(false);
+    expect(result.playerStats.home).toEqual(EMPTY_GAME_PLAYER_STATS);
+    expect(result.playerStats.away).toEqual(EMPTY_GAME_PLAYER_STATS);
   });
 });

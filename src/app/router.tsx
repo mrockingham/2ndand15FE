@@ -48,6 +48,18 @@ const LazyPlayerDetailPage = lazy(async () => ({
 const LazyPlayerComparePage = lazy(async () => ({
   default: (await import('@/pages/PlayerComparePage')).PlayerComparePage,
 }));
+const LazyStatsPage = lazy(async () => ({
+  default: (await import('@/pages/StatsPage')).StatsPage,
+}));
+const LazyTeamsPage = lazy(async () => ({
+  default: (await import('@/pages/TeamsPage')).TeamsPage,
+}));
+const LazyTeamHubPage = lazy(async () => ({
+  default: (await import('@/pages/TeamHubPage')).TeamHubPage,
+}));
+const LazyAiHubPage = lazy(async () => ({
+  default: (await import('@/pages/AiHubPage')).AiHubPage,
+}));
 const LazyAdminGamesPage = lazy(async () => ({
   default: (await import('@/pages/AdminGamesPage')).AdminGamesPage,
 }));
@@ -62,6 +74,9 @@ const LazyAdminImportPage = lazy(async () => ({
 }));
 const LazyAdminAuditPage = lazy(async () => ({
   default: (await import('@/pages/AdminAuditPage')).AdminAuditPage,
+}));
+const LazyAdminDataHealthPage = lazy(async () => ({
+  default: (await import('@/pages/AdminDataHealthPage')).AdminDataHealthPage,
 }));
 const LazyAdminArticlesPage = lazy(async () => ({
   default: (await import('@/pages/AdminArticlesPage')).AdminArticlesPage,
@@ -97,6 +112,20 @@ const LazyAdminNewsCandidateDetailPage = lazy(async () => ({
   default: (await import('@/pages/AdminNewsCandidateDetailPage'))
     .AdminNewsCandidateDetailPage,
 }));
+const LazyAdminGameMediaPage = lazy(async () => ({
+  default: (await import('@/pages/AdminGameMediaPage')).AdminGameMediaPage,
+}));
+const LazyAdminGameMediaDetailPage = lazy(async () => ({
+  default: (await import('@/pages/AdminGameMediaDetailPage'))
+    .AdminGameMediaDetailPage,
+}));
+const LazyAdminHomepagePage = lazy(async () => ({
+  default: (await import('@/pages/AdminHomepagePage')).AdminHomepagePage,
+}));
+const LazyAdminHeroSlideEditorPage = lazy(async () => ({
+  default: (await import('@/pages/AdminHeroSlideEditorPage'))
+    .AdminHeroSlideEditorPage,
+}));
 
 const deferred = (element: ReactNode) => (
   <Suspense fallback={<RouteLoading />}>{element}</Suspense>
@@ -118,25 +147,12 @@ export const appRoutes: RouteObject[] = [
         path: 'players/:playerId',
         element: deferred(<LazyPlayerDetailPage />),
       },
-      {
-        path: 'stats',
-        element: (
-          <SectionPage
-            eyebrow="BEYOND THE BOX SCORE"
-            title="Stats"
-            description="Team, player, and league performance tools are planned for a later milestone."
-          />
-        ),
-      },
+      { path: 'stats', element: deferred(<LazyStatsPage />) },
+      { path: 'teams', element: deferred(<LazyTeamsPage />) },
+      { path: 'teams/:teamId', element: deferred(<LazyTeamHubPage />) },
       {
         path: 'ai',
-        element: (
-          <SectionPage
-            eyebrow="RESPONSIBLE INTELLIGENCE"
-            title="AI Hub"
-            description="Transparent predictions and decision support will be built here with confidence and provenance."
-          />
-        ),
+        element: deferred(<LazyAiHubPage />),
       },
       {
         path: 'fantasy',
@@ -179,6 +195,18 @@ export const appRoutes: RouteObject[] = [
             element: deferred(<LazyAdminLayout />),
             children: [
               { index: true, element: <Navigate to="games" replace /> },
+              {
+                path: 'homepage',
+                element: deferred(<LazyAdminHomepagePage />),
+              },
+              {
+                path: 'homepage/hero/new',
+                element: deferred(<LazyAdminHeroSlideEditorPage />),
+              },
+              {
+                path: 'homepage/hero/:slideId',
+                element: deferred(<LazyAdminHeroSlideEditorPage />),
+              },
               { path: 'games', element: deferred(<LazyAdminGamesPage />) },
               {
                 path: 'games/new',
@@ -224,6 +252,18 @@ export const appRoutes: RouteObject[] = [
               {
                 path: 'news-candidates/:candidateId',
                 element: deferred(<LazyAdminNewsCandidateDetailPage />),
+              },
+              {
+                path: 'data-health',
+                element: deferred(<LazyAdminDataHealthPage />),
+              },
+              {
+                path: 'game-media',
+                element: deferred(<LazyAdminGameMediaPage />),
+              },
+              {
+                path: 'game-media/:gameId',
+                element: deferred(<LazyAdminGameMediaDetailPage />),
               },
               {
                 element: <RequireAdministrativeRole adminOnly />,

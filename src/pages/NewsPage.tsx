@@ -16,7 +16,10 @@ import {
   useFeaturedArticlesQuery,
   usePublicArticlesQuery,
 } from '@/features/articles/queries';
-import type { ArticleType } from '@/features/articles/types';
+import type {
+  ArticleContentType,
+  ArticleType,
+} from '@/features/articles/types';
 import { useCurrentUserQuery } from '@/features/users/queries';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -29,6 +32,8 @@ export const NewsPage = () => {
   const currentUser = useCurrentUserQuery().data;
   const favorite = currentUser?.favoriteTeam ?? null;
   const type = (parameters.get('type') || undefined) as ArticleType | undefined;
+  const contentType = (parameters.get('contentType') || undefined) as
+    ArticleContentType | undefined;
   const searchValue = parameters.get('search') ?? '';
   const search =
     searchValue.trim().length >= 2 ? searchValue.trim() : undefined;
@@ -37,6 +42,7 @@ export const NewsPage = () => {
   const filters = {
     limit: 20,
     type,
+    contentType,
     search,
     cursor,
     ...(myTeam ? { teamId: favorite.id } : {}),
@@ -113,6 +119,18 @@ export const NewsPage = () => {
               <MenuItem value="ORIGINAL">Original</MenuItem>
               <MenuItem value="CURATED">Curated</MenuItem>
               <MenuItem value="ANNOUNCEMENT">Announcement</MenuItem>
+            </TextField>
+            <TextField
+              fullWidth
+              select
+              label="Content type"
+              value={contentType ?? ''}
+              onChange={(event) => update('contentType', event.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              <MenuItem value="ARTICLE">Articles</MenuItem>
+              <MenuItem value="VIDEO">Videos</MenuItem>
+              <MenuItem value="HIGHLIGHT">Highlights</MenuItem>
             </TextField>
             {authenticated && favorite ? (
               <Button

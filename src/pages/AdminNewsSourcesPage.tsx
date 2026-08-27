@@ -169,6 +169,11 @@ export const AdminNewsSourcesPage = () => {
                       sx={{ my: 2, flexWrap: 'wrap', gap: 0.75 }}
                     >
                       <Chip size="small" label={sourceKindLabel[source.kind]} />
+                      <Chip
+                        size="small"
+                        variant="outlined"
+                        label={source.contentType}
+                      />
                       {source.defaultTeam ? (
                         <Chip
                           size="small"
