@@ -302,9 +302,9 @@ describe('public Team Hub page', () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText('Win · completed score')).toBeInTheDocument();
-    expect(screen.getByText('Hall of Fame Game')).toBeInTheDocument();
-    expect(screen.getByText('33')).toBeInTheDocument();
-    expect(screen.getByText('30')).toBeInTheDocument();
+    expect(screen.getAllByText('Hall of Fame Game').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('33').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('30').length).toBeGreaterThan(0);
     expect(
       screen.getByText('No upcoming games are currently stored.'),
     ).toBeInTheDocument();
@@ -322,7 +322,7 @@ describe('public Team Hub page', () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText('Loss · completed score')).toBeInTheDocument();
-    expect(screen.getByText('Hall of Fame Game')).toBeInTheDocument();
+    expect(screen.getAllByText('Hall of Fame Game').length).toBeGreaterThan(0);
   });
 
   it('keeps global favorite accents separate from the viewed team hero', async () => {
@@ -389,6 +389,13 @@ describe('public Team Hub page', () => {
       0,
     );
     expect(screen.getAllByText('4,500').length).toBeGreaterThan(0);
+    expect(screen.getByText('NEXT GAME')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Team at a glance' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Explore the league' }),
+    ).toBeInTheDocument();
     expect(
       screen
         .getByRole('link', { name: 'Open in full Stats Hub' })
@@ -534,6 +541,14 @@ describe('public Team Hub page', () => {
     expect(
       screen.getByText(/injuries, depth charts.*are not included/i),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Explore the league' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('NEXT GAME')).not.toBeInTheDocument();
+    expect(screen.queryByText('LAST GAME')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Team at a glance' }),
+    ).not.toBeInTheDocument();
   });
 
   it('renders invalid and unknown team identifiers with the existing not-found experience', async () => {

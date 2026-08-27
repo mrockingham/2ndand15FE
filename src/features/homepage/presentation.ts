@@ -1,11 +1,14 @@
 import type {
   AdminHeroSlide,
   HeroContentSlot,
+  HomepageAiHubSnapshot,
   HomepageInsightPick,
   HomepageInsightTeam,
   HomepageLeader,
   HomepageLeaderCategory,
+  HomepageLeaders,
   HomepageWeeklyLeader,
+  HomepageWeeklyLeaders,
   PublicHeroSlide,
 } from '@/features/homepage/types';
 
@@ -117,3 +120,52 @@ export const weeklyLeaderAccessibleLabel = (
   categoryLabel: string,
 ) =>
   `${categoryLabel}: ${leader.playerName}, ${leader.team}, ${formatWeeklyLeaderValue(leader)}`;
+
+interface HomepageInsightRailQueryState {
+  readonly data?: {
+    readonly insights: {
+      readonly aiHub: HomepageAiHubSnapshot | null;
+      readonly weeklyLeaders: HomepageWeeklyLeaders | null;
+    };
+    readonly leaders: HomepageLeaders;
+  };
+  readonly isError: boolean;
+  readonly isPending: boolean;
+}
+
+const aiHubHasContent = (aiHub: HomepageAiHubSnapshot | null | undefined) =>
+  !!aiHub &&
+  (aiHub.strongestPick !== null ||
+    aiHub.closestMatchup !== null ||
+    aiHub.highestProjectedTotal !== null);
+
+export const weeklyLeadersHaveContent = (
+  weeklyLeaders: HomepageWeeklyLeaders | null | undefined,
+) =>
+  !!weeklyLeaders &&
+  (weeklyLeaders.passing !== null ||
+    weeklyLeaders.rushing !== null ||
+    weeklyLeaders.receiving !== null);
+
+const seasonLeadersHaveContent = (leaders: HomepageLeaders | undefined) =>
+  !!leaders &&
+  (leaders.passing.length > 0 ||
+    leaders.rushing.length > 0 ||
+    leaders.receiving.length > 0);
+
+/** Number of rail modules the current homepage data resolves to -- drives
+ * the adaptive main/rail grid ratio so a short rail never reserves an empty
+ * fixed-width column next to a much taller main column. */
+export const homepageInsightRailModuleCount = (
+  homepageQuery: HomepageInsightRailQueryState,
+) => {
+  if (homepageQuery.isPending) return 2;
+  if (homepageQuery.isError) return 1;
+  const data = homepageQuery.data;
+  if (!data) return 0;
+  const hasAiHub = aiHubHasContent(data.insights.aiHub);
+  const hasLeaderModule =
+    weeklyLeadersHaveContent(data.insights.weeklyLeaders) ||
+    seasonLeadersHaveContent(data.leaders);
+  return (hasAiHub ? 1 : 0) + (hasLeaderModule ? 1 : 0);
+};

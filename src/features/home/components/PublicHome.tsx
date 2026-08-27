@@ -25,9 +25,10 @@ import { HomeGamesGrid } from '@/features/home/components/HomeGamesPanels';
 import { HomePublicNews } from '@/features/home/components/HomeNewsPanels';
 import { HomepageHeroCarousel } from '@/features/homepage/components/HomepageHeroCarousel';
 import { HomepageHighlightsSection } from '@/features/homepage/components/HomepageHighlightsSection';
+import { HomepageInsightRail } from '@/features/homepage/components/HomepageInsightRail';
 import { HomepageLeadersSection } from '@/features/homepage/components/HomepageLeadersSection';
-import { InsightRail } from '@/features/homepage/components/InsightRail';
 import { TopStoriesSection } from '@/features/homepage/components/TopStoriesSection';
+import { homepageInsightRailModuleCount } from '@/features/homepage/presentation';
 import { useHomepageQuery } from '@/features/homepage/queries';
 
 const PublicHero = ({ chooseTeam }: { readonly chooseTeam: boolean }) => {
@@ -241,6 +242,13 @@ export const PublicHomeContent = ({
   const homepageQuery = useHomepageQuery();
   const homepage = homepageQuery.data;
   const activeHeroSlides = homepage?.heroSlides ?? [];
+  const railModuleCount = homepageInsightRailModuleCount(homepageQuery);
+  const railGridTemplateColumns =
+    railModuleCount === 0
+      ? { xs: '1fr' }
+      : railModuleCount === 1
+        ? { xs: '1fr', lg: 'minmax(0, 3.2fr) minmax(300px, 1fr)' }
+        : { xs: '1fr', lg: 'minmax(0, 1.35fr) minmax(340px, 0.65fr)' };
 
   return (
     <Stack spacing={{ xs: 4, md: 5 }}>
@@ -250,18 +258,11 @@ export const PublicHomeContent = ({
         <PublicHero chooseTeam={chooseTeam} />
       )}
       {chooseTeam ? <PersonalizationCallout chooseTeam /> : null}
-      <HomeGamesGrid query={gamesQuery} />
-      {homepage ? (
-        <HomepageHighlightsSection highlights={homepage.highlights} />
-      ) : null}
       <Box
         sx={{
           display: 'grid',
           gap: { xs: 4, lg: 3 },
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: 'minmax(0, 1.35fr) minmax(340px, 0.65fr)',
-          },
+          gridTemplateColumns: railGridTemplateColumns,
         }}
       >
         {homepage && homepage.topStories.length > 0 ? (
@@ -269,8 +270,14 @@ export const PublicHomeContent = ({
         ) : (
           <HomePublicNews query={newsQuery} />
         )}
-        <InsightRail homepageQuery={homepageQuery} />
+        {railModuleCount > 0 ? (
+          <HomepageInsightRail homepageQuery={homepageQuery} />
+        ) : null}
       </Box>
+      {homepage ? (
+        <HomepageHighlightsSection highlights={homepage.highlights} />
+      ) : null}
+      <HomeGamesGrid query={gamesQuery} />
       {homepage ? (
         <Box
           sx={{

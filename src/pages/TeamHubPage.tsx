@@ -24,10 +24,12 @@ import { PlayerAttribution } from '@/features/players/components/PlayerAttributi
 import { isUuid } from '@/features/players/presentation';
 import { useStatsMetadataQuery } from '@/features/statsHub/queries';
 import { FavoriteTeamButton } from '@/features/teamHub/components/FavoriteTeamButton';
+import { TeamHubRail } from '@/features/teamHub/components/TeamHubRail';
 import { TeamLeadersSection } from '@/features/teamHub/components/TeamLeadersSection';
 import { TeamRosterSection } from '@/features/teamHub/components/TeamRosterSection';
 import { TeamScheduleSection } from '@/features/teamHub/components/TeamScheduleSection';
 import { getTeamHubErrorMessage } from '@/features/teamHub/errors';
+import { teamHubRailModuleCount } from '@/features/teamHub/presentation';
 import { useTeamHubQuery } from '@/features/teamHub/queries';
 import type { NormalizedTeamHubUrlState } from '@/features/teamHub/types';
 import {
@@ -207,62 +209,83 @@ export const TeamHubPage = () => {
           </Stack>
         </Paper>
 
-        <Stack id="overview" spacing={5}>
-          <TeamScheduleSection
-            teamId={team.id}
-            season={overview.schedule.season}
-            upcoming={overview.schedule.upcoming}
-            recent={overview.schedule.recent}
-          />
+        <Box
+          sx={{
+            display: 'grid',
+            gap: { xs: 4, lg: 3 },
+            gridTemplateColumns:
+              teamHubRailModuleCount(overview, state.leader) <= 1
+                ? { xs: '1fr', lg: 'minmax(0, 3.2fr) minmax(300px, 1fr)' }
+                : { xs: '1fr', lg: 'minmax(0, 1.35fr) minmax(340px, 0.65fr)' },
+          }}
+        >
+          <Stack id="overview" spacing={5}>
+            <TeamScheduleSection
+              teamId={team.id}
+              season={overview.schedule.season}
+              upcoming={overview.schedule.upcoming}
+              recent={overview.schedule.recent}
+            />
 
-          <Box component="section" aria-labelledby="team-news-title">
-            <Stack spacing={2}>
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1}
-                sx={{ justifyContent: 'space-between' }}
-              >
-                <Box>
-                  <Typography id="team-news-title" component="h2" variant="h3">
-                    Published team news
-                  </Typography>
-                  <Typography color="text.secondary">
-                    Public articles returned by the Team Hub.
-                  </Typography>
-                </Box>
-                <Button component={RouterLink} to={`/news?teamId=${team.id}`}>
-                  All News
-                </Button>
-              </Stack>
-              {overview.news.articles.length ? (
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gap: 2,
-                    gridTemplateColumns: { md: 'repeat(3, 1fr)' },
-                  }}
+            <Box component="section" aria-labelledby="team-news-title">
+              <Stack spacing={2}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  spacing={1}
+                  sx={{ justifyContent: 'space-between' }}
                 >
-                  {overview.news.articles.map((article) => (
-                    <ArticleCard
-                      key={article.id}
-                      article={article}
-                      favoriteTeamId={team.id}
-                      headingComponent="h3"
-                    />
-                  ))}
-                </Box>
-              ) : (
-                <Alert severity="info">
-                  No published news is currently available for this team.{' '}
-                  <Link component={RouterLink} to="/news">
-                    Browse league News
-                  </Link>
-                  .
-                </Alert>
-              )}
-            </Stack>
-          </Box>
-        </Stack>
+                  <Box>
+                    <Typography
+                      id="team-news-title"
+                      component="h2"
+                      variant="h3"
+                    >
+                      Published team news
+                    </Typography>
+                    <Typography color="text.secondary">
+                      Public articles returned by the Team Hub.
+                    </Typography>
+                  </Box>
+                  <Button component={RouterLink} to={`/news?teamId=${team.id}`}>
+                    All News
+                  </Button>
+                </Stack>
+                {overview.news.articles.length ? (
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gap: 2,
+                      gridTemplateColumns: { md: 'repeat(3, 1fr)' },
+                    }}
+                  >
+                    {overview.news.articles.map((article) => (
+                      <ArticleCard
+                        key={article.id}
+                        article={article}
+                        favoriteTeamId={team.id}
+                        headingComponent="h3"
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Alert severity="info">
+                    No published news is currently available for this team.{' '}
+                    <Link component={RouterLink} to="/news">
+                      Browse league News
+                    </Link>
+                    .
+                  </Alert>
+                )}
+              </Stack>
+            </Box>
+          </Stack>
+          <TeamHubRail
+            teamId={team.id}
+            overview={overview}
+            metadata={metadata}
+            leader={state.leader}
+          />
+        </Box>
 
         <TeamRosterSection
           teamId={team.id}
