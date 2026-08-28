@@ -254,6 +254,13 @@ describe('Admin Team Homepages', () => {
         ),
       ).toBe(true),
     );
+    await waitFor(() =>
+      expect(
+        fetchImplementation.mock.calls.filter(([input]) =>
+          String(input).endsWith(`/teams/${billsFixture.id}/hub`),
+        ).length,
+      ).toBeGreaterThan(1),
+    );
     await user.click(screen.getByLabelText('Team'));
     await user.click(
       await screen.findByRole('option', { name: /PHI.*Philadelphia Eagles/ }),

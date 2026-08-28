@@ -1,7 +1,12 @@
 import { screen, waitFor, within } from '@testing-library/react';
 
+import type {
+  TeamHomepageVideoItem,
+  TeamHubOverview,
+} from '@/features/teamHub/types';
 import { useThemePreferences } from '@/stores/themePreferences';
 import { weeklyInsightsFixture } from '@/test/aiHubFixtures';
+import { publicArticleFixture } from '@/test/articleFixtures';
 import {
   apiErrorResponse,
   jsonResponse,
@@ -29,10 +34,12 @@ const homeRequestRouter = ({
   failures = [],
   insights = weeklyInsightsFixture,
   homepage = publicHomepageFixture,
+  hub = teamHubOverviewFixture,
 }: {
   readonly failures?: readonly FailureArea[];
   readonly insights?: typeof weeklyInsightsFixture;
   readonly homepage?: typeof publicHomepageFixture;
+  readonly hub?: TeamHubOverview;
 } = {}) =>
   vi.fn<typeof fetch>((input) => {
     const url = new URL(String(input));
@@ -71,7 +78,7 @@ const homeRequestRouter = ({
           )
         : Promise.resolve(
             jsonResponse({
-              data: teamHubOverviewFixture,
+              data: hub,
               meta: { attribution: playerAttributionFixture },
             }),
           );
@@ -100,6 +107,22 @@ const homeRequestRouter = ({
       new TypeError(`Unexpected request: ${url.toString()}`),
     );
   });
+
+const teamVideo = (
+  id: string,
+  title: string,
+  canEmbed = true,
+): TeamHomepageVideoItem => ({
+  type: 'VIDEO',
+  id,
+  gameId: preseasonWeekOneFixture.id,
+  title,
+  thumbnailUrl: `https://static.example.com/${id}.jpg`,
+  canonicalUrl: `https://www.youtube.com/watch?v=${id}`,
+  embedUrl: canEmbed ? `https://www.youtube.com/embed/${id}` : null,
+  canEmbed,
+  publishedAt: '2026-08-20T12:00:00.000Z',
+});
 
 describe('Home page states', () => {
   it('renders the visitor event hero and independent public content without a team hub request', async () => {
@@ -205,8 +228,14 @@ describe('Home page states', () => {
     expect(screen.getByText('Model confidence: LOW')).toBeInTheDocument();
     expect(screen.getByText('Model favors BUF')).toBeInTheDocument();
     expect(
-      await screen.findByRole('heading', { name: /Bills news/i }),
+      await screen.findByRole('heading', { name: /Team News/i }),
     ).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-team-hub-identity="BUF"]'),
+    ).toHaveAttribute('data-banner-image', 'fallback');
+    expect(
+      screen.queryByRole('heading', { name: /Team Highlights/i }),
+    ).not.toBeInTheDocument();
     expect(
       await screen.findByRole('heading', { name: /2025 Team Leaders/i }),
     ).toBeInTheDocument();
@@ -249,6 +278,88 @@ describe('Home page states', () => {
 
     expect(await screen.findByText('Model favors PHI')).toBeInTheDocument();
     expect(screen.getByText('42%')).toBeInTheDocument();
+  });
+
+  it('uses the favorite team CMS banner, video lead, mixed supporting order, and highlights', async () => {
+    const featuredVideo = teamVideo(
+      'featured-team-video',
+      'Featured team film',
+    );
+    const supportingVideo = teamVideo(
+      'supporting-team-video',
+      'Supporting team video',
+      false,
+    );
+    const supportingArticle = {
+      ...publicArticleFixture,
+      id: '70000000-0000-4000-8000-000000000001',
+      slug: 'favorite-team-supporting-story',
+      title: 'Favorite team supporting story',
+    };
+    const hub: TeamHubOverview = {
+      ...teamHubOverviewFixture,
+      homepage: {
+        banner: {
+          imageUrl: 'https://res.cloudinary.com/example/bills-action.jpg',
+          focalX: 24,
+          focalY: 68,
+          overlayOpacity: 44,
+        },
+        editorial: {
+          featuredItem: featuredVideo,
+          supportingItems: [
+            { type: 'ARTICLE', article: supportingArticle },
+            supportingVideo,
+          ],
+        },
+        highlights: [teamVideo('team-highlight', 'Favorite team highlight')],
+      },
+    };
+    renderApp('/', {
+      currentUser: userWithFavoriteFixture,
+      fetchImplementation: homeRequestRouter({ hub }),
+      restorationStatus: 'authenticated',
+    });
+
+    expect(await screen.findByTitle('Featured team film')).toBeInTheDocument();
+    const hero = document.querySelector('[data-team-hub-identity="BUF"]');
+    expect(hero).toHaveAttribute('data-banner-image', 'custom');
+    expect(hero).toHaveAttribute('data-banner-overlay-opacity', '44');
+    expect(
+      hero?.querySelector(
+        'img[src="https://res.cloudinary.com/example/bills-action.jpg"]',
+      ),
+    ).toHaveStyle({ objectPosition: '24% 68%' });
+    const editorial = screen.getByRole('region', { name: 'Team News' });
+    expect(
+      within(editorial)
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent),
+    ).toEqual([
+      'Featured team film',
+      'Favorite team supporting story',
+      'Supporting team video',
+    ]);
+    expect(
+      screen.getByRole('link', {
+        name: 'Open Game Center video: Favorite team highlight',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Open Team Hub/i }),
+    ).toHaveAttribute(
+      'href',
+      `/teams/${userWithFavoriteFixture.favoriteTeam!.id}`,
+    );
+    expect(
+      screen.getByRole('link', { name: /Team settings/i }),
+    ).toHaveAttribute('href', '/account');
+    expect(
+      screen.getByRole('heading', { name: /2nd & 15 Prediction/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /AI Hub snapshot/i }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -337,7 +448,7 @@ describe('Home section isolation and presentation', () => {
       screen.getByRole('heading', { name: 'Buffalo Bills' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /Bills news/i }),
+      screen.getByRole('heading', { name: /Team News/i }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: /AI Hub snapshot/i }),
