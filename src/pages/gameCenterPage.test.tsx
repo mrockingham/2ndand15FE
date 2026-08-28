@@ -37,9 +37,14 @@ const statsBody = (away: GameTeamStats, home: GameTeamStats) => ({
       home: EMPTY_GAME_PLAYER_STATS,
       away: EMPTY_GAME_PLAYER_STATS,
     },
+    gameLeaders: {
+      home: { passer: null, rusher: null, receiver: null },
+      away: { passer: null, rusher: null, receiver: null },
+    },
   },
   meta: {
     playerStatsAvailable: false,
+    playerStatsCoverageState: 'UNAVAILABLE',
     playerStatsCoverage: null,
     limitations: [],
   },
@@ -123,7 +128,9 @@ describe('Game Center', () => {
     expect(screen.getByText('Scheduled')).toBeInTheDocument();
     expect(screen.queryByText('0')).not.toBeInTheDocument();
     expect(
-      await screen.findByText('Game data will appear once action begins.'),
+      await screen.findByText(
+        'Play-by-play will appear once it is available for this game.',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -142,7 +149,7 @@ describe('Game Center', () => {
     expect(screen.getAllByText('0')).toHaveLength(2);
   });
 
-  it('defaults to the Plays tab, shows both tabs when both exist, and switches to Team Stats', async () => {
+  it('shows PBP and team stats together and filters scoring plays', async () => {
     const finalGame: Game = {
       ...gameFixture,
       status: 'FINAL',
@@ -159,10 +166,10 @@ describe('Game Center', () => {
     });
 
     await screen.findByRole('heading', { name: 'Game Center' });
-    const playsTab = await screen.findByRole('tab', { name: 'Plays' });
-    const statsTab = screen.getByRole('tab', { name: 'Team Stats' });
+    const playsTab = await screen.findByRole('tab', { name: 'Play-by-Play' });
+    const scoringTab = screen.getByRole('tab', { name: 'Scoring Plays' });
     expect(playsTab).toHaveAttribute('aria-selected', 'true');
-    expect(statsTab).toHaveAttribute('aria-selected', 'false');
+    expect(scoringTab).toHaveAttribute('aria-selected', 'false');
     expect(
       await screen.findByText(scoringPlayFixture.description),
     ).toBeInTheDocument();
@@ -170,10 +177,17 @@ describe('Game Center', () => {
     expect(screen.getByText('TURNOVER')).toBeInTheDocument();
     expect(screen.getByText('FLAG')).toBeInTheDocument();
 
-    await userEvent.click(statsTab);
     expect(await screen.findByText('Total yards')).toBeInTheDocument();
     expect(screen.getByText('389')).toBeInTheDocument();
     expect(screen.getByText('312')).toBeInTheDocument();
+    await userEvent.click(scoringTab);
+    expect(scoringTab).toHaveAttribute('aria-selected', 'true');
+    expect(
+      screen.getByText(scoringPlayFixture.description),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(turnoverPlayFixture.description),
+    ).not.toBeInTheDocument();
   });
 
   it('isolates a plays failure from the scoreboard and team stats', async () => {
@@ -200,7 +214,6 @@ describe('Game Center', () => {
     expect(
       await screen.findByRole('button', { name: 'Retry' }),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('tab', { name: 'Team Stats' }));
     expect(await screen.findByText('Total yards')).toBeInTheDocument();
   });
 
@@ -225,10 +238,9 @@ describe('Game Center', () => {
     expect(
       await screen.findByText(scoringPlayFixture.description),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('tab', { name: 'Team Stats' }));
     expect(
-      await screen.findByRole('button', { name: 'Retry' }),
-    ).toBeInTheDocument();
+      (await screen.findAllByRole('button', { name: 'Retry' })).length,
+    ).toBeGreaterThan(0);
   });
 
   it('refreshes the game, plays, and stats together, and preserves the selected play', async () => {

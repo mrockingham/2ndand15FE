@@ -3,23 +3,22 @@ import {
   Alert,
   Box,
   Button,
-  Card,
   CircularProgress,
-  Divider,
   Stack,
-  Tab,
-  Tabs,
   Typography,
 } from '@mui/material';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
 
 import { CurrentSituation } from '@/features/games/components/CurrentSituation';
 import { FieldProgress } from '@/features/games/components/FieldProgress';
 import { FreshnessIndicator } from '@/features/games/components/FreshnessIndicator';
+import { GameCenterModule } from '@/features/games/components/GameCenterModule';
 import { GameCenterRefreshButton } from '@/features/games/components/GameCenterRefreshButton';
+import { GameInfoPanel } from '@/features/games/components/GameInfoPanel';
+import { GameLeadersPanel } from '@/features/games/components/GameLeadersPanel';
 import { PlayFeed } from '@/features/games/components/PlayFeed';
 import { PlayerStatsPanel } from '@/features/games/components/PlayerStatsPanel';
+import { PlayerQuickStats } from '@/features/games/components/PlayerQuickStats';
 import { ScoreboardHero } from '@/features/games/components/ScoreboardHero';
 import { TeamStatsPanel } from '@/features/games/components/TeamStatsPanel';
 import { getPublicGameErrorMessage } from '@/features/games/errors';
@@ -40,34 +39,25 @@ export const GameCenterContent = ({
 }: {
   readonly gameQuery: UseQueryResult<Game, unknown>;
 }) => {
-  // GameDetailPage only renders this component once gameQuery.data is
-  // populated; a later background refetch failure keeps that data intact.
   const game = gameQuery.data!;
-
-  const playsStaleTime = getGameCenterStaleTime(game, 'plays');
-  const statsStaleTime = getGameCenterStaleTime(game, 'stats');
-  const playsRefetchInterval = getPlaysRefetchInterval(game);
-  const statsRefetchInterval = getStatsRefetchInterval(game);
-
   const playsQuery = useGamePlaysQuery(game.id, {
-    staleTime: playsStaleTime,
-    refetchInterval: playsRefetchInterval,
+    staleTime: getGameCenterStaleTime(game, 'plays'),
+    refetchInterval: getPlaysRefetchInterval(game),
   });
   const statsQuery = useGameStatsQuery(game.id, {
-    staleTime: statsStaleTime,
-    refetchInterval: statsRefetchInterval,
+    staleTime: getGameCenterStaleTime(game, 'stats'),
+    refetchInterval: getStatsRefetchInterval(game),
   });
   const gameMediaQuery = useGameMediaQuery(game.id);
-
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const plays = useMemo(() => playsQuery.data?.plays ?? [], [playsQuery.data]);
+  const latestPlay = useMemo(
+    () =>
+      [...plays].sort((left, right) => right.sequence - left.sequence)[0] ??
+      null,
+    [plays],
+  );
 
-  // Resolve the effective selection whenever the plays list changes,
-  // comparing against the previous list/selection captured in state (the
-  // React-documented way to react to a changed value during render without
-  // an effect or a ref read during render).
   const [selectedPlayId, setSelectedPlayId] = useState<string | null>(null);
   const [previousPlays, setPreviousPlays] = useState(plays);
   if (plays !== previousPlays) {
@@ -79,17 +69,11 @@ export const GameCenterContent = ({
       previousSelectedPlay,
     );
     setPreviousPlays(plays);
-    if (resolvedId !== selectedPlayId) {
-      setSelectedPlayId(resolvedId);
-    }
+    if (resolvedId !== selectedPlayId) setSelectedPlayId(resolvedId);
   }
-  const selectedPlay = plays.find((play) => play.id === selectedPlayId) ?? null;
+  const selectedPlay =
+    plays.find((play) => play.id === selectedPlayId) ?? latestPlay;
 
-  // Fires exactly once on the LIVE -> FINAL transition: the game record
-  // itself is already the fresh FINAL data that triggered this effect, so
-  // only plays/stats need an explicit one-time refetch to pick up the
-  // backend's authoritative snapshot replacement. Interval polling for all
-  // three queries already stops on its own once the status is finalized.
   const previousStatusRef = useRef<GameStatus | null>(null);
   useEffect(() => {
     const previousStatus = previousStatusRef.current;
@@ -100,29 +84,11 @@ export const GameCenterContent = ({
       !isFinalizedGameStatus(previousStatus) &&
       isFinalizedGameStatus(game.status)
     ) {
-      playsQuery.refetch();
-      statsQuery.refetch();
-      gameMediaQuery.refetch();
+      void playsQuery.refetch();
+      void statsQuery.refetch();
+      void gameMediaQuery.refetch();
     }
   }, [game.status, playsQuery, statsQuery, gameMediaQuery]);
-
-  const playsUnavailable = playsQuery.isSuccess && plays.length === 0;
-  const statsUnavailable =
-    statsQuery.isSuccess && statsQuery.data.coverage === 'UNAVAILABLE';
-  const showPlaysTab = !playsUnavailable;
-  const showStatsTab = !statsUnavailable;
-
-  const requestedSection = searchParams.get('section');
-  const activeSection =
-    showPlaysTab && showStatsTab
-      ? requestedSection === 'stats'
-        ? 'stats'
-        : 'plays'
-      : showPlaysTab
-        ? 'plays'
-        : showStatsTab
-          ? 'stats'
-          : 'overview';
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -150,126 +116,149 @@ export const GameCenterContent = ({
     gameQuery.isFetching || playsQuery.isFetching || statsQuery.isFetching;
   const hasErrorAny =
     gameQuery.isError || playsQuery.isError || statsQuery.isError;
+  const stats =
+    statsQuery.data?.coverage === 'AVAILABLE' ? statsQuery.data : null;
+
+  const playContent =
+    playsQuery.data === undefined ? (
+      playsQuery.isPending ? (
+        <Stack sx={{ alignItems: 'center', py: 4 }}>
+          <CircularProgress aria-label="Loading plays" size={28} />
+        </Stack>
+      ) : (
+        <Alert
+          severity="error"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => playsQuery.refetch()}
+            >
+              Retry
+            </Button>
+          }
+        >
+          {getPublicGameErrorMessage(playsQuery.error)}
+        </Alert>
+      )
+    ) : (
+      <PlayFeed
+        plays={plays}
+        selectedPlayId={selectedPlayId}
+        onSelectPlay={setSelectedPlayId}
+      />
+    );
 
   return (
-    <Card
-      sx={{ p: { xs: 2.5, sm: 4 }, borderColor: 'appSurfaces.borderStrong' }}
-    >
-      <Stack spacing={3}>
-        <GameCenterRefreshButton
-          onRefresh={handleRefresh}
-          isRefreshing={isRefreshing}
+    <Stack spacing={2}>
+      <GameCenterRefreshButton
+        onRefresh={handleRefresh}
+        isRefreshing={isRefreshing}
+      />
+      <ScoreboardHero game={game} latestPlay={latestPlay} />
+      {isLive ? (
+        <FreshnessIndicator
+          label={game.status === 'IN_PROGRESS' ? 'LIVE' : 'HALFTIME'}
+          updatedAt={oldestUpdatedAt}
+          isFetching={isFetchingAny}
+          hasError={hasErrorAny}
         />
-        <ScoreboardHero game={game} />
-        {isLive ? (
-          <FreshnessIndicator
-            label={game.status === 'IN_PROGRESS' ? 'LIVE' : 'HALFTIME'}
-            updatedAt={oldestUpdatedAt}
-            isFetching={isFetchingAny}
-            hasError={hasErrorAny}
-          />
-        ) : null}
-        <GameMediaSection game={game} query={gameMediaQuery} />
-        <Divider />
+      ) : null}
 
-        {activeSection === 'overview' ? (
-          <Typography
-            color="text.secondary"
-            sx={{ textAlign: 'center', py: 2 }}
-          >
-            {game.status === 'SCHEDULED' || game.status === 'PREGAME'
-              ? 'Game data will appear once action begins.'
-              : 'No play-by-play or team statistics are available for this game yet.'}
+      <Box
+        data-testid="gamecast-grid"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: 'minmax(0, 1fr)',
+            lg: 'minmax(250px, 0.9fr) minmax(420px, 1.75fr) minmax(250px, 0.9fr)',
+          },
+          gap: 2,
+          alignItems: 'start',
+        }}
+      >
+        <Stack spacing={2} sx={{ minWidth: 0, order: { xs: 2, lg: 1 } }}>
+          <GameCenterModule title="Game Leaders" eyebrow="Top Performers">
+            {stats === null ? (
+              <Typography color="text.secondary">
+                Game leaders will appear when player statistics are available.
+              </Typography>
+            ) : (
+              <GameLeadersPanel
+                leaders={stats.gameLeaders}
+                awayTeam={game.awayTeam}
+                homeTeam={game.homeTeam}
+              />
+            )}
+          </GameCenterModule>
+          <GameCenterModule title="Team Stats" id="team-stats">
+            <TeamStatsPanel
+              awayTeam={game.awayTeam}
+              homeTeam={game.homeTeam}
+              gameStatus={game.status}
+              query={statsQuery}
+            />
+          </GameCenterModule>
+          {stats === null ? null : (
+            <GameCenterModule title="Player Stats" eyebrow="Quick Leaders">
+              <PlayerQuickStats
+                leaders={stats.gameLeaders}
+                awayTeam={game.awayTeam}
+                homeTeam={game.homeTeam}
+              />
+            </GameCenterModule>
+          )}
+        </Stack>
+
+        <Stack spacing={2} sx={{ minWidth: 0, order: { xs: 1, lg: 2 } }}>
+          {latestPlay === null ? null : (
+            <GameCenterModule title="Live Situation" eyebrow="On the Field">
+              <Stack spacing={1.5}>
+                <CurrentSituation play={selectedPlay} />
+                <FieldProgress play={selectedPlay} />
+                <Box>
+                  <Typography variant="overline" color="text.secondary">
+                    Latest Play
+                  </Typography>
+                  <Typography sx={{ fontWeight: 750 }}>
+                    {latestPlay.description}
+                  </Typography>
+                </Box>
+              </Stack>
+            </GameCenterModule>
+          )}
+          <GameCenterModule title="Play-by-Play" eyebrow="Gamecast">
+            {playContent}
+          </GameCenterModule>
+        </Stack>
+
+        <Stack spacing={2} sx={{ minWidth: 0, order: 3 }}>
+          <GameCenterModule title="Featured Video">
+            <GameMediaSection game={game} query={gameMediaQuery} compact />
+          </GameCenterModule>
+          <GameCenterModule title="Game Info">
+            <GameInfoPanel game={game} />
+          </GameCenterModule>
+        </Stack>
+      </Box>
+
+      <GameCenterModule title="Player Stats" id="player-stats">
+        {stats === null ? (
+          <Typography color="text.secondary">
+            {statsQuery.isPending
+              ? 'Player statistics are loading.'
+              : 'Player statistics are not available for this game.'}
           </Typography>
         ) : (
-          <>
-            {showPlaysTab && showStatsTab ? (
-              <Tabs
-                value={activeSection}
-                onChange={(_event, next: 'plays' | 'stats') =>
-                  setSearchParams(
-                    (previous) => {
-                      const updated = new URLSearchParams(previous);
-                      updated.set('section', next);
-                      return updated;
-                    },
-                    { replace: true },
-                  )
-                }
-                aria-label="Game Center sections"
-              >
-                <Tab value="plays" label="Plays" />
-                <Tab value="stats" label="Team Stats" />
-              </Tabs>
-            ) : null}
-
-            {activeSection === 'plays' ? (
-              playsQuery.data === undefined ? (
-                playsQuery.isPending ? (
-                  <Stack sx={{ alignItems: 'center', py: 4 }}>
-                    <CircularProgress aria-label="Loading plays" size={28} />
-                  </Stack>
-                ) : (
-                  <Alert
-                    severity="error"
-                    action={
-                      <Button
-                        color="inherit"
-                        size="small"
-                        onClick={() => playsQuery.refetch()}
-                      >
-                        Retry
-                      </Button>
-                    }
-                  >
-                    {getPublicGameErrorMessage(playsQuery.error)}
-                  </Alert>
-                )
-              ) : (
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gap: 3,
-                    gridTemplateColumns: { xs: '1fr', md: '5fr 7fr' },
-                    alignItems: 'start',
-                  }}
-                >
-                  <Stack spacing={2}>
-                    <CurrentSituation play={selectedPlay} />
-                    <FieldProgress play={selectedPlay} />
-                  </Stack>
-                  <PlayFeed
-                    plays={plays}
-                    selectedPlayId={selectedPlayId}
-                    onSelectPlay={setSelectedPlayId}
-                  />
-                </Box>
-              )
-            ) : null}
-
-            {activeSection === 'stats' ? (
-              <Stack spacing={4}>
-                <TeamStatsPanel
-                  awayTeam={game.awayTeam}
-                  homeTeam={game.homeTeam}
-                  gameStatus={game.status}
-                  query={statsQuery}
-                />
-                {statsQuery.data !== undefined &&
-                statsQuery.data.coverage === 'AVAILABLE' ? (
-                  <PlayerStatsPanel
-                    awayTeam={game.awayTeam}
-                    homeTeam={game.homeTeam}
-                    playerStatsAvailable={statsQuery.data.playerStatsAvailable}
-                    awayStats={statsQuery.data.playerStats.away}
-                    homeStats={statsQuery.data.playerStats.home}
-                  />
-                ) : null}
-              </Stack>
-            ) : null}
-          </>
+          <PlayerStatsPanel
+            awayTeam={game.awayTeam}
+            homeTeam={game.homeTeam}
+            coverageState={stats.playerStatsCoverageState}
+            awayStats={stats.playerStats.away}
+            homeStats={stats.playerStats.home}
+          />
         )}
-      </Stack>
-    </Card>
+      </GameCenterModule>
+    </Stack>
   );
 };

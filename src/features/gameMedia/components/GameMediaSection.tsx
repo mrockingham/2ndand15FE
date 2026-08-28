@@ -9,9 +9,11 @@ import type { Game } from '@/features/games/types';
 export const GameMediaSection = ({
   game,
   query,
+  compact = false,
 }: {
   readonly game: Game;
   readonly query: UseQueryResult<GameMediaResult, unknown>;
+  readonly compact?: boolean;
 }) => {
   const displayVideos = query.data?.displayVideos ?? [];
 
@@ -20,7 +22,14 @@ export const GameMediaSection = ({
   // `key={game.id}` forces a remount (and thus a selection reset) whenever
   // the viewer navigates to a different game.
   if (displayVideos.length > 0) {
-    return <GameMediaPlayer key={game.id} game={game} videos={displayVideos} />;
+    return (
+      <GameMediaPlayer
+        key={game.id}
+        game={game}
+        videos={displayVideos}
+        compact={compact}
+      />
+    );
   }
 
   // No selectable video -- fall back to the same "checking/unavailable"

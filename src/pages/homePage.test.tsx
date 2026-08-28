@@ -130,6 +130,21 @@ describe('Home page states', () => {
     expect(
       await screen.findByRole('heading', { name: /AI Hub snapshot/i }),
     ).toBeInTheDocument();
+    const newsAndInsights = screen.getByRole('complementary', {
+      name: /homepage news and insights/i,
+    });
+    const topStories = screen.getByRole('region', {
+      name: /^top stories$/i,
+    });
+    expect(
+      within(topStories).getByRole('heading', { name: /^top stories$/i }),
+    ).toBeInTheDocument();
+    expect(newsAndInsights).not.toContainElement(topStories);
+    expect(
+      within(newsAndInsights).getByRole('heading', {
+        name: /AI Hub snapshot/i,
+      }),
+    ).toBeInTheDocument();
     expect(
       await screen.findByRole('heading', { name: /league leaders/i }),
     ).toBeInTheDocument();

@@ -7,6 +7,7 @@ import { Box, Chip, Stack, Typography } from '@mui/material';
 import {
   formatDownDistance,
   formatGameClock,
+  formatYardLine,
 } from '@/features/games/presentation';
 import type { GamePlay } from '@/features/games/types';
 
@@ -22,6 +23,8 @@ export const PlayRow = memo(
   }) => {
     const distance = formatDownDistance(play.start.down, play.start.distance);
     const clock = formatGameClock(play.clock) ?? '—';
+    const yardLine =
+      play.start.yardLine === null ? null : formatYardLine(play.start.yardLine);
 
     return (
       <Box
@@ -35,9 +38,9 @@ export const PlayRow = memo(
           width: '100%',
           boxSizing: 'border-box',
           cursor: 'pointer',
-          borderRadius: 1.5,
+          borderRadius: 1,
           px: 1.5,
-          py: 1.25,
+          py: 1,
           border: '1px solid',
           borderColor: selected ? 'primary.main' : 'transparent',
           bgcolor: selected ? 'action.selected' : 'transparent',
@@ -60,7 +63,7 @@ export const PlayRow = memo(
               color="text.secondary"
               sx={{ fontVariantNumeric: 'tabular-nums' }}
             >
-              Q{play.period} · {clock}
+              {clock}
             </Typography>
             {play.possessionTeam === null ? null : (
               <Typography variant="caption" sx={{ fontWeight: 800 }}>
@@ -72,6 +75,16 @@ export const PlayRow = memo(
                 {distance}
               </Typography>
             )}
+            {yardLine === null ? null : (
+              <Typography variant="caption" color="text.secondary">
+                {yardLine}
+              </Typography>
+            )}
+            <Chip
+              size="small"
+              variant="outlined"
+              label={play.type.replace('_', ' ')}
+            />
             {play.flags.scoring ? (
               <Chip
                 size="small"

@@ -1,6 +1,4 @@
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
-import LocationOnOutlined from '@mui/icons-material/LocationOnOutlined';
-import TvOutlined from '@mui/icons-material/TvOutlined';
 import {
   Alert,
   Box,
@@ -54,10 +52,8 @@ export const GameDetailPage = () => {
   }
 
   const game = query.data;
-  const venue = [game.venue.name, game.venue.city].filter(Boolean).join(' · ');
-
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 4, sm: 6 } }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 3, sm: 4 } }}>
       <Stack spacing={3}>
         <Button
           component={RouterLink}
@@ -71,49 +67,9 @@ export const GameDetailPage = () => {
           <Typography variant="overline" color="primary.light">
             {game.season} · {getGameDisplayLabel(game)}
           </Typography>
-          <Typography variant="h2" component="h1" sx={{ mt: 0.75 }}>
+          <Typography variant="h3" component="h1" sx={{ mt: 0.5 }}>
             Game Center
           </Typography>
-          {venue === '' && game.broadcastNetwork === null ? null : (
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={2.5}
-              sx={{ mt: 1 }}
-            >
-              {venue === '' ? null : (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: 'center' }}
-                >
-                  <LocationOnOutlined
-                    color="primary"
-                    fontSize="small"
-                    aria-hidden="true"
-                  />
-                  <Typography variant="body2" color="text.secondary">
-                    {venue}
-                  </Typography>
-                </Stack>
-              )}
-              {game.broadcastNetwork === null ? null : (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{ alignItems: 'center' }}
-                >
-                  <TvOutlined
-                    color="primary"
-                    fontSize="small"
-                    aria-hidden="true"
-                  />
-                  <Typography variant="body2" color="text.secondary">
-                    {game.broadcastNetwork}
-                  </Typography>
-                </Stack>
-              )}
-            </Stack>
-          )}
         </Box>
         <GameCenterContent gameQuery={query} />
       </Stack>
