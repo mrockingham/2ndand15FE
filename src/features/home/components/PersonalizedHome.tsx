@@ -9,10 +9,10 @@ import {
   Skeleton,
   Stack,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
-import { TeamHelmet } from '@/components/team/TeamHelmet';
 import { useWeeklyInsightsQuery } from '@/features/aiHub/queries';
 import {
   HomeAiSnapshot,
@@ -23,13 +23,15 @@ import {
   HomeFavoriteMatchup,
   HomeMatchupSkeleton,
 } from '@/features/home/components/HomeGamesPanels';
-import {
-  HomeTeamNews,
-  HomeTeamNewsSkeleton,
-} from '@/features/home/components/HomeNewsPanels';
+import { HomeTeamNewsSkeleton } from '@/features/home/components/HomeNewsPanels';
 import { HomeStatsLeaders } from '@/features/home/components/HomeStatsLeaders';
+import { TeamEditorialSection } from '@/features/teamHub/components/TeamEditorialSection';
+import { TeamHighlightsSection } from '@/features/teamHub/components/TeamHighlightsSection';
+import { TeamHubHero } from '@/features/teamHub/components/TeamHubHero';
 import { useTeamHubQuery } from '@/features/teamHub/queries';
 import type { Team } from '@/features/teams/types';
+import { getTeamVisualConfig } from '@/features/teamVisualIdentity/teamVisualConfigs';
+import { getTeamThemeTokens } from '@/features/teamVisualIdentity/teamTheme';
 
 const greetingFor = (date: Date) => {
   const hour = date.getHours();
@@ -58,88 +60,6 @@ const TeamHubSectionError = ({
   </Alert>
 );
 
-const FavoriteHero = ({
-  displayName,
-  team,
-}: {
-  readonly displayName: string;
-  readonly team: Team;
-}) => (
-  <Card
-    component="header"
-    sx={{
-      position: 'relative',
-      isolation: 'isolate',
-      minHeight: { xs: 330, md: 360 },
-      overflow: 'hidden',
-      borderColor: 'var(--team-border)',
-      backgroundImage:
-        'linear-gradient(115deg, var(--team-hero-start), var(--team-hero-end) 56%, transparent 88%)',
-      '&::after': {
-        position: 'absolute',
-        inset: 'auto -8% -60% 38%',
-        zIndex: -1,
-        height: '120%',
-        borderRadius: '50%',
-        background:
-          'radial-gradient(circle, var(--team-subtle-strong), transparent 70%)',
-        content: '""',
-      },
-    }}
-  >
-    <Stack
-      direction={{ xs: 'column', md: 'row' }}
-      spacing={3}
-      sx={{
-        minHeight: 'inherit',
-        alignItems: { xs: 'flex-start', md: 'center' },
-        justifyContent: 'space-between',
-        p: { xs: 3, sm: 4, md: 5 },
-      }}
-    >
-      <Stack spacing={2} sx={{ maxWidth: 720 }}>
-        <Typography color="text.secondary">
-          {greetingFor(new Date())}, {displayName}
-        </Typography>
-        <Box>
-          <Typography variant="overline" color="var(--team-primary)">
-            {team.conference} {team.division} · MY TEAM
-          </Typography>
-          <Typography component="h1" variant="h2">
-            {team.fullName}
-          </Typography>
-        </Box>
-        <Typography color="text.secondary" sx={{ maxWidth: 580 }}>
-          Your matchup, published team coverage, historical leaders, and weekly
-          model context—together without pretending historical data is current.
-        </Typography>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
-          <Button
-            component={RouterLink}
-            to={`/teams/${team.id}`}
-            variant="contained"
-            endIcon={<ArrowForwardRounded />}
-          >
-            Open Team Hub
-          </Button>
-          <Button component={RouterLink} to="/account" variant="outlined">
-            Team settings
-          </Button>
-        </Stack>
-      </Stack>
-      <Box
-        sx={{
-          alignSelf: { xs: 'center', md: 'center' },
-          filter: 'drop-shadow(0 28px 34px rgba(0,0,0,0.32))',
-          transform: { md: 'scale(1.22)' },
-        }}
-      >
-        <TeamHelmet team={team.abbreviation} size="lg" />
-      </Box>
-    </Stack>
-  </Card>
-);
-
 export const PersonalizedHomeContent = ({
   displayName,
   favoriteTeam,
@@ -147,6 +67,7 @@ export const PersonalizedHomeContent = ({
   readonly displayName: string;
   readonly favoriteTeam: Team;
 }) => {
+  const theme = useTheme();
   const hubQuery = useTeamHubQuery(favoriteTeam.id);
   const insightsQuery = useWeeklyInsightsQuery({
     season: 2026,
@@ -156,10 +77,51 @@ export const PersonalizedHomeContent = ({
     teamId: favoriteTeam.id,
   });
   const overview = hubQuery.data?.overview;
+  const teamTokens = getTeamThemeTokens(
+    getTeamVisualConfig(favoriteTeam.abbreviation),
+    theme.palette.mode,
+  );
+  const banner = overview?.homepage?.banner ?? {
+    imageUrl: null,
+    focalX: 50,
+    focalY: 50,
+    overlayOpacity: 35,
+  };
 
   return (
     <Stack spacing={{ xs: 4, md: 5 }}>
-      <FavoriteHero displayName={displayName} team={favoriteTeam} />
+      <TeamHubHero
+        team={favoriteTeam}
+        banner={banner}
+        teamTokens={teamTokens}
+        showDirectoryLink={false}
+        intro={`${greetingFor(new Date())}, ${displayName}`}
+        eyebrow={`${favoriteTeam.conference} ${favoriteTeam.division} · MY TEAM`}
+        description="Your matchup, published team coverage, historical leaders, and weekly model context—together without pretending historical data is current."
+        actions={
+          <Stack
+            direction={{ xs: 'column', sm: 'row', md: 'column' }}
+            spacing={1.25}
+          >
+            <Button
+              component={RouterLink}
+              to={`/teams/${favoriteTeam.id}`}
+              variant="contained"
+              endIcon={<ArrowForwardRounded />}
+            >
+              Open Team Hub
+            </Button>
+            <Button
+              component={RouterLink}
+              to="/account"
+              variant="outlined"
+              sx={{ color: banner.imageUrl ? '#FFFFFF' : undefined }}
+            >
+              Team settings
+            </Button>
+          </Stack>
+        }
+      />
 
       <Box
         sx={{
@@ -187,32 +149,32 @@ export const PersonalizedHomeContent = ({
         <HomeFavoritePrediction query={insightsQuery} />
       </Box>
 
-      <Box
-        sx={{
-          display: 'grid',
-          gap: { xs: 4, lg: 3 },
-          gridTemplateColumns: {
-            xs: '1fr',
-            lg: 'minmax(0, 1.35fr) minmax(340px, 0.65fr)',
-          },
-        }}
-      >
-        {hubQuery.isPending ? (
-          <HomeTeamNewsSkeleton />
-        ) : hubQuery.isError || !overview ? (
-          <TeamHubSectionError
-            onRetry={hubQuery.refetch}
-            section="Favorite-team news"
-          />
-        ) : (
-          <HomeTeamNews
-            articles={overview.news.articles}
-            favoriteTeamId={favoriteTeam.id}
-            teamName={favoriteTeam.name}
-          />
-        )}
-        <HomeAiSnapshot query={insightsQuery} />
-      </Box>
+      {hubQuery.isPending ? (
+        <HomeTeamNewsSkeleton />
+      ) : hubQuery.isError || !overview ? (
+        <TeamHubSectionError
+          onRetry={hubQuery.refetch}
+          section="Favorite-team news"
+        />
+      ) : overview.homepage ? (
+        <TeamEditorialSection
+          teamId={favoriteTeam.id}
+          featuredItem={overview.homepage.editorial.featuredItem}
+          supportingItems={overview.homepage.editorial.supportingItems}
+        />
+      ) : null}
+
+      {hubQuery.isPending ? (
+        <Skeleton
+          variant="rounded"
+          height={190}
+          aria-label="Loading team highlights"
+        />
+      ) : overview?.homepage ? (
+        <TeamHighlightsSection highlights={overview.homepage.highlights} />
+      ) : null}
+
+      <HomeAiSnapshot query={insightsQuery} />
 
       <Box
         sx={{

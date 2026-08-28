@@ -1,6 +1,6 @@
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import { Box, Button, Paper, Stack, Typography } from '@mui/material';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { TeamHelmet } from '@/components/team/TeamHelmet';
@@ -15,11 +15,21 @@ export const TeamHubHero = ({
   team,
   teamTokens,
   preview = false,
+  intro,
+  eyebrow,
+  description,
+  actions,
+  showDirectoryLink = true,
 }: {
   readonly banner: TeamHomepageBanner;
   readonly team: Team;
   readonly teamTokens: TeamThemeTokens;
   readonly preview?: boolean;
+  readonly intro?: string;
+  readonly eyebrow?: string;
+  readonly description?: string;
+  readonly actions?: ReactNode;
+  readonly showDirectoryLink?: boolean;
 }) => {
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const showImage =
@@ -87,7 +97,7 @@ export const TeamHubHero = ({
         spacing={3}
         sx={{ minHeight: 'inherit', justifyContent: 'center' }}
       >
-        {preview ? null : (
+        {!preview && showDirectoryLink ? (
           <Button
             component={RouterLink}
             to="/teams"
@@ -99,7 +109,7 @@ export const TeamHubHero = ({
           >
             All teams
           </Button>
-        )}
+        ) : null}
         <Stack
           direction={{ xs: 'column', md: 'row' }}
           spacing={3}
@@ -107,11 +117,20 @@ export const TeamHubHero = ({
         >
           <TeamHelmet team={team.abbreviation} size="lg" />
           <Box sx={{ flexGrow: 1, color: showImage ? '#FFFFFF' : undefined }}>
+            {intro ? (
+              <Typography
+                color={showImage ? 'rgba(255,255,255,0.82)' : 'text.secondary'}
+                sx={{ mb: 1 }}
+              >
+                {intro}
+              </Typography>
+            ) : null}
             <Typography
               variant="overline"
               color={showImage ? 'inherit' : 'var(--team-primary)'}
             >
-              {team.abbreviation} · {team.conference} {team.division}
+              {eyebrow ??
+                `${team.abbreviation} · ${team.conference} ${team.division}`}
             </Typography>
             <Typography component={preview ? 'h3' : 'h1'} variant="h2">
               {team.fullName}
@@ -119,10 +138,12 @@ export const TeamHubHero = ({
             <Typography
               color={showImage ? 'rgba(255,255,255,0.82)' : 'text.secondary'}
             >
-              {team.city} · {team.name} · Active NFL team
+              {description ?? `${team.city} · ${team.name} · Active NFL team`}
             </Typography>
           </Box>
-          {preview ? null : (
+          {preview ? null : actions ? (
+            actions
+          ) : (
             <Stack spacing={1.25} sx={{ alignItems: { md: 'flex-end' } }}>
               <FavoriteTeamButton teamId={team.id} teamName={team.fullName} />
               <Button

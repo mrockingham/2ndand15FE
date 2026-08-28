@@ -54,6 +54,9 @@ const LazyPlayerComparePage = lazy(async () => ({
 const LazyStatsPage = lazy(async () => ({
   default: (await import('@/pages/StatsPage')).StatsPage,
 }));
+const LazyStandingsPage = lazy(async () => ({
+  default: (await import('@/pages/StandingsPage')).StandingsPage,
+}));
 const LazyTeamsPage = lazy(async () => ({
   default: (await import('@/pages/TeamsPage')).TeamsPage,
 }));
@@ -164,6 +167,7 @@ export const appRoutes: RouteObject[] = [
         element: deferred(<LazyPlayerDetailPage />),
       },
       { path: 'stats', element: deferred(<LazyStatsPage />) },
+      { path: 'standings', element: deferred(<LazyStandingsPage />) },
       { path: 'teams', element: deferred(<LazyTeamsPage />) },
       { path: 'teams/:teamId', element: deferred(<LazyTeamHubPage />) },
       {

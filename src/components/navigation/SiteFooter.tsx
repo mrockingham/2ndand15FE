@@ -5,6 +5,7 @@ const footerLinks = [
   { label: 'News', path: '/news' },
   { label: 'Games', path: '/games' },
   { label: 'Stats', path: '/stats' },
+  { label: 'Standings', path: '/standings' },
   { label: 'Teams', path: '/teams' },
   { label: 'Contact', path: '/contact' },
 ];

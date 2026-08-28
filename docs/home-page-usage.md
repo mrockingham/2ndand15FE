@@ -2,11 +2,13 @@
 
 Frontend Milestone 21 composes the public `/` route from existing public and authenticated query families. Milestone 35B layers the Homepage CMS (Hero carousel, Top Stories, Highlights, League Leaders) on top of the generic (non-personalized) Home only — see [homepage-usage.md](homepage-usage.md) for that contract in full. This document covers the parts of Home that predate and remain outside the CMS: the personalized/team Home, and the generic Home's fallback behavior when no CMS content is configured.
 
+Frontend Milestone 39C reuses M39B's Team Homepage presentation on the authenticated favorite-team Home. Its existing Team Hub request now supplies the CMS banner, backend-resolved ARTICLE/VIDEO editorial composition, and ordered highlights without another public request. Next Game and the favorite-team Baseline Model remain in their approved positions; the AI Hub snapshot follows Team Highlights so it no longer creates an empty editorial rail.
+
 ## Supported states
 
 - Signed-out visitors receive the CMS Hero carousel when configured (otherwise the original Hall of Fame Game artwork hero), curated Top Stories when configured (otherwise featured News), recent/upcoming games, Highlights, a compact weekly AI Hub snapshot, the League Leaders three-category view, team discovery, and sign-in/register personalization actions.
 - Authenticated users without a favorite receive the same useful public mix plus a prominent `/choose-team` action. No team identity, matchup, or prediction is fabricated.
-- Authenticated users with a favorite receive a team-accent hero, the bounded Team Hub matchup and published team News, the favorite-team weekly prediction, a compact weekly snapshot, factual historical team leaders, and model performance.
+- Authenticated users with a favorite receive the CMS-aware team hero, bounded Team Hub matchup, backend-resolved team editorial and highlights, the favorite-team weekly prediction, a compact weekly snapshot, factual historical team leaders, and model performance.
 
 The supplied Hall of Fame Game artwork is a temporary, explicitly provided project asset. It is used directly as one responsive, locally encoded hero image. No player photography or official marks are extracted from the desktop mockups, and every ordinary team identity continues to use the generic `TeamHelmet`/safe badge system.
 
@@ -18,7 +20,7 @@ The supplied Hall of Fame Game artwork is a temporary, explicitly provided proje
 | `GET /games/:gameId`              | Resolve the reviewed Hall of Fame Game status and final score for the static Hero fallback                                   |
 | `GET /games?limit=4`              | Bounded public recent/upcoming grid                                                                                          |
 | `GET /articles/featured?limit=3`  | Featured stories fallback, used only when no Top Stories are curated                                                         |
-| `GET /teams/:teamId/hub`          | One favorite team's bounded schedule, published News, and historical coverage metadata                                       |
+| `GET /teams/:teamId/hub`          | One favorite team's banner, editorial, highlights, bounded schedule, News, and historical coverage                           |
 | `GET /ai-hub/weekly-insights`     | Weekly snapshot, favorite-team prediction, and model-performance strip                                                       |
 | `GET /stats/metadata`             | Historical season, metric, label, and precision selection                                                                    |
 | `GET /teams/:teamId/stat-leaders` | Compact, team-split historical leaders for the favorite team (personalized Home only)                                        |
@@ -26,6 +28,8 @@ The supplied Hall of Fame Game artwork is a temporary, explicitly provided proje
 The weekly-insights query uses the backend's current reviewed `2026 PRE Week 1` context with `top=3` and adds only the favorite team UUID in the personalized state. Its deterministic query key means the prediction card, weekly snapshot, and model-performance strip share one five-minute-cached response. A visitor never requests Team Hub data, and a favorite user requests only one Team Hub rather than all 32.
 
 Every aggregate section owns its loading, error, empty, and retry presentation. AI failure does not remove Games, News, or Stats; News failure does not remove predictions; and Team Hub failure does not remove the favorite identity or independent AI response.
+
+The personalized Home and dedicated Team Hub share `teamHubKeys.overview(teamId)`. Team Homepage Admin mutations invalidate that exact selected-team key, so either mounted view refetches the same authoritative CMS composition without invalidating other teams.
 
 ## Trust and data limits
 
