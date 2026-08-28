@@ -22,9 +22,9 @@ The scoreboard (`ScoreboardHero`) never fabricates a `0–0` score for a schedul
 
 Plays are keyed by their stable backend `id` (never array index) and displayed newest-first while the backend's `sequence` field is preserved for selection and default-play logic. Each row shows only the fields the backend actually returned — down/distance is hidden, not fabricated, when either value is null — and marks scoring, turnover, and penalty plays with an icon-plus-text badge (`SCORE`, `TURNOVER`, `FLAG`), never color alone.
 
-The backend's `start.yardLine`/`end.yardLine` are already offense-relative on a 0–100 scale (own goal 0, midfield 50, opponent goal 100), so the field-progress visualization never needs to guess which physical team's endzone is which — it always labels the track `OWN / 50 / OPP` and derives the "current situation" yard line (e.g. `Opp 42`) from the same number. Selecting a play updates the field; the default selection is the latest play with usable field-position data.
+The backend's `start.yardLine`/`end.yardLine` are already offense-relative on a 0–100 scale (own goal 0, midfield 50, opponent goal 100), so the play visualization never needs to guess which physical team's endzone is which. Selecting a play updates the field; live mode follows the latest play, including a static or generic fallback when that play lacks location.
 
-Backend `GamePlay` IDs are stable only for the currently-active snapshot — the FINAL authoritative replacement (see below) can mint entirely new IDs for the same logical plays. `resolveSelectedPlayAfterRefresh` (`src/features/games/gameCenterSelection.ts`) resolves the selection after every refresh in three steps: keep the same ID if it still exists; otherwise fall back to a play at the same `sequence`/`period`/`clock` (survives an ID swap when the logical play is still represented); otherwise fall back to the latest play with usable field data. It never throws or renders a broken state when a previously-selected play disappears. New plays never force-scroll the feed or reset the user's place: a lightweight "N new plays" control appears only when the user has scrolled away from the newest region and more plays arrive, on the desktop two-column layout's own scroll container (mobile page-flow scrolling is out of scope for this indicator in V1).
+Backend `GamePlay` IDs are stable only for the currently-active snapshot — the FINAL authoritative replacement (see below) can mint entirely new IDs for the same logical plays. For a manually selected replay, `resolveSelectedPlayAfterRefresh` (`src/features/games/gameCenterSelection.ts`) resolves the selection after every refresh in three steps: keep the same ID if it still exists; otherwise fall back to a play at the same `sequence`/`period`/`clock` (survives an ID swap when the logical play is still represented); otherwise fall back to the latest play with usable field data. Live mode keeps no explicit selection and follows the current latest play. The resolver never throws or renders a broken state when a previously-selected play disappears. New plays never force-scroll the feed or reset the user's place: a lightweight "N new plays" control appears only when the user has scrolled away from the newest region and more plays arrive, on the desktop two-column layout's own scroll container (mobile page-flow scrolling is out of scope for this indicator in V1).
 
 ## Team stats
 
@@ -85,6 +85,75 @@ Play-by-play is always the primary center experience. Its only tabs are `Play-by
 **Global video (M32C).** A single, globally-configured video (not copied per game, never counted against a game's 4-curated-video cap) that becomes primary (`displayMode: 'GLOBAL'`) for any game with no curated video and no available automatic highlight, and otherwise appears as a secondary selector alongside whatever game-specific media exists. Removing the global video (or a game gaining its own curated/automatic media) is entirely backend-driven — the frontend never has to reconcile this, it just renders whatever `displayVideos` says on the next fetch.
 
 Admin curation happens at `/admin/game-media` (list, with season/season-type/week filters and a page-level Global Game Center Video panel) and `/admin/game-media/:gameId` (detail — add/edit/remove/reorder up to 4 per-game curated videos; see [admin-usage.md](admin-usage.md)).
+
+## Tactical play visualization (M41A)
+
+The center Game Center rail now presents the selected or latest play as **Play
+Visualization**. It is a deterministic schematic generated in the browser from
+the existing public play response; it is not provider tracking, an exact replay,
+or a claim about actual formation and alignment.
+
+### Public data coverage
+
+The public `GamePlay` DTO exposes a stable snapshot play ID, sequence, period,
+clock, normalized play type, description, possession team when resolved,
+start/end down, distance and offense-relative yard line, plus scoring, penalty,
+and turnover flags. It does not expose a separate yards-gained value, no-play
+flag, pass-completion result, lateral direction, kick result, formation,
+personnel, or player coordinates.
+
+The backend stores an internal `sourcePlayType`, but does not expose it publicly.
+No M41A backend change is required: normalized `type` and flags remain the
+factual classification, and a deliberately bounded description classifier is
+used only for exact `pass incomplete`, `left|middle|right`, and `no play`
+phrases. The UI does not label a field goal GOOD/MISSED from free text.
+
+### Presentation model and field
+
+`buildPlayAnimation(play)` returns transient presentation data only: category,
+generic formation, factual or generic location mode, LOS, first-down marker,
+ball path, 11 offensive and 11 defensive schematic markers, duration, and
+factual status flags. Nothing is persisted or written back to query data.
+
+When supplied, `start.yardLine` and `end.yardLine` place the LOS, start/end ball
+markers, first-down line, carrier destination, and ball landing on the existing
+offense-relative 0–100 field. Missing location remains null in the model; the
+visualizer labels its centered motion as generic rather than presenting a
+fabricated spot. A play with neither useful type nor location remains static.
+
+Shotgun-like, balanced, field-goal, punt, and kickoff arrangements provide
+visual context only. Passes and kicks use a dotted quadratic SVG trajectory;
+runs keep the ball with the carrier; sacks bring rush markers toward the QB;
+incomplete passes fade before attachment; and turnover, scoring, flag, and
+no-play overlays remain textual as well as colored. No-play descriptions do not
+advance the official ending marker. `prefers-reduced-motion` renders the same
+final field facts and trajectory without animated SVG elements.
+
+### Selection and expanded replay
+
+With no manual selection the visualizer follows the latest play. Choosing an
+older PBP row enters clearly labeled Replay mode and remains pinned across
+polling/reconciliation. Live games offer Return to Live. Replay remounts only
+the SVG animation, and Expand opens a large field beside the existing selectable
+PBP list without another request. The compact mobile field preserves end zones,
+yard lines, LOS, first down, ball, status, and trajectory through its responsive
+SVG view box.
+
+### Real-play verification
+
+Verified against the stored 2026 preseason **NE @ CLE** game
+`f63bd9b3-a60a-43af-bc0d-2a47e2601ca2` (166 public plays):
+
+- kickoff `338a2923-e49f-4b48-980c-bc3caad3ff57`, NE 35 to CLE 33;
+- completed short-left pass `4e2b2ebd-f8b4-4db3-8b50-0176b86db2cc`, CLE 33 to CLE 45;
+- incomplete short-left pass `4e7f7b93-19f8-4303-b9b5-27afb19b8b50`, remaining at CLE 46;
+- penalty/no-play `f79aad25-0428-4bf5-9184-17ec7a011199`;
+- punt `578fea03-10de-43ec-8fc8-a33e5e69256c`;
+- 35-yard scoring field goal `b93205d7-4e05-45a7-91cc-a255a2f6891e`;
+- interception `4ab3c7ea-d74a-4e7f-8927-dd9cb2f86dc5`.
+
+These examples use the public stored DTO exactly; the visualizer makes no
+provider request.
 
 ## Exclusions
 

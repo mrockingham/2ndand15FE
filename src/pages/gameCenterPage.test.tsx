@@ -279,10 +279,42 @@ describe('Game Center', () => {
     await waitFor(() => expect(counts.stats).toBe(2));
     await waitFor(() => expect(counts.highlights).toBe(2));
 
-    const refreshedTurnoverRow = (
-      await screen.findByText(turnoverPlayFixture.description)
-    ).closest('button')!;
+    const refreshedTurnoverRow = await screen.findByRole('button', {
+      name: new RegExp(turnoverPlayFixture.description),
+    });
     expect(refreshedTurnoverRow).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('keeps an older selected play in replay mode until the user returns to live', async () => {
+    const live: Game = {
+      ...gameFixture,
+      status: 'IN_PROGRESS',
+      awayScore: 7,
+      homeScore: 3,
+      quarter: 4,
+      clock: '00:12',
+    };
+    renderApp(`/games/${live.id}`, {
+      fetchImplementation: buildFetch(live, { plays: gamePlaysFixture }),
+    });
+
+    expect(await screen.findByText('LIVE PLAY')).toBeInTheDocument();
+    const turnoverRow = screen.getByRole('button', {
+      name: new RegExp(turnoverPlayFixture.description),
+    });
+    await userEvent.click(turnoverRow);
+
+    expect(screen.getByText('REPLAY')).toBeInTheDocument();
+    expect(screen.getByTestId('visualized-play-summary')).toHaveTextContent(
+      turnoverPlayFixture.description,
+    );
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Return to Live' }),
+    );
+    expect(screen.getByText('LIVE PLAY')).toBeInTheDocument();
+    expect(screen.getByTestId('visualized-play-summary')).toHaveTextContent(
+      gamePlaysFixture.at(-1)!.description,
+    );
   });
 
   it('renders a large play feed keyed by stable play IDs without crashing', async () => {

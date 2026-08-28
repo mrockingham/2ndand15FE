@@ -9,8 +9,10 @@ import {
 } from '@mui/material';
 import type { UseQueryResult } from '@tanstack/react-query';
 
-import { CurrentSituation } from '@/features/games/components/CurrentSituation';
-import { FieldProgress } from '@/features/games/components/FieldProgress';
+import {
+  ExpandedPlayVisualizerDialog,
+  TacticalPlayVisualizer,
+} from '@/features/games/components/TacticalPlayVisualizer';
 import { FreshnessIndicator } from '@/features/games/components/FreshnessIndicator';
 import { GameCenterModule } from '@/features/games/components/GameCenterModule';
 import { GameCenterRefreshButton } from '@/features/games/components/GameCenterRefreshButton';
@@ -59,20 +61,34 @@ export const GameCenterContent = ({
   );
 
   const [selectedPlayId, setSelectedPlayId] = useState<string | null>(null);
+  const [replayVersion, setReplayVersion] = useState(0);
+  const [expanded, setExpanded] = useState(false);
   const [previousPlays, setPreviousPlays] = useState(plays);
   if (plays !== previousPlays) {
     const previousSelectedPlay =
       previousPlays.find((play) => play.id === selectedPlayId) ?? null;
-    const resolvedId = resolveSelectedPlayAfterRefresh(
-      plays,
-      selectedPlayId,
-      previousSelectedPlay,
-    );
+    const resolvedId =
+      selectedPlayId === null
+        ? null
+        : resolveSelectedPlayAfterRefresh(
+            plays,
+            selectedPlayId,
+            previousSelectedPlay,
+          );
     setPreviousPlays(plays);
-    if (resolvedId !== selectedPlayId) setSelectedPlayId(resolvedId);
+    const nextSelectedId =
+      resolvedId !== null && resolvedId === latestPlay?.id ? null : resolvedId;
+    if (nextSelectedId !== selectedPlayId) setSelectedPlayId(nextSelectedId);
   }
   const selectedPlay =
     plays.find((play) => play.id === selectedPlayId) ?? latestPlay;
+  const replayMode =
+    selectedPlayId !== null &&
+    selectedPlay !== null &&
+    selectedPlay.id !== latestPlay?.id;
+  const handleSelectPlay = (playId: string) => {
+    setSelectedPlayId(playId === latestPlay?.id ? null : playId);
+  };
 
   const previousStatusRef = useRef<GameStatus | null>(null);
   useEffect(() => {
@@ -144,8 +160,8 @@ export const GameCenterContent = ({
     ) : (
       <PlayFeed
         plays={plays}
-        selectedPlayId={selectedPlayId}
-        onSelectPlay={setSelectedPlayId}
+        selectedPlayId={selectedPlay?.id ?? null}
+        onSelectPlay={handleSelectPlay}
       />
     );
 
@@ -212,19 +228,16 @@ export const GameCenterContent = ({
 
         <Stack spacing={2} sx={{ minWidth: 0, order: { xs: 1, lg: 2 } }}>
           {latestPlay === null ? null : (
-            <GameCenterModule title="Live Situation" eyebrow="On the Field">
-              <Stack spacing={1.5}>
-                <CurrentSituation play={selectedPlay} />
-                <FieldProgress play={selectedPlay} />
-                <Box>
-                  <Typography variant="overline" color="text.secondary">
-                    Latest Play
-                  </Typography>
-                  <Typography sx={{ fontWeight: 750 }}>
-                    {latestPlay.description}
-                  </Typography>
-                </Box>
-              </Stack>
+            <GameCenterModule title="Play Visualization" eyebrow="On the Field">
+              <TacticalPlayVisualizer
+                game={game}
+                play={selectedPlay ?? latestPlay}
+                replayMode={replayMode}
+                replayVersion={replayVersion}
+                onReplay={() => setReplayVersion((version) => version + 1)}
+                onExpand={() => setExpanded(true)}
+                onReturnToLive={() => setSelectedPlayId(null)}
+              />
             </GameCenterModule>
           )}
           <GameCenterModule title="Play-by-Play" eyebrow="Gamecast">
@@ -259,6 +272,21 @@ export const GameCenterContent = ({
           />
         )}
       </GameCenterModule>
+      {selectedPlay === null ? null : (
+        <ExpandedPlayVisualizerDialog
+          open={expanded}
+          game={game}
+          play={selectedPlay}
+          plays={plays}
+          selectedPlayId={selectedPlay.id}
+          replayMode={replayMode}
+          replayVersion={replayVersion}
+          onClose={() => setExpanded(false)}
+          onSelectPlay={handleSelectPlay}
+          onReplay={() => setReplayVersion((version) => version + 1)}
+          onReturnToLive={() => setSelectedPlayId(null)}
+        />
+      )}
     </Stack>
   );
 };
