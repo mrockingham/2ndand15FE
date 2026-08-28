@@ -25,9 +25,12 @@ import { HomeGamesGrid } from '@/features/home/components/HomeGamesPanels';
 import { HomePublicNews } from '@/features/home/components/HomeNewsPanels';
 import { HomepageHeroCarousel } from '@/features/homepage/components/HomepageHeroCarousel';
 import { HomepageHighlightsSection } from '@/features/homepage/components/HomepageHighlightsSection';
+import { HomepageInsightRail } from '@/features/homepage/components/HomepageInsightRail';
 import { HomepageLeadersSection } from '@/features/homepage/components/HomepageLeadersSection';
-import { InsightRail } from '@/features/homepage/components/InsightRail';
-import { TopStoriesSection } from '@/features/homepage/components/TopStoriesSection';
+import {
+  FeaturedTopStorySection,
+  TopStoriesList,
+} from '@/features/homepage/components/TopStoriesSection';
 import { useHomepageQuery } from '@/features/homepage/queries';
 
 const PublicHero = ({ chooseTeam }: { readonly chooseTeam: boolean }) => {
@@ -241,6 +244,8 @@ export const PublicHomeContent = ({
   const homepageQuery = useHomepageQuery();
   const homepage = homepageQuery.data;
   const activeHeroSlides = homepage?.heroSlides ?? [];
+  const featuredTopStory = homepage?.topStories[0];
+  const supportingTopStories = homepage?.topStories.slice(1) ?? [];
 
   return (
     <Stack spacing={{ xs: 4, md: 5 }}>
@@ -250,44 +255,57 @@ export const PublicHomeContent = ({
         <PublicHero chooseTeam={chooseTeam} />
       )}
       {chooseTeam ? <PersonalizationCallout chooseTeam /> : null}
-      <HomeGamesGrid query={gamesQuery} />
-      {homepage ? (
-        <HomepageHighlightsSection highlights={homepage.highlights} />
-      ) : null}
       <Box
         sx={{
           display: 'grid',
           gap: { xs: 4, lg: 3 },
+          alignItems: 'start',
           gridTemplateColumns: {
-            xs: '1fr',
-            lg: 'minmax(0, 1.35fr) minmax(340px, 0.65fr)',
+            xs: 'minmax(0, 1fr)',
+            lg: 'minmax(0, 1.45fr) minmax(360px, 0.7fr)',
           },
         }}
       >
-        {homepage && homepage.topStories.length > 0 ? (
-          <TopStoriesSection stories={homepage.topStories} />
-        ) : (
-          <HomePublicNews query={newsQuery} />
-        )}
-        <InsightRail homepageQuery={homepageQuery} />
-      </Box>
-      {homepage ? (
-        <Box
+        <Stack
+          spacing={{ xs: 4, md: 5 }}
           sx={{
-            display: 'grid',
-            gap: 3,
-            gridTemplateColumns: {
-              xs: '1fr',
-              lg: 'minmax(0, 1.35fr) minmax(300px, 0.65fr)',
-            },
+            minWidth: 0,
+            gridColumn: { lg: 1 },
+            gridRow: { lg: 1 },
           }}
         >
-          <HomepageLeadersSection leaders={homepage.leaders} />
+          {featuredTopStory ? (
+            <FeaturedTopStorySection story={featuredTopStory} />
+          ) : (
+            <HomePublicNews query={newsQuery} mode="featured" />
+          )}
+          {homepage ? (
+            <HomepageHighlightsSection highlights={homepage.highlights} />
+          ) : null}
+          <HomeGamesGrid query={gamesQuery} />
+          {homepage ? (
+            <HomepageLeadersSection leaders={homepage.leaders} />
+          ) : null}
           <ExploreTeamsCard />
-        </Box>
-      ) : (
-        <ExploreTeamsCard />
-      )}
+        </Stack>
+        <Stack
+          component="aside"
+          aria-label="Homepage news and insights"
+          spacing={{ xs: 4, md: 5 }}
+          sx={{
+            minWidth: 0,
+            gridColumn: { lg: 2 },
+            gridRow: { lg: 1 },
+          }}
+        >
+          {featuredTopStory ? (
+            <TopStoriesList stories={supportingTopStories} />
+          ) : (
+            <HomePublicNews query={newsQuery} mode="supporting" />
+          )}
+          <HomepageInsightRail homepageQuery={homepageQuery} />
+        </Stack>
+      </Box>
       {chooseTeam || !showPersonalizationCallout ? null : (
         <PersonalizationCallout chooseTeam={false} />
       )}

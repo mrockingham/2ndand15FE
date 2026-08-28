@@ -5,10 +5,16 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { CurrentSituation } from '@/features/games/components/CurrentSituation';
 import { FieldProgress } from '@/features/games/components/FieldProgress';
 import { FreshnessIndicator } from '@/features/games/components/FreshnessIndicator';
+import { GameLeadersPanel } from '@/features/games/components/GameLeadersPanel';
 import { PlayFeed } from '@/features/games/components/PlayFeed';
 import { PlayerStatsPanel } from '@/features/games/components/PlayerStatsPanel';
+import { ScoreboardHero } from '@/features/games/components/ScoreboardHero';
 import { TeamStatsPanel } from '@/features/games/components/TeamStatsPanel';
-import { awayGameTeamFixture, homeGameTeamFixture } from '@/test/gameFixtures';
+import {
+  awayGameTeamFixture,
+  gameFixture,
+  homeGameTeamFixture,
+} from '@/test/gameFixtures';
 import {
   awayPlayerStatsFixture,
   awayTeamStatsFixture,
@@ -21,9 +27,79 @@ import {
 } from '@/test/gamePlaysFixtures';
 import {
   EMPTY_GAME_PLAYER_STATS,
+  EMPTY_GAME_LEADERS,
   type GamePlay,
+  type GameLeaders,
   type GameStatsResult,
 } from '@/features/games/types';
+
+describe('ScoreboardHero', () => {
+  it.each([
+    ['SCHEDULED', 'Scheduled'],
+    ['IN_PROGRESS', 'Live'],
+    ['HALFTIME', 'Halftime'],
+    ['FINAL', 'Final'],
+  ] as const)('renders the %s state', (status, label) => {
+    render(
+      <ScoreboardHero
+        game={{
+          ...gameFixture,
+          status,
+          awayScore: status === 'SCHEDULED' ? null : 13,
+          homeScore: status === 'SCHEDULED' ? null : 17,
+          quarter: status === 'IN_PROGRESS' ? 3 : null,
+          clock: status === 'IN_PROGRESS' ? '7:42' : null,
+        }}
+      />,
+    );
+    expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+  });
+
+  it('hides missing possession and situation fields', () => {
+    render(
+      <ScoreboardHero
+        game={{
+          ...gameFixture,
+          status: 'IN_PROGRESS',
+          awayScore: 0,
+          homeScore: 0,
+        }}
+        latestPlay={null}
+      />,
+    );
+    expect(screen.queryByText(/ ball$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1st &/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('GameLeadersPanel', () => {
+  const leaders: GameLeaders = {
+    away: {
+      passer: awayPlayerStatsFixture.passing[0]!,
+      rusher: awayPlayerStatsFixture.rushing[0]!,
+      receiver: awayPlayerStatsFixture.receiving[0]!,
+    },
+    home: {
+      passer: homePlayerStatsFixture.passing[0]!,
+      rusher: null,
+      receiver: null,
+    },
+  };
+
+  it('honors backend leaders, allows one missing side, and hides empty categories', () => {
+    render(
+      <GameLeadersPanel
+        leaders={leaders}
+        awayTeam={awayGameTeamFixture}
+        homeTeam={homeGameTeamFixture}
+      />,
+    );
+    expect(screen.getByText('Alex Away')).toBeInTheDocument();
+    expect(screen.getByText('Jordan Home')).toBeInTheDocument();
+    expect(screen.getByText('Sam Runner')).toBeInTheDocument();
+    expect(screen.getByText('Receiving')).toBeInTheDocument();
+  });
+});
 
 describe('FieldProgress', () => {
   it('prompts for a selection when no play is chosen', () => {
@@ -93,6 +169,8 @@ describe('TeamStatsPanel', () => {
       coverage: 'UNAVAILABLE',
       teamStats: { home: null, away: null },
       playerStatsAvailable: false,
+      playerStatsCoverageState: 'UNAVAILABLE',
+      gameLeaders: EMPTY_GAME_LEADERS,
       playerStats: {
         home: EMPTY_GAME_PLAYER_STATS,
         away: EMPTY_GAME_PLAYER_STATS,
@@ -122,6 +200,8 @@ describe('TeamStatsPanel', () => {
       coverage: 'UNAVAILABLE',
       teamStats: { home: null, away: null },
       playerStatsAvailable: false,
+      playerStatsCoverageState: 'UNAVAILABLE',
+      gameLeaders: EMPTY_GAME_LEADERS,
       playerStats: {
         home: EMPTY_GAME_PLAYER_STATS,
         away: EMPTY_GAME_PLAYER_STATS,
@@ -150,6 +230,8 @@ describe('TeamStatsPanel', () => {
       coverage: 'AVAILABLE',
       teamStats: { home: homeTeamStatsFixture, away: awayTeamStatsFixture },
       playerStatsAvailable: false,
+      playerStatsCoverageState: 'UNAVAILABLE',
+      gameLeaders: EMPTY_GAME_LEADERS,
       playerStats: {
         home: EMPTY_GAME_PLAYER_STATS,
         away: EMPTY_GAME_PLAYER_STATS,
@@ -196,6 +278,8 @@ describe('TeamStatsPanel', () => {
       coverage: 'AVAILABLE',
       teamStats: { home: homeTeamStatsFixture, away: awayTeamStatsFixture },
       playerStatsAvailable: false,
+      playerStatsCoverageState: 'UNAVAILABLE',
+      gameLeaders: EMPTY_GAME_LEADERS,
       playerStats: {
         home: EMPTY_GAME_PLAYER_STATS,
         away: EMPTY_GAME_PLAYER_STATS,
@@ -226,6 +310,37 @@ describe('TeamStatsPanel', () => {
 });
 
 describe('PlayerStatsPanel', () => {
+  it('explains partial coverage while keeping resolved rows visible', () => {
+    render(
+      <PlayerStatsPanel
+        awayTeam={awayGameTeamFixture}
+        homeTeam={homeGameTeamFixture}
+        coverageState="PARTIAL"
+        awayStats={awayPlayerStatsFixture}
+        homeStats={EMPTY_GAME_PLAYER_STATS}
+      />,
+    );
+    expect(
+      screen.getByText(/Some player statistics are still being matched/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Alex Away')).toBeInTheDocument();
+  });
+
+  it('explains pending coverage without empty tables', () => {
+    render(
+      <PlayerStatsPanel
+        awayTeam={awayGameTeamFixture}
+        homeTeam={homeGameTeamFixture}
+        coverageState="PENDING"
+        awayStats={EMPTY_GAME_PLAYER_STATS}
+        homeStats={EMPTY_GAME_PLAYER_STATS}
+      />,
+    );
+    expect(
+      screen.getByText('Player statistics are updating.'),
+    ).toBeInTheDocument();
+  });
+
   it('shows a factual unavailable message rather than empty tables when the backend has no player data yet', () => {
     render(
       <PlayerStatsPanel
@@ -253,13 +368,11 @@ describe('PlayerStatsPanel', () => {
       />,
     );
     expect(
-      screen.getByText(
-        'Player statistics are not yet available for this game.',
-      ),
+      screen.getByText('Player statistics are unavailable for this game.'),
     ).toBeInTheDocument();
   });
 
-  it('separates populated categories by team and omits categories with no rows for either team', () => {
+  it('switches team tables and omits empty categories', async () => {
     render(
       <PlayerStatsPanel
         awayTeam={awayGameTeamFixture}
@@ -272,27 +385,67 @@ describe('PlayerStatsPanel', () => {
     expect(screen.getByText('Passing')).toBeInTheDocument();
     expect(screen.getByText('Rushing')).toBeInTheDocument();
     expect(screen.getByText('Receiving')).toBeInTheDocument();
-    expect(screen.getByText('Defense')).toBeInTheDocument();
-    expect(screen.getByText('Kicking')).toBeInTheDocument();
+    expect(screen.queryByText('Defense')).not.toBeInTheDocument();
+    expect(screen.queryByText('Kicking')).not.toBeInTheDocument();
     expect(screen.queryByText('Punting')).not.toBeInTheDocument();
     expect(screen.queryByText('Returns')).not.toBeInTheDocument();
 
     expect(screen.getByText('Alex Away')).toBeInTheDocument();
-    expect(screen.getByText('Jordan Home')).toBeInTheDocument();
     expect(screen.getByText('Sam Runner')).toBeInTheDocument();
+    expect(screen.getAllByRole('table')).toHaveLength(3);
+    expect(screen.getByText('77.4')).toBeInTheDocument();
+    expect(screen.getByText('7.3')).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole('tab', { name: homeGameTeamFixture.fullName }),
+    );
+    expect(screen.getByText('Defense')).toBeInTheDocument();
+    expect(screen.getByText('Kicking')).toBeInTheDocument();
+    expect(screen.getByText('Jordan Home')).toBeInTheDocument();
     expect(screen.getByText('Pat Tackler')).toBeInTheDocument();
     expect(screen.getByText('Kelly Kicker')).toBeInTheDocument();
+    expect(screen.getAllByRole('table')).toHaveLength(3);
+  });
 
-    expect(
-      screen.getAllByRole('table', {
-        name: `${awayGameTeamFixture.abbreviation} stats table`,
-      }),
-    ).toHaveLength(3);
-    expect(
-      screen.getAllByRole('table', {
-        name: `${homeGameTeamFixture.abbreviation} stats table`,
-      }),
-    ).toHaveLength(3);
+  it('renders punting and returns without turning nulls into zeroes', () => {
+    render(
+      <PlayerStatsPanel
+        awayTeam={awayGameTeamFixture}
+        homeTeam={homeGameTeamFixture}
+        coverageState="COMPLETE"
+        awayStats={{
+          ...EMPTY_GAME_PLAYER_STATS,
+          punting: [
+            {
+              player: awayPlayerStatsFixture.passing[0]!.player,
+              punts: 2,
+              yards: 91,
+              average: 45.5,
+              inside20: 1,
+              touchbacks: 0,
+              longest: 51,
+            },
+          ],
+          returns: [
+            {
+              player: awayPlayerStatsFixture.passing[0]!.player,
+              kickReturns: 1,
+              kickReturnYards: 24,
+              kickReturnTouchdowns: null,
+              longestKickReturn: 24,
+              puntReturns: null,
+              puntReturnYards: null,
+              puntReturnTouchdowns: null,
+              longestPuntReturn: null,
+            },
+          ],
+        }}
+        homeStats={EMPTY_GAME_PLAYER_STATS}
+      />,
+    );
+    expect(screen.getByText('Punting')).toBeInTheDocument();
+    expect(screen.getByText('Returns')).toBeInTheDocument();
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
   });
 });
 
@@ -306,7 +459,7 @@ describe('FreshnessIndicator', () => {
     vi.useRealTimers();
   });
 
-  it('shows "Updating…" while a fetch is in flight', () => {
+  it('shows "Refreshing…" while a fetch is in flight', () => {
     render(
       <FreshnessIndicator
         label="LIVE"
@@ -315,10 +468,10 @@ describe('FreshnessIndicator', () => {
         hasError={false}
       />,
     );
-    expect(screen.getByText('LIVE · Updating…')).toBeInTheDocument();
+    expect(screen.getByText('LIVE · Refreshing…')).toBeInTheDocument();
   });
 
-  it('shows a relative "Updated X ago" and advances it locally without new fetches', () => {
+  it('shows a relative refresh age and advances it locally without new fetches', () => {
     render(
       <FreshnessIndicator
         label="LIVE"
@@ -327,15 +480,15 @@ describe('FreshnessIndicator', () => {
         hasError={false}
       />,
     );
-    expect(screen.getByText('LIVE · Updated 8 sec ago')).toBeInTheDocument();
+    expect(screen.getByText('LIVE · Refreshed 8 sec ago')).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(5_000);
     });
-    expect(screen.getByText('LIVE · Updated 13 sec ago')).toBeInTheDocument();
+    expect(screen.getByText('LIVE · Refreshed 13 sec ago')).toBeInTheDocument();
   });
 
-  it('shows "Last updated" phrasing when a refresh has failed', () => {
+  it('shows "Last refreshed" phrasing when a refresh has failed', () => {
     render(
       <FreshnessIndicator
         label="LIVE"
@@ -345,7 +498,7 @@ describe('FreshnessIndicator', () => {
       />,
     );
     expect(
-      screen.getByText('LIVE · Last updated 1 min ago'),
+      screen.getByText('LIVE · Last refreshed 1 min ago'),
     ).toBeInTheDocument();
   });
 

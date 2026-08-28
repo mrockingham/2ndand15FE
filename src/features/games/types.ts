@@ -104,12 +104,21 @@ export interface GamePlaysResult {
 export interface GameTeamStats {
   readonly teamId: string;
   readonly firstDowns: number | null;
+  readonly firstDownsPassing: number | null;
+  readonly firstDownsRushing: number | null;
+  readonly firstDownsPenalty: number | null;
   readonly totalPlays: number | null;
   readonly totalYards: number | null;
+  readonly passingCompletions: number | null;
+  readonly passingAttempts: number | null;
   readonly passingYards: number | null;
+  readonly passingInterceptions: number | null;
+  readonly rushingAttempts: number | null;
   readonly rushingYards: number | null;
   readonly turnovers: number | null;
+  readonly fumblesLost: number | null;
   readonly sacks: number | null;
+  readonly sackYardsLost: number | null;
   readonly thirdDownConversions: number | null;
   readonly thirdDownAttempts: number | null;
   readonly fourthDownConversions: number | null;
@@ -119,6 +128,7 @@ export interface GameTeamStats {
   readonly possessionSeconds: number | null;
   readonly redZoneConversions: number | null;
   readonly redZoneAttempts: number | null;
+  readonly totalDrives: number | null;
   readonly scoringByPeriod: {
     readonly q1: number | null;
     readonly q2: number | null;
@@ -220,6 +230,25 @@ export interface GamePlayerStatsByCategory {
   readonly returns: readonly GamePlayerReturnStats[];
 }
 
+export interface GameLeadersByTeam {
+  readonly passer: GamePlayerPassingStats | null;
+  readonly rusher: GamePlayerRushingStats | null;
+  readonly receiver: GamePlayerReceivingStats | null;
+}
+
+export interface GameLeaders {
+  readonly home: GameLeadersByTeam;
+  readonly away: GameLeadersByTeam;
+}
+
+export const EMPTY_GAME_LEADERS: GameLeaders = {
+  home: { passer: null, rusher: null, receiver: null },
+  away: { passer: null, rusher: null, receiver: null },
+};
+
+export type GamePlayerStatsCoverageState =
+  'COMPLETE' | 'PARTIAL' | 'PENDING' | 'UNAVAILABLE';
+
 export const EMPTY_GAME_PLAYER_STATS: GamePlayerStatsByCategory = {
   passing: [],
   rushing: [],
@@ -238,10 +267,12 @@ export interface GameStatsResult {
     readonly away: GameTeamStats | null;
   };
   readonly playerStatsAvailable: boolean;
+  readonly playerStatsCoverageState: GamePlayerStatsCoverageState;
   readonly playerStats: {
     readonly home: GamePlayerStatsByCategory;
     readonly away: GamePlayerStatsByCategory;
   };
+  readonly gameLeaders: GameLeaders;
   readonly limitations: readonly string[];
 }
 

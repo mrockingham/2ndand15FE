@@ -3,6 +3,7 @@ import {
   Card,
   CardContent,
   Chip,
+  Divider,
   Link,
   Stack,
   Typography,
@@ -122,6 +123,48 @@ const SecondaryStory = ({ story }: { readonly story: PublicTopStory }) => {
   );
 };
 
+export const FeaturedTopStorySection = ({
+  story,
+}: {
+  readonly story: PublicTopStory;
+}) => (
+  <Stack component="section" spacing={2} aria-label="Top stories">
+    <HomeSectionHeader
+      eyebrow="PUBLISHED COVERAGE"
+      title="Top stories"
+      actionLabel="Latest news"
+      actionTo="/news"
+    />
+    <LeadStory story={story} />
+  </Stack>
+);
+
+export const TopStoriesList = ({
+  stories,
+}: {
+  readonly stories: readonly PublicTopStory[];
+}) => {
+  if (stories.length === 0) return null;
+
+  return (
+    <Stack component="section" spacing={2} aria-label="More top stories">
+      <HomeSectionHeader
+        eyebrow="LATEST NEWS"
+        title="More stories"
+        actionLabel="View all"
+        actionTo="/news"
+      />
+      <Card sx={{ p: { xs: 2.25, md: 2.75 } }}>
+        <Stack spacing={2} divider={<Divider flexItem />}>
+          {stories.map((story) => (
+            <SecondaryStory key={story.id} story={story} />
+          ))}
+        </Stack>
+      </Card>
+    </Stack>
+  );
+};
+
 /**
  * Occupies the same Home slot as `HomePublicNews` -- the two are
  * alternatives, never both rendered at once (curated Top Stories when
@@ -138,21 +181,9 @@ export const TopStoriesSection = ({
   if (lead === undefined) return null;
 
   return (
-    <Stack component="section" spacing={2} aria-labelledby="home-news-heading">
-      <HomeSectionHeader
-        eyebrow="PUBLISHED COVERAGE"
-        title="Top stories"
-        actionLabel="Latest news"
-        actionTo="/news"
-      />
-      <LeadStory story={lead} />
-      {rest.length > 0 ? (
-        <Stack spacing={2}>
-          {rest.map((story) => (
-            <SecondaryStory key={story.id} story={story} />
-          ))}
-        </Stack>
-      ) : null}
+    <Stack spacing={4}>
+      <FeaturedTopStorySection story={lead} />
+      <TopStoriesList stories={rest} />
     </Stack>
   );
 };

@@ -11,13 +11,19 @@ import {
 import { formatProbability } from '@/features/aiHub/presentation';
 import { HomeSectionHeader } from '@/features/home/components/HomeSectionHeader';
 import {
+  formatLeaderValue,
   insightPickMatchupLabel,
+  leaderAccessibleLabel,
+  leaderCategoryLabel,
   weeklyLeaderAccessibleLabel,
   weeklyLeaderMetricLabel,
+  weeklyLeadersHaveContent,
 } from '@/features/homepage/presentation';
 import type {
   HomepageAiHubSnapshot,
   HomepageInsightPick,
+  HomepageLeaderCategory,
+  HomepageLeaders,
   HomepageWeeklyLeader,
   HomepageWeeklyLeaders,
 } from '@/features/homepage/types';
@@ -28,6 +34,7 @@ interface HomepageQueryState {
       readonly aiHub: HomepageAiHubSnapshot | null;
       readonly weeklyLeaders: HomepageWeeklyLeaders | null;
     };
+    readonly leaders: HomepageLeaders;
   };
   readonly isError: boolean;
   readonly isPending: boolean;
@@ -145,15 +152,10 @@ const WeeklyLeaderRow = ({
   category,
   leader,
 }: {
-  readonly category: 'passing' | 'rushing' | 'receiving';
+  readonly category: HomepageLeaderCategory;
   readonly leader: HomepageWeeklyLeader;
 }) => {
-  const categoryLabel =
-    category === 'passing'
-      ? 'Passing'
-      : category === 'rushing'
-        ? 'Rushing'
-        : 'Receiving';
+  const categoryLabel = leaderCategoryLabel[category];
   return (
     <Box>
       <Typography
@@ -205,7 +207,7 @@ const WeeklyLeadersCard = ({
   readonly weeklyLeaders: HomepageWeeklyLeaders;
 }) => {
   const categories: readonly (readonly [
-    'passing' | 'rushing' | 'receiving',
+    HomepageLeaderCategory,
     HomepageWeeklyLeader | null,
   ])[] = [
     ['passing', weeklyLeaders.passing],
@@ -238,12 +240,113 @@ const WeeklyLeadersCard = ({
   );
 };
 
-export const InsightRail = ({
+const QuickLeaderRow = ({
+  category,
+  leader,
+}: {
+  readonly category: HomepageLeaderCategory;
+  readonly leader: HomepageLeaders['passing'][number];
+}) => {
+  const categoryLabel = leaderCategoryLabel[category];
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        color="text.secondary"
+        sx={{ textTransform: 'uppercase' }}
+      >
+        {categoryLabel}
+      </Typography>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'baseline', justifyContent: 'space-between' }}
+      >
+        <Box>
+          <Typography sx={{ fontWeight: 800 }}>
+            {leader.player.displayName}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {leader.team ? leader.team.abbreviation : ''}
+          </Typography>
+        </Box>
+        <Typography
+          variant="body2"
+          sx={{ fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}
+        >
+          {formatLeaderValue(leader.value)}
+        </Typography>
+      </Stack>
+      <Typography
+        sx={{
+          position: 'absolute',
+          width: 1,
+          height: 1,
+          overflow: 'hidden',
+          clip: 'rect(0 0 0 0)',
+        }}
+      >
+        {leaderAccessibleLabel(leader, category)}
+      </Typography>
+    </Box>
+  );
+};
+
+/** Fallback rail module shown when no published Weekly Leaders exist yet --
+ * reuses the season leaders already fetched for the lower League Leaders
+ * section, so it's clearly a season summary rather than "this week". */
+const QuickLeadersCard = ({
+  leaders,
+}: {
+  readonly leaders: HomepageLeaders;
+}) => {
+  const categories: readonly HomepageLeaderCategory[] = [
+    'passing',
+    'rushing',
+    'receiving',
+  ];
+  const populated = categories
+    .map((category) => [category, leaders[category][0]] as const)
+    .filter(
+      (
+        entry,
+      ): entry is [
+        HomepageLeaderCategory,
+        HomepageLeaders['passing'][number],
+      ] => entry[1] !== undefined,
+    );
+  if (populated.length === 0) return null;
+
+  return (
+    <Stack spacing={2}>
+      <Typography component="h2" variant="h5">
+        {leaders.season} Leaders
+      </Typography>
+      <Card sx={{ p: { xs: 2.25, md: 2.75 } }}>
+        <Stack spacing={1.75} divider={<Divider flexItem />}>
+          {populated.map(([category, leader]) => (
+            <QuickLeaderRow
+              key={category}
+              category={category}
+              leader={leader}
+            />
+          ))}
+        </Stack>
+      </Card>
+    </Stack>
+  );
+};
+
+export const HomepageInsightRail = ({
   homepageQuery,
 }: {
   readonly homepageQuery: HomepageQueryState;
 }) => {
   const insights = homepageQuery.data?.insights;
+  const leaders = homepageQuery.data?.leaders;
+  const showLeaderFallback = !homepageQuery.isPending && !homepageQuery.isError;
+  const hasWeeklyLeaders = weeklyLeadersHaveContent(insights?.weeklyLeaders);
+
   return (
     <Stack spacing={4} sx={{ alignSelf: 'start' }}>
       <AiHubSnapshotCard
@@ -251,10 +354,11 @@ export const InsightRail = ({
         isPending={homepageQuery.isPending}
         isError={homepageQuery.isError}
       />
-      {!homepageQuery.isPending &&
-      !homepageQuery.isError &&
-      insights?.weeklyLeaders ? (
+      {showLeaderFallback && hasWeeklyLeaders && insights?.weeklyLeaders ? (
         <WeeklyLeadersCard weeklyLeaders={insights.weeklyLeaders} />
+      ) : null}
+      {showLeaderFallback && !hasWeeklyLeaders && leaders ? (
+        <QuickLeadersCard leaders={leaders} />
       ) : null}
     </Stack>
   );

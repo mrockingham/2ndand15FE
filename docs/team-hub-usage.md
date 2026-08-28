@@ -2,6 +2,8 @@
 
 Frontend Milestone 20 consumes the read-only Team Hub delivered by backend Milestone 19. The public `/teams` directory and `/teams/:teamId` hub combine approved team identity, bounded schedule and news previews, historical roster evidence, and team-split statistical leaders. They do not provide current 2026 rosters, injuries, depth charts, transactions, live statistics, AI analysis, fantasy recommendations, or predictions.
 
+Frontend Milestone 39B consumes M39A's backend-authored `homepage` object from that same Hub response. It adds a focal-point action-image banner with the prior identity treatment as its null/load-failure fallback, a resolved ARTICLE/VIDEO featured editorial slot with ordered mixed supporting content, and an ordered horizontal Team Highlights row. These modules never issue separate public requests or recompute featured ownership, media eligibility, or ordering.
+
 ## Endpoints and query ownership
 
 | Endpoint                          | Frontend use                                                                 |
@@ -12,6 +14,8 @@ Frontend Milestone 20 consumes the read-only Team Hub delivered by backend Miles
 | `GET /teams/:teamId/stat-leaders` | Cursor-paginated team-split historical leaders                               |
 | `GET /stats/metadata`             | Leader seasons, types, categories, metrics, precision, positions, and limits |
 | `PATCH /users/me/favorite-team`   | Existing authenticated set/replace workflow using an internal team UUID      |
+
+Team Homepage administration lives at `/admin/team-homepages?teamId=<uuid>` and calls only `/admin/teams/:teamId/homepage` plus its banner, editorial, candidate, order, highlight, and settings subresources. Mutations invalidate that team's admin detail, the relevant team-scoped candidate family, and `teamHubKeys.overview(teamId)`; they do not invalidate every Team Hub.
 
 The active team catalog remains under `['teams', 'list']` and is fresh for 24 hours. Team Hub overview, roster, and leader reads use separate deterministic `['teamHub', ...]` families with five-minute, one-day, and six-hour stale times respectively. Overview reads refetch on mount so synchronized current-season results become visible; historical roster and leader caching is unchanged. Stats metadata retains its existing one-day cache. All requests pass abort signals, do not poll, do not aggressively refetch on focus, and are never copied into Zustand or browser persistence.
 

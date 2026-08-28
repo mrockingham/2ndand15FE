@@ -1,9 +1,12 @@
 import {
   EMPTY_GAME_PLAYER_STATS,
+  EMPTY_GAME_LEADERS,
   type Game,
   type GameHighlightsResult,
   type GameListFilters,
   type GameListPage,
+  type GameLeaders,
+  type GamePlayerStatsCoverageState,
   type GamePlayerStatsByCategory,
   type GamePlaysResult,
   type GameStatsResult,
@@ -112,9 +115,11 @@ interface GameStatsResponse {
       readonly home: GamePlayerStatsByCategory;
       readonly away: GamePlayerStatsByCategory;
     };
+    readonly gameLeaders: GameLeaders;
   };
   readonly meta: {
     readonly playerStatsAvailable: boolean;
+    readonly playerStatsCoverageState: GamePlayerStatsCoverageState;
     readonly playerStatsCoverage: unknown;
     readonly limitations: readonly string[];
   };
@@ -135,7 +140,9 @@ export const getGameStats = async (
       coverage: 'AVAILABLE',
       teamStats: response.data.teamStats,
       playerStatsAvailable: response.meta.playerStatsAvailable,
+      playerStatsCoverageState: response.meta.playerStatsCoverageState,
       playerStats: response.data.playerStats,
+      gameLeaders: response.data.gameLeaders,
       limitations: response.meta.limitations,
     };
   } catch (error) {
@@ -145,10 +152,12 @@ export const getGameStats = async (
         coverage: 'UNAVAILABLE',
         teamStats: { home: null, away: null },
         playerStatsAvailable: false,
+        playerStatsCoverageState: 'UNAVAILABLE',
         playerStats: {
           home: EMPTY_GAME_PLAYER_STATS,
           away: EMPTY_GAME_PLAYER_STATS,
         },
+        gameLeaders: EMPTY_GAME_LEADERS,
         limitations: [],
       };
     }

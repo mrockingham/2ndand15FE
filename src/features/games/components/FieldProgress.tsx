@@ -27,6 +27,25 @@ const Marker = ({
   />
 );
 
+const LineMarker = ({
+  percent,
+  color,
+}: {
+  readonly percent: number;
+  readonly color: string;
+}) => (
+  <Box
+    sx={{
+      position: 'absolute',
+      insetBlock: 0,
+      left: `${percent}%`,
+      width: 2,
+      bgcolor: color,
+      transform: 'translateX(-50%)',
+    }}
+  />
+);
+
 export const FieldProgress = ({ play }: { readonly play: GamePlay | null }) => {
   if (play === null) {
     return (
@@ -49,6 +68,13 @@ export const FieldProgress = ({ play }: { readonly play: GamePlay | null }) => {
 
   const startPercent = startYard ?? endYard!;
   const endPercent = endYard ?? startYard!;
+  const lineOfScrimmage = play.start.yardLine;
+  const firstDownMarker =
+    lineOfScrimmage !== null &&
+    play.start.distance !== null &&
+    play.start.distance > 0
+      ? Math.min(100, lineOfScrimmage + play.start.distance)
+      : null;
   const startLabel = startYard === null ? null : formatYardLine(startYard);
   const endLabel = endYard === null ? null : formatYardLine(endYard);
   const summary =
@@ -60,7 +86,8 @@ export const FieldProgress = ({ play }: { readonly play: GamePlay | null }) => {
     <Stack spacing={1.5}>
       <Typography sx={{ fontWeight: 700 }}>{summary}</Typography>
       <Box
-        aria-hidden="true"
+        role="img"
+        aria-label={`${summary}${lineOfScrimmage === null ? '' : `, line of scrimmage ${formatYardLine(lineOfScrimmage)}`}${firstDownMarker === null ? '' : `, first down marker ${formatYardLine(firstDownMarker)}`}`}
         sx={{
           position: 'relative',
           height: 48,
@@ -71,6 +98,12 @@ export const FieldProgress = ({ play }: { readonly play: GamePlay | null }) => {
             'repeating-linear-gradient(90deg, transparent 0, transparent calc(10% - 1px), rgba(128,128,128,0.25) calc(10% - 1px), rgba(128,128,128,0.25) 10%)',
         }}
       >
+        {lineOfScrimmage === null ? null : (
+          <LineMarker percent={lineOfScrimmage} color="primary.dark" />
+        )}
+        {firstDownMarker === null ? null : (
+          <LineMarker percent={firstDownMarker} color="warning.main" />
+        )}
         <Marker percent={startPercent} color="text.secondary" />
         <Marker percent={endPercent} color="primary.main" />
       </Box>

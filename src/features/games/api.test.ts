@@ -129,9 +129,14 @@ describe('public games API', () => {
                 away: awayTeamStatsFixture,
               },
               playerStats: { home: {}, away: {} },
+              gameLeaders: {
+                home: { passer: null, rusher: null, receiver: null },
+                away: { passer: null, rusher: null, receiver: null },
+              },
             },
             meta: {
               playerStatsAvailable: false,
+              playerStatsCoverageState: 'UNAVAILABLE',
               playerStatsCoverage: null,
               limitations: [],
             },
@@ -171,9 +176,14 @@ describe('public games API', () => {
                 home: homePlayerStatsFixture,
                 away: awayPlayerStatsFixture,
               },
+              gameLeaders: {
+                home: { passer: null, rusher: null, receiver: null },
+                away: { passer: null, rusher: null, receiver: null },
+              },
             },
             meta: {
               playerStatsAvailable: true,
+              playerStatsCoverageState: 'COMPLETE',
               playerStatsCoverage: {
                 providerRows: 44,
                 resolvedRows: 44,

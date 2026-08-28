@@ -83,6 +83,89 @@ const ComparisonRow = ({
   </Box>
 );
 
+const PeriodScoring = ({
+  awayTeam,
+  homeTeam,
+  away,
+  home,
+}: {
+  readonly awayTeam: GameTeam;
+  readonly homeTeam: GameTeam;
+  readonly away: GameTeamStats | null;
+  readonly home: GameTeamStats | null;
+}) => {
+  const periods = [
+    ['Q1', away?.scoringByPeriod.q1 ?? null, home?.scoringByPeriod.q1 ?? null],
+    ['Q2', away?.scoringByPeriod.q2 ?? null, home?.scoringByPeriod.q2 ?? null],
+    ['Q3', away?.scoringByPeriod.q3 ?? null, home?.scoringByPeriod.q3 ?? null],
+    ['Q4', away?.scoringByPeriod.q4 ?? null, home?.scoringByPeriod.q4 ?? null],
+    [
+      'OT',
+      away?.scoringByPeriod.ot1 ?? null,
+      home?.scoringByPeriod.ot1 ?? null,
+    ],
+    [
+      '2OT',
+      away?.scoringByPeriod.ot2 ?? null,
+      home?.scoringByPeriod.ot2 ?? null,
+    ],
+  ].filter(
+    ([, awayScore, homeScore]) => awayScore !== null || homeScore !== null,
+  );
+  if (periods.length === 0) return null;
+  return (
+    <Box sx={{ overflowX: 'auto', mb: 1.5 }}>
+      <Box
+        role="table"
+        aria-label="Period scoring"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: `minmax(44px, 1fr) repeat(${periods.length}, 32px)`,
+          gap: 0.5,
+          minWidth: 180,
+        }}
+      >
+        <span />
+        {periods.map(([label]) => (
+          <Typography
+            role="columnheader"
+            key={label}
+            variant="caption"
+            color="text.secondary"
+            sx={{ textAlign: 'center' }}
+          >
+            {label}
+          </Typography>
+        ))}
+        {[
+          ['away', awayTeam.abbreviation, periods.map((period) => period[1])],
+          ['home', homeTeam.abbreviation, periods.map((period) => period[2])],
+        ].map(([key, abbreviation, scores]) => (
+          <Box key={String(key)} sx={{ display: 'contents' }}>
+            <Typography
+              role="rowheader"
+              variant="caption"
+              sx={{ fontWeight: 850 }}
+            >
+              {String(abbreviation)}
+            </Typography>
+            {(scores as (number | null)[]).map((score, index) => (
+              <Typography
+                role="cell"
+                key={`${String(key)}-${index}`}
+                variant="caption"
+                sx={{ textAlign: 'center', fontVariantNumeric: 'tabular-nums' }}
+              >
+                {value(score)}
+              </Typography>
+            ))}
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
 const primaryRows = (away: GameTeamStats | null, home: GameTeamStats | null) =>
   [
     [
@@ -211,6 +294,23 @@ export const TeamStatsPanel = ({
     <Box
       aria-label={`${awayTeam.abbreviation} and ${homeTeam.abbreviation} team statistics`}
     >
+      <PeriodScoring
+        awayTeam={awayTeam}
+        homeTeam={homeTeam}
+        away={teamStats.away}
+        home={teamStats.home}
+      />
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', mb: 0.5 }}>
+        <Typography variant="caption" sx={{ fontWeight: 900 }}>
+          {awayTeam.abbreviation}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{ fontWeight: 900, textAlign: 'right' }}
+        >
+          {homeTeam.abbreviation}
+        </Typography>
+      </Box>
       {primaryRows(teamStats.away, teamStats.home).map(
         ([label, away, home]) => (
           <ComparisonRow key={label} label={label} away={away} home={home} />

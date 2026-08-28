@@ -23,16 +23,39 @@ interface NewsQueryState {
 
 export const HomePublicNews = ({
   query,
+  mode = 'all',
 }: {
   readonly query: NewsQueryState;
+  readonly mode?: 'all' | 'featured' | 'supporting';
 }) => {
   const articles = query.data?.articles ?? [];
+  const visibleArticles =
+    mode === 'featured'
+      ? articles.slice(0, 1)
+      : mode === 'supporting'
+        ? articles.slice(1, 3)
+        : articles.slice(0, 3);
+  const title = mode === 'supporting' ? 'More stories' : 'Top stories';
+  const eyebrow = mode === 'supporting' ? 'LATEST NEWS' : 'PUBLISHED COVERAGE';
+  const skeletonCount = mode === 'featured' ? 1 : mode === 'supporting' ? 2 : 3;
+
+  if (
+    (mode === 'featured' &&
+      (query.isError || (!query.isPending && articles.length === 0))) ||
+    (mode === 'supporting' &&
+      !query.isPending &&
+      !query.isError &&
+      visibleArticles.length === 0)
+  ) {
+    return null;
+  }
+
   return (
-    <Stack component="section" spacing={2} aria-labelledby="home-news-heading">
+    <Stack component="section" spacing={2} aria-label={title}>
       <HomeSectionHeader
-        eyebrow="PUBLISHED COVERAGE"
-        title="Top stories"
-        actionLabel="Latest news"
+        eyebrow={eyebrow}
+        title={title}
+        actionLabel={mode === 'supporting' ? 'View all' : 'Latest news'}
         actionTo="/news"
       />
       {query.isPending ? (
@@ -40,12 +63,12 @@ export const HomePublicNews = ({
           sx={{
             display: 'grid',
             gap: 2,
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+            gridTemplateColumns: 'minmax(0, 1fr)',
           }}
           aria-busy="true"
           aria-label="Loading top stories"
         >
-          {Array.from({ length: 3 }, (_value, index) => (
+          {Array.from({ length: skeletonCount }, (_value, index) => (
             <Skeleton key={index} variant="rounded" height={270} />
           ))}
         </Box>
@@ -61,7 +84,7 @@ export const HomePublicNews = ({
           News is temporarily unavailable. Games, Stats, and AI Hub remain
           ready.
         </Alert>
-      ) : articles.length === 0 ? (
+      ) : visibleArticles.length === 0 ? (
         <Alert severity="info">
           No published featured stories are available right now.
         </Alert>
@@ -70,10 +93,10 @@ export const HomePublicNews = ({
           sx={{
             display: 'grid',
             gap: 2,
-            gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' },
+            gridTemplateColumns: 'minmax(0, 1fr)',
           }}
         >
-          {articles.slice(0, 3).map((article) => (
+          {visibleArticles.map((article) => (
             <ArticleCard
               key={article.id}
               article={article}

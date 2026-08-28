@@ -38,6 +38,14 @@ export const teamHubOverviewFixture: TeamHubOverview = {
     recent: [recentTeamGameFixture],
   },
   news: { articles: [publicArticleFixture] },
+  homepage: {
+    banner: { imageUrl: null, focalX: 50, focalY: 50, overlayOpacity: 35 },
+    editorial: {
+      featuredItem: { type: 'ARTICLE', article: publicArticleFixture },
+      supportingItems: [],
+    },
+    highlights: [],
+  },
   historicalData: {
     defaultSeason: 2025,
     rosterSeasons: [2024, 2025],

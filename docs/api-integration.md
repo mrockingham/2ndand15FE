@@ -18,62 +18,65 @@ Vite environment values are visible to users. Never place secrets in them.
 
 ## Known endpoints
 
-| Method    | Path                                                                | Authentication               | Frontend purpose                               |
-| --------- | ------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------- |
-| GET       | `/health`                                                           | Not specified                | Environment/API health diagnostics             |
-| GET       | `/teams`                                                            | Public                       | List active teams and favorite choices         |
-| GET       | `/teams/:teamId`                                                    | Public                       | Active team detail when needed                 |
-| GET       | `/teams/:teamId/hub`                                                | Public                       | Bounded team overview and historical coverage  |
-| GET       | `/teams/:teamId/roster`                                             | Public                       | Cursor-paginated historical roster evidence    |
-| GET       | `/teams/:teamId/stat-leaders`                                       | Public                       | Cursor-paginated team-split leaders            |
-| POST      | `/auth/register`                                                    | Public                       | Create an account and immediately authenticate |
-| POST      | `/auth/login`                                                       | Public                       | Authenticate                                   |
-| POST      | `/auth/refresh`                                                     | Refresh cookie               | Restore/renew an access token                  |
-| POST      | `/auth/logout`                                                      | Refresh cookie               | End the session                                |
-| POST      | `/auth/forgot-password`                                             | Public                       | Request password reset instructions            |
-| POST      | `/auth/reset-password`                                              | Public token in JSON request | Complete password reset                        |
-| GET       | `/users/me`                                                         | Bearer token                 | Load current-user DTO                          |
-| PATCH     | `/users/me/favorite-team`                                           | Bearer token                 | Select, replace, or clear favorite team        |
-| GET       | `/games`                                                            | Public                       | Filtered, cursor-paginated resolved games      |
-| GET       | `/games/:gameId`                                                    | Public                       | One resolved public game                       |
-| GET       | `/games/:gameId/plays`                                              | Public                       | Structured play-by-play for the Game Center    |
-| GET       | `/games/:gameId/stats`                                              | Public                       | Per-game team statistics for the Game Center   |
-| GET       | `/teams/:teamId/games`                                              | Public                       | Bounded team schedule                          |
-| GET       | `/players`                                                          | Public                       | Filtered, cursor-paginated player directory    |
-| GET       | `/players/:playerId`                                                | Public                       | Public player identity/profile                 |
-| GET       | `/players/:playerId/stats`                                          | Public                       | Cursor-paginated recorded game statistics      |
-| GET       | `/players/:playerId/seasons`                                        | Public                       | Available season summaries                     |
-| GET       | `/stats/metadata`                                                   | Public                       | Stats capabilities, filters, and coverage      |
-| GET       | `/stats/leaders`                                                    | Public                       | Cursor-paginated season leaderboard            |
-| GET       | `/stats/weekly-leaders`                                             | Public                       | Cursor-paginated weekly leaderboard            |
-| GET       | `/stats/recent`                                                     | Public                       | Recent recorded player performances            |
-| GET       | `/admin/games`                                                      | Bearer token; editor/admin   | Bounded administrative schedule list           |
-| GET       | `/admin/games/:gameId`                                              | Bearer token; editor/admin   | Administrative game detail                     |
-| POST      | `/admin/games`                                                      | Bearer token; editor/admin   | Create a manually owned game                   |
-| PATCH     | `/admin/games/:gameId`                                              | Bearer token; editor/admin   | Edit a manually owned base game                |
-| PUT       | `/admin/games/:gameId/override`                                     | Bearer token; editor/admin   | Upsert partial editorial override values       |
-| DELETE    | `/admin/games/:gameId/override`                                     | Bearer token; admin          | Delete the complete override                   |
-| PUT       | `/admin/games/:gameId/verification`                                 | Bearer token; editor/admin   | Record verification source and timestamp       |
-| POST      | `/admin/schedule-imports/validate`                                  | Bearer token; editor/admin   | Dry-run structured schedule rows               |
-| POST      | `/admin/schedule-imports`                                           | Bearer token; editor/admin   | Write previously validated structured rows     |
-| GET       | `/admin/audit-events`                                               | Bearer token; scoped by role | Cursor-paginated sanitized audit events        |
-| GET       | `/articles`                                                         | Public                       | Published article list and filters             |
-| GET       | `/articles/featured`                                                | Public                       | Currently featured published articles          |
-| GET       | `/articles/:slug`                                                   | Public                       | Published article detail                       |
-| GET       | `/teams/:teamId/articles`                                           | Public                       | Published team article list                    |
-| GET/POST  | `/admin/articles`                                                   | Bearer token; editor/admin   | List articles or create a draft                |
-| GET/PATCH | `/admin/articles/:articleId`                                        | Bearer token; editor/admin   | Read or version-edit editorial content         |
-| PUT       | `/admin/articles/:articleId/teams`                                  | Bearer token; editor/admin   | Versioned replacement of team tags             |
-| POST      | `/admin/articles/:articleId/{publish,unpublish,schedule}`           | Bearer token; editor/admin   | Versioned publication lifecycle                |
-| POST      | `/admin/articles/:articleId/{archive,restore}`                      | Bearer token; admin          | Versioned archival lifecycle                   |
-| GET       | `/admin/articles/:articleId/revisions`                              | Bearer token; editor/admin   | Immutable revision history                     |
-| GET/POST  | `/admin/news-sources`                                               | Bearer token; role-dependent | Source list or admin-only creation             |
-| GET/PATCH | `/admin/news-sources/:sourceId`                                     | Bearer token; role-dependent | Source detail or admin-only configuration edit |
-| POST      | `/admin/news-sources/:sourceId/{pause,resume}`                      | Bearer token; admin          | Source lifecycle                               |
-| POST      | `/admin/news-sources/:sourceId/{test,ingest}`                       | Bearer token; editor/admin   | Explicit feed operation                        |
-| GET       | `/admin/news-candidates[/:candidateId]`                             | Bearer token; editor/admin   | Candidate list or detail                       |
-| POST      | `/admin/news-candidates/manual`                                     | Bearer token; editor/admin   | Store manual source metadata                   |
-| POST      | `/admin/news-candidates/:candidateId/{review,save,dismiss,convert}` | Bearer token; editor/admin   | Candidate workflow action                      |
+| Method     | Path                                                                | Authentication               | Frontend purpose                               |
+| ---------- | ------------------------------------------------------------------- | ---------------------------- | ---------------------------------------------- |
+| GET        | `/health`                                                           | Not specified                | Environment/API health diagnostics             |
+| GET        | `/teams`                                                            | Public                       | List active teams and favorite choices         |
+| GET        | `/teams/:teamId`                                                    | Public                       | Active team detail when needed                 |
+| GET        | `/teams/:teamId/hub`                                                | Public                       | Bounded team overview and historical coverage  |
+| GET        | `/teams/:teamId/roster`                                             | Public                       | Cursor-paginated historical roster evidence    |
+| GET        | `/teams/:teamId/stat-leaders`                                       | Public                       | Cursor-paginated team-split leaders            |
+| POST       | `/auth/register`                                                    | Public                       | Create an account and immediately authenticate |
+| POST       | `/auth/login`                                                       | Public                       | Authenticate                                   |
+| POST       | `/auth/refresh`                                                     | Refresh cookie               | Restore/renew an access token                  |
+| POST       | `/auth/logout`                                                      | Refresh cookie               | End the session                                |
+| POST       | `/auth/forgot-password`                                             | Public                       | Request password reset instructions            |
+| POST       | `/auth/reset-password`                                              | Public token in JSON request | Complete password reset                        |
+| GET        | `/users/me`                                                         | Bearer token                 | Load current-user DTO                          |
+| PATCH      | `/users/me/favorite-team`                                           | Bearer token                 | Select, replace, or clear favorite team        |
+| GET        | `/games`                                                            | Public                       | Filtered, cursor-paginated resolved games      |
+| GET        | `/games/:gameId`                                                    | Public                       | One resolved public game                       |
+| GET        | `/games/:gameId/plays`                                              | Public                       | Structured play-by-play for the Game Center    |
+| GET        | `/games/:gameId/stats`                                              | Public                       | Per-game team statistics for the Game Center   |
+| GET        | `/teams/:teamId/games`                                              | Public                       | Bounded team schedule                          |
+| GET        | `/players`                                                          | Public                       | Filtered, cursor-paginated player directory    |
+| GET        | `/players/:playerId`                                                | Public                       | Public player identity/profile                 |
+| GET        | `/players/:playerId/stats`                                          | Public                       | Cursor-paginated recorded game statistics      |
+| GET        | `/players/:playerId/seasons`                                        | Public                       | Available season summaries                     |
+| GET        | `/stats/metadata`                                                   | Public                       | Stats capabilities, filters, and coverage      |
+| GET        | `/stats/leaders`                                                    | Public                       | Cursor-paginated season leaderboard            |
+| GET        | `/stats/weekly-leaders`                                             | Public                       | Cursor-paginated weekly leaderboard            |
+| GET        | `/stats/recent`                                                     | Public                       | Recent recorded player performances            |
+| GET        | `/admin/games`                                                      | Bearer token; editor/admin   | Bounded administrative schedule list           |
+| GET        | `/admin/games/:gameId`                                              | Bearer token; editor/admin   | Administrative game detail                     |
+| POST       | `/admin/games`                                                      | Bearer token; editor/admin   | Create a manually owned game                   |
+| PATCH      | `/admin/games/:gameId`                                              | Bearer token; editor/admin   | Edit a manually owned base game                |
+| PUT        | `/admin/games/:gameId/override`                                     | Bearer token; editor/admin   | Upsert partial editorial override values       |
+| DELETE     | `/admin/games/:gameId/override`                                     | Bearer token; admin          | Delete the complete override                   |
+| PUT        | `/admin/games/:gameId/verification`                                 | Bearer token; editor/admin   | Record verification source and timestamp       |
+| POST       | `/admin/schedule-imports/validate`                                  | Bearer token; editor/admin   | Dry-run structured schedule rows               |
+| POST       | `/admin/schedule-imports`                                           | Bearer token; editor/admin   | Write previously validated structured rows     |
+| GET        | `/admin/audit-events`                                               | Bearer token; scoped by role | Cursor-paginated sanitized audit events        |
+| GET        | `/articles`                                                         | Public                       | Published article list and filters             |
+| GET        | `/articles/featured`                                                | Public                       | Currently featured published articles          |
+| GET        | `/articles/:slug`                                                   | Public                       | Published article detail                       |
+| GET        | `/teams/:teamId/articles`                                           | Public                       | Published team article list                    |
+| GET/POST   | `/admin/articles`                                                   | Bearer token; editor/admin   | List articles or create a draft                |
+| GET/PATCH  | `/admin/articles/:articleId`                                        | Bearer token; editor/admin   | Read or version-edit editorial content         |
+| PUT        | `/admin/articles/:articleId/teams`                                  | Bearer token; editor/admin   | Versioned replacement of team tags             |
+| POST       | `/admin/articles/:articleId/{publish,unpublish,schedule}`           | Bearer token; editor/admin   | Versioned publication lifecycle                |
+| POST       | `/admin/articles/:articleId/{archive,restore}`                      | Bearer token; admin          | Versioned archival lifecycle                   |
+| GET        | `/admin/articles/:articleId/revisions`                              | Bearer token; editor/admin   | Immutable revision history                     |
+| GET/POST   | `/admin/news-sources`                                               | Bearer token; role-dependent | Source list or admin-only creation             |
+| GET/PATCH  | `/admin/news-sources/:sourceId`                                     | Bearer token; role-dependent | Source detail or admin-only configuration edit |
+| POST       | `/admin/news-sources/:sourceId/{pause,resume}`                      | Bearer token; admin          | Source lifecycle                               |
+| POST       | `/admin/news-sources/:sourceId/{test,ingest}`                       | Bearer token; editor/admin   | Explicit feed operation                        |
+| GET        | `/admin/news-candidates[/:candidateId]`                             | Bearer token; editor/admin   | Candidate list or detail                       |
+| GET/PUT    | `/admin/teams/:teamId/homepage[/banner]`                            | Bearer token; editor/admin   | Team Homepage state and banner                 |
+| GET/POST   | `/admin/teams/:teamId/homepage/{editorial,highlights}`              | Bearer token; editor/admin   | Team editorial/highlight reads and additions   |
+| PUT/DELETE | `/admin/teams/:teamId/homepage/{editorial,highlights,...}`          | Bearer token; editor/admin   | Team ordering, settings, and removals          |
+| POST       | `/admin/news-candidates/manual`                                     | Bearer token; editor/admin   | Store manual source metadata                   |
+| POST       | `/admin/news-candidates/:candidateId/{review,save,dismiss,convert}` | Bearer token; editor/admin   | Candidate workflow action                      |
 
 Frontend paths above are relative to the configured `/api/v1` base.
 

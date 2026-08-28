@@ -17,9 +17,11 @@ import type { Game } from '@/features/games/types';
 export const GameMediaPlayer = ({
   game,
   videos,
+  compact = false,
 }: {
   readonly game: Game;
   readonly videos: readonly GameDisplayVideo[];
+  readonly compact?: boolean;
 }) => {
   // Entirely local viewer selection: switching videos never calls the
   // backend, never reorders, and never changes the admin-configured order.
@@ -52,7 +54,9 @@ export const GameMediaPlayer = ({
         display: 'grid',
         gap: 2,
         gridTemplateColumns:
-          otherVideos.length > 0 ? { xs: '1fr', md: '2fr 1fr' } : '1fr',
+          otherVideos.length > 0 && !compact
+            ? { xs: '1fr', md: '2fr 1fr' }
+            : '1fr',
       }}
     >
       <Stack spacing={1.5}>
@@ -72,7 +76,11 @@ export const GameMediaPlayer = ({
         <Typography variant="overline" color="text.secondary">
           {mediaTypeLabel[selected.mediaType]}
         </Typography>
-        <Typography component="h2" variant="h6">
+        <Typography
+          component="h3"
+          variant={compact ? 'subtitle1' : 'h6'}
+          sx={{ fontWeight: 850 }}
+        >
           {selected.title}
         </Typography>
         {selected.sourceLabel ? (

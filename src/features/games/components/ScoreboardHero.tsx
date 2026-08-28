@@ -3,45 +3,55 @@ import { Box, Chip, Stack, Typography } from '@mui/material';
 import { TeamHelmet } from '@/components/team/TeamHelmet';
 import { GameStatusChip } from '@/features/games/components/GameStatusChip';
 import {
+  formatDownDistance,
+  formatYardLine,
   getScoreboardStatusLine,
   isScoreStatus,
 } from '@/features/games/presentation';
-import type { Game, GameTeam } from '@/features/games/types';
+import type { Game, GamePlay, GameTeam } from '@/features/games/types';
 
 const TeamColumn = ({
   team,
   score,
   side,
-  winner,
-  align,
 }: {
   readonly team: GameTeam;
   readonly score: number | null;
-  readonly side: 'AWAY' | 'HOME';
-  readonly winner: boolean;
-  readonly align: 'start' | 'end';
+  readonly side: 'Away' | 'Home';
 }) => (
   <Stack
-    spacing={1}
-    sx={{
-      alignItems: {
-        xs: 'center',
-        sm: align === 'start' ? 'flex-start' : 'flex-end',
-      },
-      textAlign: { xs: 'center', sm: align === 'start' ? 'left' : 'right' },
-    }}
-    aria-label={`${side === 'AWAY' ? 'Away' : 'Home'} team ${team.fullName}${score === null ? '' : `, ${score} points`}`}
+    direction={{ xs: 'column', sm: side === 'Away' ? 'row' : 'row-reverse' }}
+    spacing={{ xs: 0.5, sm: 1.5 }}
+    sx={{ alignItems: 'center', minWidth: 0 }}
+    aria-label={`${side} team ${team.fullName}${score === null ? '' : `, ${score} points`}`}
   >
-    <TeamHelmet team={team.abbreviation} size="lg" decorative />
-    <Typography variant="overline">{side}</Typography>
-    <Typography variant="h3">{team.fullName}</Typography>
+    <TeamHelmet team={team.abbreviation} size="md" decorative />
+    <Stack
+      sx={{
+        alignItems: {
+          xs: 'center',
+          sm: side === 'Away' ? 'flex-start' : 'flex-end',
+        },
+        minWidth: 0,
+      }}
+    >
+      <Typography variant="caption" color="text.secondary">
+        {team.abbreviation}
+      </Typography>
+      <Typography
+        sx={{
+          fontWeight: 850,
+          lineHeight: 1.15,
+          textAlign: side === 'Away' ? 'left' : 'right',
+        }}
+      >
+        {team.fullName}
+      </Typography>
+    </Stack>
     {score === null ? null : (
       <Typography
         variant="h2"
-        sx={{
-          fontVariantNumeric: 'tabular-nums',
-          fontWeight: winner ? 950 : 700,
-        }}
+        sx={{ fontWeight: 950, fontVariantNumeric: 'tabular-nums' }}
       >
         {score}
       </Typography>
@@ -49,64 +59,96 @@ const TeamColumn = ({
   </Stack>
 );
 
-export const ScoreboardHero = ({ game }: { readonly game: Game }) => {
+export const ScoreboardHero = ({
+  game,
+  latestPlay = null,
+}: {
+  readonly game: Game;
+  readonly latestPlay?: GamePlay | null;
+}) => {
   const canShowScore =
     isScoreStatus(game.status) &&
     game.awayScore !== null &&
     game.homeScore !== null;
-  const awayWins =
-    canShowScore &&
-    game.status === 'FINAL' &&
-    game.awayScore! > game.homeScore!;
-  const homeWins =
-    canShowScore &&
-    game.status === 'FINAL' &&
-    game.homeScore! > game.awayScore!;
   const statusLine = getScoreboardStatusLine(game);
+  const downDistance =
+    latestPlay === null
+      ? null
+      : formatDownDistance(
+          latestPlay.end.down ?? latestPlay.start.down,
+          latestPlay.end.distance ?? latestPlay.start.distance,
+        );
+  const yardLine =
+    latestPlay === null
+      ? null
+      : (latestPlay.end.yardLine ?? latestPlay.start.yardLine);
+  const situation = [
+    downDistance,
+    yardLine === null ? null : formatYardLine(yardLine),
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <Stack spacing={2.5}>
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{ justifyContent: 'center', flexWrap: 'wrap' }}
-      >
-        <GameStatusChip status={game.status} />
-        {game.isNeutralSite ? (
-          <Chip label="Neutral site" variant="outlined" size="small" />
-        ) : null}
-      </Stack>
+    <Box
+      component="section"
+      aria-label="Game score"
+      sx={{
+        borderRadius: 2.5,
+        border: '1px solid',
+        borderColor: 'appSurfaces.borderStrong',
+        bgcolor: 'background.paper',
+        px: { xs: 2, sm: 3 },
+        py: { xs: 2.5, sm: 3 },
+      }}
+    >
       <Box
         sx={{
           display: 'grid',
-          gap: 3,
-          gridTemplateColumns: { xs: '1fr', sm: '1fr auto 1fr' },
+          gridTemplateColumns: { xs: '1fr 0.7fr 1fr', sm: '1fr auto 1fr' },
+          gap: { xs: 1, sm: 3 },
           alignItems: 'center',
         }}
       >
         <TeamColumn
           team={game.awayTeam}
           score={canShowScore ? game.awayScore : null}
-          side="AWAY"
-          winner={awayWins}
-          align="start"
+          side="Away"
         />
-        <Stack spacing={1} sx={{ alignItems: 'center', textAlign: 'center' }}>
-          <Typography variant="h5" color="text.secondary">
-            @
-          </Typography>
+        <Stack
+          spacing={0.75}
+          sx={{ alignItems: 'center', textAlign: 'center' }}
+        >
+          <GameStatusChip status={game.status} />
           {statusLine === null ? null : (
-            <Typography sx={{ fontWeight: 800 }}>{statusLine}</Typography>
+            <Typography sx={{ fontWeight: 850 }}>{statusLine}</Typography>
+          )}
+          {situation === '' ? null : (
+            <Typography variant="body2" color="text.secondary">
+              {situation}
+            </Typography>
+          )}
+          {latestPlay?.possessionTeam === null ||
+          latestPlay?.possessionTeam === undefined ? null : (
+            <Typography variant="caption" sx={{ fontWeight: 850 }}>
+              {latestPlay.possessionTeam.abbreviation} ball
+            </Typography>
           )}
         </Stack>
         <TeamColumn
           team={game.homeTeam}
           score={canShowScore ? game.homeScore : null}
-          side="HOME"
-          winner={homeWins}
-          align="end"
+          side="Home"
         />
       </Box>
-    </Stack>
+      {game.isNeutralSite ? (
+        <Chip
+          label="Neutral site"
+          variant="outlined"
+          size="small"
+          sx={{ display: 'flex', width: 'fit-content', mx: 'auto', mt: 1.5 }}
+        />
+      ) : null}
+    </Box>
   );
 };

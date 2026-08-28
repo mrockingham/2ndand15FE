@@ -36,10 +36,10 @@ export const FreshnessIndicator = ({
       : formatFreshnessAge(Math.max(0, now - updatedAt));
 
   const status = isFetching
-    ? 'Updating…'
+    ? 'Refreshing…'
     : hasError
-      ? `Last updated ${age}`
-      : `Updated ${age}`;
+      ? `Last refreshed ${age}`
+      : `Refreshed ${age}`;
 
   return (
     <Typography
