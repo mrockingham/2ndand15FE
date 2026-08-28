@@ -513,6 +513,11 @@ describe('public Team Hub page', () => {
         recent: [],
       },
       news: { articles: [] },
+      homepage: {
+        ...teamHubOverviewFixture.homepage,
+        editorial: { featuredItem: null, supportingItems: [] },
+        highlights: [],
+      },
       historicalData: {
         ...teamHubOverviewFixture.historicalData,
         rosterSeasons: [],
@@ -530,8 +535,8 @@ describe('public Team Hub page', () => {
       screen.getByText('No recent completed games are currently stored.'),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/No published news is currently available/),
-    ).toBeInTheDocument();
+      screen.queryByRole('region', { name: 'Team News' }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(/No historical roster seasons are available/),
     ).toBeInTheDocument();

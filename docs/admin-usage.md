@@ -26,6 +26,7 @@ These frontend checks improve navigation only. Every administrative request is a
 | `/admin/game-media`                   | Game Center curated video list                   | Editor or admin               |
 | `/admin/game-media/:gameId`           | Curated video management for one game            | Editor (view), admin (manage) |
 | `/admin/homepage`                     | Hero carousel and Top Stories management         | Editor or admin               |
+| `/admin/team-homepages`               | Team banner, editorial, and highlight management | Editor or admin               |
 | `/admin/homepage/hero/new`            | Hero slide creation                              | Editor or admin               |
 | `/admin/homepage/hero/:slideId`       | Hero slide editing                               | Editor or admin               |
 

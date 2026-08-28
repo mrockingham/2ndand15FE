@@ -24,6 +24,7 @@ export const useTeamHubQuery = (teamId: string, enabled = true) => {
     queryFn: ({ signal }) => getTeamHub(publicClient, teamId, signal),
     enabled: enabled && teamId !== '',
     staleTime: 5 * 60_000,
+    placeholderData: (previousData) => previousData,
     refetchOnMount: 'always',
     refetchOnWindowFocus: false,
     retry: publicRetry,

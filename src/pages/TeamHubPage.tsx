@@ -1,10 +1,8 @@
-import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import {
   Alert,
   Box,
   Button,
   Container,
-  Link,
   Paper,
   Skeleton,
   Stack,
@@ -12,18 +10,14 @@ import {
   useTheme,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo } from 'react';
-import {
-  Link as RouterLink,
-  useParams,
-  useSearchParams,
-} from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 
-import { TeamHelmet } from '@/components/team/TeamHelmet';
-import { ArticleCard } from '@/features/articles/components/ArticleCard';
 import { PlayerAttribution } from '@/features/players/components/PlayerAttribution';
 import { isUuid } from '@/features/players/presentation';
 import { useStatsMetadataQuery } from '@/features/statsHub/queries';
-import { FavoriteTeamButton } from '@/features/teamHub/components/FavoriteTeamButton';
+import { TeamEditorialSection } from '@/features/teamHub/components/TeamEditorialSection';
+import { TeamHighlightsSection } from '@/features/teamHub/components/TeamHighlightsSection';
+import { TeamHubHero } from '@/features/teamHub/components/TeamHubHero';
 import { TeamHubRail } from '@/features/teamHub/components/TeamHubRail';
 import { TeamLeadersSection } from '@/features/teamHub/components/TeamLeadersSection';
 import { TeamRosterSection } from '@/features/teamHub/components/TeamRosterSection';
@@ -37,10 +31,7 @@ import {
   serializeTeamHubUrlState,
 } from '@/features/teamHub/urlState';
 import { getTeamVisualConfig } from '@/features/teamVisualIdentity/teamVisualConfigs';
-import {
-  getTeamThemeTokens,
-  getTeamVisualCssVariables,
-} from '@/features/teamVisualIdentity/teamTheme';
+import { getTeamThemeTokens } from '@/features/teamVisualIdentity/teamTheme';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { ApiError } from '@/services/api/apiClient';
 
@@ -138,57 +129,11 @@ export const TeamHubPage = () => {
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 4, md: 7 } }}>
       <Stack spacing={5}>
-        <Paper
-          component="header"
-          variant="outlined"
-          data-team-hub-identity={team.abbreviation}
-          sx={{
-            ...getTeamVisualCssVariables(teamTokens),
-            p: { xs: 2.5, md: 4 },
-            overflow: 'hidden',
-            borderColor: teamTokens.subtleBorder,
-            backgroundImage: `linear-gradient(125deg, ${teamTokens.heroStart}, ${teamTokens.heroEnd} 48%, transparent 82%)`,
-          }}
-        >
-          <Stack spacing={3}>
-            <Button
-              component={RouterLink}
-              to="/teams"
-              startIcon={<ArrowBackRounded />}
-              sx={{ alignSelf: 'flex-start' }}
-            >
-              All teams
-            </Button>
-            <Stack
-              direction={{ xs: 'column', md: 'row' }}
-              spacing={3}
-              sx={{ alignItems: { md: 'center' } }}
-            >
-              <TeamHelmet team={team.abbreviation} size="lg" />
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="overline" color="var(--team-primary)">
-                  {team.abbreviation} · {team.conference} {team.division}
-                </Typography>
-                <Typography component="h1" variant="h2">
-                  {team.fullName}
-                </Typography>
-                <Typography color="text.secondary">
-                  {team.city} · {team.name} · Active NFL team
-                </Typography>
-              </Box>
-              <Stack spacing={1.25} sx={{ alignItems: { md: 'flex-end' } }}>
-                <FavoriteTeamButton teamId={team.id} teamName={team.fullName} />
-                <Button
-                  component={RouterLink}
-                  to={`/stats?teamId=${team.id}`}
-                  variant="text"
-                >
-                  Team-filtered Stats
-                </Button>
-              </Stack>
-            </Stack>
-          </Stack>
-        </Paper>
+        <TeamHubHero
+          team={team}
+          banner={overview.homepage.banner}
+          teamTokens={teamTokens}
+        />
 
         <Paper
           component="nav"
@@ -219,65 +164,13 @@ export const TeamHubPage = () => {
                 : { xs: '1fr', lg: 'minmax(0, 1.35fr) minmax(340px, 0.65fr)' },
           }}
         >
-          <Stack id="overview" spacing={5}>
+          <Stack id="overview" spacing={5} sx={{ minWidth: 0 }}>
             <TeamScheduleSection
               teamId={team.id}
               season={overview.schedule.season}
               upcoming={overview.schedule.upcoming}
               recent={overview.schedule.recent}
             />
-
-            <Box component="section" aria-labelledby="team-news-title">
-              <Stack spacing={2}>
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={1}
-                  sx={{ justifyContent: 'space-between' }}
-                >
-                  <Box>
-                    <Typography
-                      id="team-news-title"
-                      component="h2"
-                      variant="h3"
-                    >
-                      Published team news
-                    </Typography>
-                    <Typography color="text.secondary">
-                      Public articles returned by the Team Hub.
-                    </Typography>
-                  </Box>
-                  <Button component={RouterLink} to={`/news?teamId=${team.id}`}>
-                    All News
-                  </Button>
-                </Stack>
-                {overview.news.articles.length ? (
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gap: 2,
-                      gridTemplateColumns: { md: 'repeat(3, 1fr)' },
-                    }}
-                  >
-                    {overview.news.articles.map((article) => (
-                      <ArticleCard
-                        key={article.id}
-                        article={article}
-                        favoriteTeamId={team.id}
-                        headingComponent="h3"
-                      />
-                    ))}
-                  </Box>
-                ) : (
-                  <Alert severity="info">
-                    No published news is currently available for this team.{' '}
-                    <Link component={RouterLink} to="/news">
-                      Browse league News
-                    </Link>
-                    .
-                  </Alert>
-                )}
-              </Stack>
-            </Box>
           </Stack>
           <TeamHubRail
             teamId={team.id}
@@ -286,6 +179,14 @@ export const TeamHubPage = () => {
             leader={state.leader}
           />
         </Box>
+
+        <TeamEditorialSection
+          teamId={team.id}
+          featuredItem={overview.homepage.editorial.featuredItem}
+          supportingItems={overview.homepage.editorial.supportingItems}
+        />
+
+        <TeamHighlightsSection highlights={overview.homepage.highlights} />
 
         <TeamRosterSection
           teamId={team.id}

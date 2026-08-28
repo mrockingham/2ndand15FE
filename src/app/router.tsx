@@ -125,6 +125,10 @@ const LazyAdminGameMediaDetailPage = lazy(async () => ({
 const LazyAdminHomepagePage = lazy(async () => ({
   default: (await import('@/pages/AdminHomepagePage')).AdminHomepagePage,
 }));
+const LazyAdminTeamHomepagesPage = lazy(async () => ({
+  default: (await import('@/pages/AdminTeamHomepagesPage'))
+    .AdminTeamHomepagesPage,
+}));
 const LazyAdminHeroSlideEditorPage = lazy(async () => ({
   default: (await import('@/pages/AdminHeroSlideEditorPage'))
     .AdminHeroSlideEditorPage,
@@ -210,6 +214,10 @@ export const appRoutes: RouteObject[] = [
               {
                 path: 'homepage',
                 element: deferred(<LazyAdminHomepagePage />),
+              },
+              {
+                path: 'team-homepages',
+                element: deferred(<LazyAdminTeamHomepagesPage />),
               },
               {
                 path: 'homepage/hero/new',

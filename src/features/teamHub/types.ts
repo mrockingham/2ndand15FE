@@ -9,6 +9,42 @@ import type {
 } from '@/features/statsHub/types';
 import type { Team } from '@/features/teams/types';
 
+export interface TeamHomepageBanner {
+  readonly imageUrl: string | null;
+  readonly focalX: number;
+  readonly focalY: number;
+  readonly overlayOpacity: number;
+}
+
+export interface TeamHomepageArticleItem {
+  readonly type: 'ARTICLE';
+  readonly article: PublicArticleListItem;
+}
+
+export interface TeamHomepageVideoItem {
+  readonly type: 'VIDEO';
+  readonly id: string;
+  readonly gameId: string;
+  readonly title: string;
+  readonly thumbnailUrl: string | null;
+  readonly canonicalUrl: string | null;
+  readonly embedUrl: string | null;
+  readonly canEmbed: boolean;
+  readonly publishedAt: string | null;
+}
+
+export type TeamHomepageEditorialItem =
+  TeamHomepageArticleItem | TeamHomepageVideoItem;
+
+export interface PublicTeamHomepage {
+  readonly banner: TeamHomepageBanner;
+  readonly editorial: {
+    readonly featuredItem: TeamHomepageEditorialItem | null;
+    readonly supportingItems: readonly TeamHomepageEditorialItem[];
+  };
+  readonly highlights: readonly TeamHomepageVideoItem[];
+}
+
 export interface TeamHubOverview {
   readonly team: Team;
   readonly schedule: {
@@ -17,6 +53,7 @@ export interface TeamHubOverview {
     readonly recent: readonly Game[];
   };
   readonly news: { readonly articles: readonly PublicArticleListItem[] };
+  readonly homepage: PublicTeamHomepage;
   readonly historicalData: {
     readonly defaultSeason: number | null;
     readonly rosterSeasons: readonly number[];
