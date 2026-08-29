@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 
 import { billsFixture, userWithFavoriteFixture } from '@/test/authFixtures';
 import {
@@ -129,6 +129,55 @@ describe('GlobalScoreboardBar', () => {
       name: /miami dolphins at buffalo bills/i,
     });
     expect(otherCard).not.toHaveAttribute('data-favorite-team');
+  });
+
+  it('uses contained edge controls and fades instead of exposing hard-clipped cards', async () => {
+    renderApp('/', {
+      fetchImplementation: scoreboardFetch([
+        liveGame,
+        finalGame,
+        scheduledGame,
+        favoriteTeamGame,
+        otherMatchupGame,
+      ]),
+    });
+
+    const rail = await screen.findByTestId('scoreboard-scroll-rail');
+    Object.defineProperties(rail, {
+      clientWidth: { configurable: true, value: 600 },
+      scrollWidth: { configurable: true, value: 1200 },
+      scrollLeft: { configurable: true, writable: true, value: 0 },
+    });
+    const scrollBy = vi.fn();
+    rail.scrollBy = scrollBy;
+    fireEvent.scroll(rail);
+
+    const left = screen.getByRole('button', {
+      name: 'Scroll scoreboard left',
+    });
+    const right = screen.getByRole('button', {
+      name: 'Scroll scoreboard right',
+    });
+    expect(left).toBeDisabled();
+    expect(right).toBeEnabled();
+    expect(screen.getByTestId('scoreboard-left-fade')).toBeInTheDocument();
+    expect(screen.getByTestId('scoreboard-right-fade')).toBeInTheDocument();
+
+    fireEvent.click(right);
+    expect(scrollBy).toHaveBeenCalledWith({
+      left: 320,
+      behavior: 'smooth',
+    });
+
+    rail.scrollLeft = 240;
+    fireEvent.scroll(rail);
+    expect(left).toBeEnabled();
+    expect(right).toBeEnabled();
+
+    rail.scrollLeft = 600;
+    fireEvent.scroll(rail);
+    expect(left).toBeEnabled();
+    expect(right).toBeDisabled();
   });
 
   it('hides gracefully when the scoreboard request fails, without breaking the page', async () => {

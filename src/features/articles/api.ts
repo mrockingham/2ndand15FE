@@ -125,6 +125,12 @@ export const updateArticle = async (
       { authenticated: true, method: 'PATCH', body: input },
     )
   ).data;
+
+export const deleteArticle = async (client: ApiClient, id: string) =>
+  client.request<void>(`/admin/articles/${encodeURIComponent(id)}`, {
+    authenticated: true,
+    method: 'DELETE',
+  });
 export const replaceArticleTeams = async (
   client: ApiClient,
   id: string,

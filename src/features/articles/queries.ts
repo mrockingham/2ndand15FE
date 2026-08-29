@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminAuditKeys } from '@/features/admin/queryKeys';
 import {
   createArticle,
+  deleteArticle,
   getAdminArticle,
   getArticleRevision,
   getPublicArticle,
@@ -17,11 +18,14 @@ import {
   updateArticle,
 } from '@/features/articles/api';
 import { adminArticleKeys, articleKeys } from '@/features/articles/queryKeys';
+import { adminHomepageKeys, homepageKeys } from '@/features/homepage/queryKeys';
 import type {
   AdminArticleDetail,
   AdminArticleFilters,
+  AdminArticleListItem,
   ArticleCreateInput,
   ArticleLifecycleAction,
+  ArticlePage,
   ArticleScheduleInput,
   ArticleTeamsInput,
   ArticleUpdateInput,
@@ -180,12 +184,80 @@ export const useArticleLifecycleMutation = (
   action: ArticleLifecycleAction,
 ) => {
   const { authenticatedClient } = useApiClients();
+  const queryClient = useQueryClient();
   const onSuccess = useArticleSuccess();
   return useMutation({
     mutationFn: (input: ArticleVersionActionInput) =>
       transitionArticle(authenticatedClient, id, action, input),
-    onSuccess,
+    onSuccess: (article) => {
+      onSuccess(article);
+      if (action === 'unpublish') {
+        queryClient.removeQueries({ queryKey: articleKeys.all });
+        void queryClient.invalidateQueries({ queryKey: homepageKeys.all });
+        void queryClient.invalidateQueries({
+          queryKey: adminHomepageKeys.topStories(),
+        });
+      }
+    },
   });
+};
+
+export interface DeleteArticleResult {
+  readonly alreadyGone: boolean;
+}
+
+export const useDeleteArticleMutation = (id: string, slug: string) => {
+  const { authenticatedClient } = useApiClients();
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (): Promise<DeleteArticleResult> => {
+      try {
+        await deleteArticle(authenticatedClient, id);
+        return { alreadyGone: false };
+      } catch (error: unknown) {
+        if (error instanceof ApiError && error.status === 404) {
+          return { alreadyGone: true };
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.removeQueries({
+        queryKey: adminArticleKeys.detail(id),
+        exact: true,
+      });
+      queryClient.removeQueries({
+        queryKey: adminArticleKeys.revisionLists(id),
+      });
+      queryClient.removeQueries({
+        queryKey: articleKeys.detail(slug),
+        exact: true,
+      });
+      queryClient.setQueriesData<ArticlePage<AdminArticleListItem>>(
+        { queryKey: adminArticleKeys.lists() },
+        (current) =>
+          current
+            ? {
+                ...current,
+                articles: current.articles.filter(
+                  (article) => article.id !== id,
+                ),
+              }
+            : current,
+      );
+      queryClient.removeQueries({ queryKey: articleKeys.all });
+      void queryClient.invalidateQueries({
+        queryKey: adminArticleKeys.lists(),
+      });
+      void queryClient.invalidateQueries({ queryKey: adminAuditKeys.all });
+      void queryClient.invalidateQueries({
+        queryKey: adminHomepageKeys.topStories(),
+      });
+      void queryClient.invalidateQueries({ queryKey: homepageKeys.all });
+    },
+  });
+  useRefreshRoleOnForbidden(mutation.error);
+  return mutation;
 };
 export const useScheduleArticleMutation = (id: string) => {
   const { authenticatedClient } = useApiClients();

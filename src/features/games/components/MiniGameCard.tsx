@@ -82,7 +82,7 @@ const TeamLine = ({ team, score, winner }: TeamLineProps) => (
       spacing={0.5}
       sx={{ alignItems: 'center', minWidth: 0 }}
     >
-      <TeamHelmet team={team.abbreviation} decorative size="sm" />
+      <TeamHelmet team={team.abbreviation} decorative size="xs" />
       <Typography
         variant="caption"
         sx={{ fontWeight: winner ? 900 : 700, letterSpacing: 0.4 }}
@@ -142,16 +142,21 @@ export const MiniGameCard = ({
           ? 'primary.main'
           : 'appSurfaces.borderStrong',
         bgcolor: isActive ? 'action.selected' : 'background.paper',
-        p: 1.5,
+        py: 0.7,
+        px: 1.5,
         justifyContent: 'stretch',
         scrollSnapAlign: 'start',
       }}
     >
-      <Stack spacing={0.75} sx={{ width: '100%' }}>
+      <Stack spacing={0.3} sx={{ width: '100%' }}>
         <Stack
           direction="row"
           spacing={0.5}
-          sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            pb: 0.3,
+          }}
         >
           <Typography
             variant="overline"

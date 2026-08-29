@@ -1,7 +1,7 @@
 import ChevronLeftRounded from '@mui/icons-material/ChevronLeftRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import { Box, IconButton, Skeleton, Stack, Typography } from '@mui/material';
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useMatch } from 'react-router-dom';
 
 import { MiniGameCard } from '@/features/games/components/MiniGameCard';
@@ -28,6 +28,7 @@ const ScoreboardSkeleton = () => (
 export const GlobalScoreboardBar = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const favoriteCardRef = useRef<HTMLElement>(null);
+  const [scrollEdges, setScrollEdges] = useState({ left: false, right: false });
   const gameCenterMatch = useMatch('/games/:gameId');
   const activeGameId = gameCenterMatch?.params.gameId;
 
@@ -39,6 +40,20 @@ export const GlobalScoreboardBar = () => {
     () => selectScoreboardGames(scoreboardQuery.data?.games ?? []),
     [scoreboardQuery.data],
   );
+
+  const updateScrollEdges = useCallback((element: HTMLDivElement | null) => {
+    if (element === null) return;
+    const maximum = Math.max(0, element.scrollWidth - element.clientWidth);
+    const next = {
+      left: element.scrollLeft > 2,
+      right: element.scrollLeft < maximum - 2,
+    };
+    setScrollEdges((current) =>
+      current.left === next.left && current.right === next.right
+        ? current
+        : next,
+    );
+  }, []);
 
   const weekLabel = useMemo(() => {
     const weeks = games
@@ -57,6 +72,22 @@ export const GlobalScoreboardBar = () => {
       inline: 'center',
     });
   }, [favoriteTeam?.id, games]);
+
+  useEffect(() => {
+    const update = () => updateScrollEdges(scrollRef.current);
+    const frame = window.requestAnimationFrame(update);
+    window.addEventListener('resize', update);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('resize', update);
+    };
+  }, [games, updateScrollEdges]);
+
+  const scrollScoreboard = (direction: -1 | 1) =>
+    scrollRef.current?.scrollBy({
+      left: direction * CARD_SCROLL_DISTANCE,
+      behavior: 'smooth',
+    });
 
   if (scoreboardQuery.isError) return null;
 
@@ -144,67 +175,122 @@ export const GlobalScoreboardBar = () => {
           {weekLabel === null ? 'Full Schedule →' : `Week ${weekLabel} →`}
         </Typography>
 
-        <IconButton
-          size="small"
-          aria-label="Scroll scoreboard left"
-          onClick={() =>
-            scrollRef.current?.scrollBy({
-              left: -CARD_SCROLL_DISTANCE,
-              behavior: 'smooth',
-            })
-          }
-          sx={{ display: { xs: 'none', md: 'inline-flex' }, flexShrink: 0 }}
-        >
-          <ChevronLeftRounded />
-        </IconButton>
-
-        <Stack
-          ref={scrollRef}
-          direction="row"
-          spacing={1.25}
+        <Box
           sx={{
-            overflowX: 'auto',
-            scrollSnapType: 'x proximity',
-            scrollbarWidth: 'none',
-            '&::-webkit-scrollbar': { display: 'none' },
             flex: 1,
             minWidth: 0,
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 1.5,
           }}
         >
-          {games.map((game) => {
-            const isFavoriteTeamGame =
-              favoriteTeam !== null &&
-              (game.homeTeam.id === favoriteTeam.id ||
-                game.awayTeam.id === favoriteTeam.id);
+          <Stack
+            ref={scrollRef}
+            data-testid="scoreboard-scroll-rail"
+            direction="row"
+            spacing={1.25}
+            onScroll={(event) => updateScrollEdges(event.currentTarget)}
+            sx={{
+              overflowX: 'auto',
+              scrollSnapType: 'x proximity',
+              scrollPaddingInline: { xs: 44, md: 52 },
+              scrollbarWidth: 'none',
+              '&::-webkit-scrollbar': { display: 'none' },
+              px: { xs: 5.5, md: 6.5 },
+              minWidth: 0,
+            }}
+          >
+            {games.map((game) => {
+              const isFavoriteTeamGame =
+                favoriteTeam !== null &&
+                (game.homeTeam.id === favoriteTeam.id ||
+                  game.awayTeam.id === favoriteTeam.id);
+              return (
+                <Box
+                  key={game.id}
+                  ref={isFavoriteTeamGame ? favoriteCardRef : undefined}
+                  sx={{ display: 'flex' }}
+                >
+                  <MiniGameCard
+                    game={game}
+                    isFavoriteTeamGame={isFavoriteTeamGame}
+                    isActive={game.id === activeGameId}
+                  />
+                </Box>
+              );
+            })}
+          </Stack>
+
+          {(['left', 'right'] as const).map((edge) => {
+            const visible = scrollEdges[edge];
             return (
               <Box
-                key={game.id}
-                ref={isFavoriteTeamGame ? favoriteCardRef : undefined}
-                sx={{ display: 'flex' }}
-              >
-                <MiniGameCard
-                  game={game}
-                  isFavoriteTeamGame={isFavoriteTeamGame}
-                  isActive={game.id === activeGameId}
-                />
-              </Box>
+                key={edge}
+                aria-hidden="true"
+                data-testid={`scoreboard-${edge}-fade`}
+                sx={(theme) => ({
+                  pointerEvents: 'none',
+                  position: 'absolute',
+                  insetBlock: 0,
+                  [edge]: 0,
+                  width: { xs: 58, md: 76 },
+                  opacity: visible ? 1 : 0,
+                  transition: theme.transitions.create('opacity', {
+                    duration: theme.transitions.duration.shortest,
+                  }),
+                  background: `linear-gradient(to ${edge === 'left' ? 'right' : 'left'}, ${theme.palette.background.paper} 28%, transparent)`,
+                })}
+              />
             );
           })}
-        </Stack>
 
-        <IconButton
-          size="small"
-          aria-label="Scroll scoreboard right"
-          onClick={() =>
-            scrollRef.current?.scrollBy({
-              left: CARD_SCROLL_DISTANCE,
-              behavior: 'smooth',
-            })
-          }
-          sx={{ display: { xs: 'none', md: 'inline-flex' }, flexShrink: 0 }}
-        >
-          <ChevronRightRounded />
-        </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Scroll scoreboard left"
+            disabled={!scrollEdges.left}
+            onClick={() => scrollScoreboard(-1)}
+            sx={{
+              display: 'inline-flex',
+              position: 'absolute',
+              left: { xs: 4, md: 8 },
+              top: '50%',
+              transform: 'translateY(-50%)',
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: 1,
+              opacity: scrollEdges.left ? 1 : 0,
+              pointerEvents: scrollEdges.left ? 'auto' : 'none',
+              transition: 'opacity 140ms ease',
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            <ChevronLeftRounded />
+          </IconButton>
+          <IconButton
+            size="small"
+            aria-label="Scroll scoreboard right"
+            disabled={!scrollEdges.right}
+            onClick={() => scrollScoreboard(1)}
+            sx={{
+              display: 'inline-flex',
+              position: 'absolute',
+              right: { xs: 4, md: 8 },
+              top: '50%',
+              transform: 'translateY(-50%)',
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: 1,
+              opacity: scrollEdges.right ? 1 : 0,
+              pointerEvents: scrollEdges.right ? 'auto' : 'none',
+              transition: 'opacity 140ms ease',
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            <ChevronRightRounded />
+          </IconButton>
+        </Box>
       </Box>
     </Box>
   );

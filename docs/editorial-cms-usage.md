@@ -2,7 +2,7 @@
 
 ## Access and routes
 
-Public readers use `/news` and `/news/:slug`. Signed-in `EDITOR` and `ADMIN` users may use `/admin/articles`, `/admin/articles/new`, and `/admin/articles/:articleId`. Only `ADMIN` sees archive, restore, and complete article audit controls. Frontend roles guide the experience; backend capability middleware remains authoritative.
+Public readers use `/news` and `/news/:slug`. Signed-in `EDITOR` and `ADMIN` users may use `/admin/articles`, `/admin/articles/new`, and `/admin/articles/:articleId`. Only `ADMIN` sees archive, restore, permanent-delete, and complete article audit controls. Frontend roles guide the experience; backend capability middleware remains authoritative.
 
 Public pages call only public endpoints, so drafts, scheduled-future, unpublished, and archived records are never inferred or filtered in browser code. The backend also derives when scheduled and featured content is visible.
 
@@ -18,7 +18,9 @@ Slug previews are generated locally, but the backend owns uniqueness and the fin
 
 Every edit, team replacement, publish, schedule, unpublish, archive, and restore request sends the displayed `expectedVersion`. A conflict leaves form content in place and offers explicit reload and copy-Markdown actions. Successful writes cache the returned detail, refresh the relevant list/revision families, and invalidate public article queries when visibility may have changed.
 
-Scheduling requires a future ISO timestamp with an explicit UTC offset. The browser does not guess a timezone. Editors can publish, schedule, and unpublish. Administrators additionally archive or restore. Every lifecycle action asks for confirmation and may include a change summary.
+Scheduling requires a future ISO timestamp with an explicit UTC offset. The browser does not guess a timezone. Editors can publish, schedule, and unpublish. Administrators additionally archive, restore, or permanently delete. Every lifecycle action asks for confirmation and may include a change summary. Permanent deletion is available only from the Admin Articles overflow menu, names the affected headline, warns that the action cannot be undone, and sends an empty `DELETE /api/v1/admin/articles/:articleId` request.
+
+Successful unpublish and permanent-delete actions refresh administrative lists and related homepage placement data, and clear public article caches so removed content is not served from stale client state. A delete `404` is treated as an already-completed deletion and performs the same local cleanup; a `403` remains a visible permission error and triggers the existing role refresh convention.
 
 ## Revisions and audit
 

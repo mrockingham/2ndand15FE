@@ -32,7 +32,7 @@ A compact label on the left of the strip reads `Week N →` (derived from the mo
 
 ## Layout and accessibility
 
-Desktop shows optional left/right scroll buttons plus native horizontal scroll (mouse wheel/trackpad); mobile relies on touch scrolling with `scroll-snap` and never causes page-level horizontal overflow. Each card carries a single descriptive `aria-label` (e.g. "Buffalo Bills 27, New York Jets 20, final") so status is never conveyed by color alone, and the scroll buttons are standard focusable icon buttons.
+The scoreboard places contextual left/right controls inside dedicated edge gutters instead of allowing cards to terminate against exposed hard edges. The controls appear only when more content exists in their direction, with a surface-colored gradient that lets partial cards recede cleanly beneath them. The rail keeps enough safe inline padding that the controls never cover a game card, plus native horizontal mouse, trackpad, and touch scrolling with scroll snapping. Mobile retains the same arrows in slightly tighter gutters and never causes page-level horizontal overflow. Each card carries a single descriptive `aria-label` (e.g. "Buffalo Bills 27, New York Jets 20, final") so status is never conveyed by color alone, and the scroll buttons are standard focusable icon buttons.
 
 ## Exclusions
 

@@ -1,15 +1,28 @@
 import AddRounded from '@mui/icons-material/AddRounded';
+import DeleteForeverRounded from '@mui/icons-material/DeleteForeverRounded';
+import EditRounded from '@mui/icons-material/EditRounded';
+import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
+import UnpublishedRounded from '@mui/icons-material/UnpublishedRounded';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardActionArea,
   CardContent,
   Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   FormControlLabel,
+  IconButton,
   Link,
+  Menu,
   MenuItem,
   Paper,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -21,6 +34,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 
 import {
@@ -30,8 +44,17 @@ import {
 } from '@/features/admin/components/AdminRequestState';
 import { AdminPageHeader } from '@/features/admin/components/AdminPageHeader';
 import { ArticleStatusChip } from '@/features/articles/components/ArticleStatusChip';
-import { useAdminArticlesQuery } from '@/features/articles/queries';
-import type { ArticleStatus, ArticleType } from '@/features/articles/types';
+import { getArticleErrorMessage } from '@/features/articles/errors';
+import {
+  useAdminArticlesQuery,
+  useArticleLifecycleMutation,
+  useDeleteArticleMutation,
+} from '@/features/articles/queries';
+import type {
+  AdminArticleListItem,
+  ArticleStatus,
+  ArticleType,
+} from '@/features/articles/types';
 import {
   useAdminTopStoriesQuery,
   useMarkTopStoryMutation,
@@ -39,6 +62,69 @@ import {
 } from '@/features/homepage/queries';
 import { MAX_TOP_STORIES } from '@/features/homepage/types';
 import { useTeamsQuery } from '@/features/teams/queries';
+import { useCurrentUserQuery } from '@/features/users/queries';
+import type { UserRole } from '@/features/users/types';
+
+type PendingArticleAction = {
+  readonly type: 'unpublish' | 'delete';
+  readonly article: AdminArticleListItem;
+} | null;
+
+const ArticleActionsMenu = ({
+  article,
+  role,
+  onAction,
+}: {
+  readonly article: AdminArticleListItem;
+  readonly role: UserRole;
+  readonly onAction: (action: NonNullable<PendingArticleAction>) => void;
+}) => {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const close = () => setAnchor(null);
+  return (
+    <>
+      <IconButton
+        aria-label={`Open actions for ${article.title}`}
+        onClick={(event) => setAnchor(event.currentTarget)}
+      >
+        <MoreVertRounded />
+      </IconButton>
+      <Menu anchorEl={anchor} open={anchor !== null} onClose={close}>
+        <MenuItem
+          component={RouterLink}
+          to={`/admin/articles/${article.id}`}
+          onClick={close}
+        >
+          <EditRounded fontSize="small" sx={{ mr: 1.25 }} />
+          Edit
+        </MenuItem>
+        {['PUBLISHED', 'SCHEDULED'].includes(article.status) ? (
+          <MenuItem
+            onClick={() => {
+              close();
+              onAction({ type: 'unpublish', article });
+            }}
+          >
+            <UnpublishedRounded fontSize="small" sx={{ mr: 1.25 }} />
+            Unpublish
+          </MenuItem>
+        ) : null}
+        {role === 'ADMIN' ? (
+          <MenuItem
+            onClick={() => {
+              close();
+              onAction({ type: 'delete', article });
+            }}
+            sx={{ color: 'error.main' }}
+          >
+            <DeleteForeverRounded fontSize="small" sx={{ mr: 1.25 }} />
+            Delete permanently
+          </MenuItem>
+        ) : null}
+      </Menu>
+    </>
+  );
+};
 
 const TopStoryToggle = ({
   articleId,
@@ -79,7 +165,20 @@ const TopStoryToggle = ({
 
 export const AdminArticlesPage = () => {
   const [parameters, setParameters] = useSearchParams();
+  const [pendingAction, setPendingAction] =
+    useState<PendingArticleAction>(null);
+  const [changeSummary, setChangeSummary] = useState('');
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const teams = useTeamsQuery();
+  const role = useCurrentUserQuery().data?.role ?? 'USER';
+  const unpublish = useArticleLifecycleMutation(
+    pendingAction?.article.id ?? '',
+    'unpublish',
+  );
+  const permanentlyDelete = useDeleteArticleMutation(
+    pendingAction?.article.id ?? '',
+    pendingAction?.article.slug ?? '',
+  );
   const searchValue = parameters.get('search') ?? '';
   const filters = {
     limit: 25,
@@ -106,6 +205,41 @@ export const AdminArticlesPage = () => {
     next.delete('cursor');
     setParameters(next);
   };
+  const closeAction = () => {
+    setPendingAction(null);
+    setChangeSummary('');
+    unpublish.reset();
+    permanentlyDelete.reset();
+  };
+  const openAction = (action: NonNullable<PendingArticleAction>) => {
+    unpublish.reset();
+    permanentlyDelete.reset();
+    setChangeSummary('');
+    setPendingAction(action);
+  };
+  const confirmAction = async () => {
+    if (!pendingAction) return;
+    try {
+      if (pendingAction.type === 'unpublish') {
+        await unpublish.mutateAsync({
+          expectedVersion: pendingAction.article.version,
+          changeSummary: changeSummary.trim() || null,
+        });
+        setSuccessMessage('Article unpublished.');
+      } else {
+        const result = await permanentlyDelete.mutateAsync();
+        setSuccessMessage(
+          result.alreadyGone
+            ? 'Article was already permanently deleted.'
+            : 'Article permanently deleted.',
+        );
+      }
+      closeAction();
+    } catch {
+      // The dialog renders the normalized mutation error without leaking API details.
+    }
+  };
+  const actionError = unpublish.error ?? permanentlyDelete.error;
   return (
     <>
       <AdminPageHeader
@@ -216,6 +350,7 @@ export const AdminArticlesPage = () => {
                   <TableCell>Publication</TableCell>
                   <TableCell>Updated</TableCell>
                   <TableCell>Version</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -263,6 +398,13 @@ export const AdminArticlesPage = () => {
                       {new Date(article.updatedAt).toLocaleString()}
                     </TableCell>
                     <TableCell>{article.version}</TableCell>
+                    <TableCell align="right">
+                      <ArticleActionsMenu
+                        article={article}
+                        role={role}
+                        onAction={openAction}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -292,16 +434,29 @@ export const AdminArticlesPage = () => {
                   </CardContent>
                 </CardActionArea>
                 <CardContent sx={{ pt: 0 }}>
-                  <FormControlLabel
-                    control={
-                      <TopStoryToggle
-                        articleId={article.id}
-                        isTopStory={topStoryArticleIds.has(article.id)}
-                        atCap={atTopStoryCap}
-                      />
-                    }
-                    label="Top Story"
-                  />
+                  <Stack
+                    direction="row"
+                    sx={{
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <FormControlLabel
+                      control={
+                        <TopStoryToggle
+                          articleId={article.id}
+                          isTopStory={topStoryArticleIds.has(article.id)}
+                          atCap={atTopStoryCap}
+                        />
+                      }
+                      label="Top Story"
+                    />
+                    <ArticleActionsMenu
+                      article={article}
+                      role={role}
+                      onAction={openAction}
+                    />
+                  </Stack>
                 </CardContent>
               </Card>
             ))}
@@ -321,6 +476,77 @@ export const AdminArticlesPage = () => {
           </Box>
         </>
       ) : null}
+      <Dialog
+        open={pendingAction !== null}
+        onClose={closeAction}
+        aria-labelledby="article-action-title"
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle id="article-action-title">
+          {pendingAction?.type === 'delete'
+            ? 'Permanently delete this article?'
+            : 'Unpublish this article?'}
+        </DialogTitle>
+        <DialogContent>
+          {pendingAction?.type === 'delete' ? (
+            <>
+              <DialogContentText>
+                You are about to permanently delete{' '}
+                <strong>{pendingAction.article.title}</strong>.
+              </DialogContentText>
+              <DialogContentText sx={{ mt: 1, fontWeight: 700 }}>
+                This cannot be undone.
+              </DialogContentText>
+            </>
+          ) : (
+            <>
+              <DialogContentText sx={{ mb: 2 }}>
+                This uses article version {pendingAction?.article.version} and
+                removes the article from public views.
+              </DialogContentText>
+              <TextField
+                fullWidth
+                label="Change summary"
+                value={changeSummary}
+                onChange={(event) => setChangeSummary(event.target.value)}
+                slotProps={{ htmlInput: { maxLength: 500 } }}
+              />
+            </>
+          )}
+          {actionError ? (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {getArticleErrorMessage(actionError)}
+            </Alert>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeAction}>Cancel</Button>
+          <Button
+            variant="contained"
+            color={pendingAction?.type === 'delete' ? 'error' : 'warning'}
+            disabled={unpublish.isPending || permanentlyDelete.isPending}
+            onClick={() => void confirmAction()}
+          >
+            {pendingAction?.type === 'delete'
+              ? 'Delete permanently'
+              : 'Unpublish'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Snackbar
+        open={successMessage !== null}
+        autoHideDuration={5000}
+        onClose={() => setSuccessMessage(null)}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setSuccessMessage(null)}
+        >
+          {successMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
