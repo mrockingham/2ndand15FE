@@ -1,4 +1,5 @@
 import {
+  deleteArticle,
   getPublicArticle,
   listPublicArticles,
   replaceArticleTeams,
@@ -15,6 +16,25 @@ import {
 import { jsonResponse } from '@/test/authFixtures';
 
 describe('article HTTP boundary', () => {
+  it('permanently deletes through the admin endpoint and accepts an empty 204 response', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(() =>
+      Promise.resolve(new Response(null, { status: 204 })),
+    );
+    const client = createApiClient({
+      baseUrl: 'http://localhost:3000/api/v1',
+      fetchImplementation,
+      getAccessToken: () => 'access-token',
+    });
+
+    await expect(
+      deleteArticle(client, adminArticleFixture.id),
+    ).resolves.toBeUndefined();
+    expect(fetchImplementation).toHaveBeenCalledWith(
+      `http://localhost:3000/api/v1/admin/articles/${adminArticleFixture.id}`,
+      expect.objectContaining({ method: 'DELETE', body: undefined }),
+    );
+  });
+
   it('uses public endpoints and preserves their intentionally limited DTOs', async () => {
     const fetchImplementation = vi.fn<typeof fetch>((input) => {
       const url = String(input);
