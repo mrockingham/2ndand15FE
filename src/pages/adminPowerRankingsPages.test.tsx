@@ -91,6 +91,11 @@ describe('Admin Power Rankings — edition list', () => {
     await user.clear(screen.getByLabelText('Season *'));
     await user.type(screen.getByLabelText('Season *'), '2026');
     await user.type(screen.getByLabelText('Edition *'), 'week-1');
+    fireEvent.change(screen.getByLabelText('Methodology *'), {
+      target: {
+        value: 'Weighted blend of roster talent, coaching, and recent results.',
+      },
+    });
     await user.click(screen.getByRole('button', { name: 'Create' }));
 
     await waitFor(() =>

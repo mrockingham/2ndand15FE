@@ -143,20 +143,54 @@ export const unpublishPowerRankingEdition = async (
     )
   ).data;
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const asIssueArray = (value: unknown): PowerRankingImportResult['errors'] =>
+  Array.isArray(value)
+    ? value.filter(isRecord).map((issue) => ({
+        message:
+          typeof issue.message === 'string' ? issue.message : String(issue),
+        path: typeof issue.path === 'string' ? issue.path : undefined,
+      }))
+    : [];
+
+// The import endpoint's success shape is looser than the rest of this
+// contract (it echoes back whatever the uploaded document contained), so
+// normalize defensively here rather than trusting every field is present --
+// a missing `errors`/`warnings` array previously crashed the whole route
+// when the result summary tried to read `.length` off `undefined`.
+const normalizeImportResult = (raw: unknown): PowerRankingImportResult => {
+  const record = isRecord(raw) ? raw : {};
+  return {
+    mode: record.mode === 'UPSERT' ? 'UPSERT' : 'PREVIEW',
+    season: typeof record.season === 'number' ? record.season : null,
+    edition: typeof record.edition === 'string' ? record.edition : null,
+    asOf: typeof record.asOf === 'string' ? record.asOf : null,
+    foundCount: typeof record.foundCount === 'number' ? record.foundCount : 0,
+    matchedTeams:
+      typeof record.matchedTeams === 'number' ? record.matchedTeams : 0,
+    errors: asIssueArray(record.errors),
+    warnings: asIssueArray(record.warnings),
+    editionId:
+      typeof record.editionId === 'string' ? record.editionId : undefined,
+  };
+};
+
 export const importPowerRankings = async (
   client: ApiClient,
   input: PowerRankingImportInput,
-) =>
-  (
-    await client.request<DataResponse<PowerRankingImportResult>>(
-      '/admin/power-rankings/import',
-      {
-        authenticated: true,
-        method: 'POST',
-        // Backend contract requires exactly { data, mode, publish } at the
-        // top level -- publish is always false here since import never
-        // auto-publishes; publishing is a separate explicit admin action.
-        body: { data: input.data, mode: input.mode, publish: false },
-      },
-    )
-  ).data;
+) => {
+  const response = await client.request<DataResponse<unknown>>(
+    '/admin/power-rankings/import',
+    {
+      authenticated: true,
+      method: 'POST',
+      // Backend contract requires exactly { data, mode, publish } at the
+      // top level -- publish is always false here since import never
+      // auto-publishes; publishing is a separate explicit admin action.
+      body: { data: input.data, mode: input.mode, publish: false },
+    },
+  );
+  return normalizeImportResult(response.data);
+};

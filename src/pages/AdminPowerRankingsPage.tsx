@@ -52,6 +52,7 @@ interface CreateEditionFields {
   readonly season: string;
   readonly edition: string;
   readonly asOf: string;
+  readonly methodology: string;
 }
 
 const emptyCreateFields: CreateEditionFields = {
@@ -60,7 +61,11 @@ const emptyCreateFields: CreateEditionFields = {
   season: String(new Date().getFullYear()),
   edition: '',
   asOf: new Date().toISOString().slice(0, 10),
+  methodology: '',
 };
+
+// Matches the backend's required slug format, e.g. "preseason" or "week-1".
+const editionSlugPattern = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 const CreateEditionDialog = ({
   open,
@@ -75,8 +80,9 @@ const CreateEditionDialog = ({
   const canSubmit =
     fields.title.trim() !== '' &&
     fields.subtitle.trim() !== '' &&
-    fields.edition.trim() !== '' &&
+    editionSlugPattern.test(fields.edition.trim()) &&
     fields.asOf.trim() !== '' &&
+    fields.methodology.trim() !== '' &&
     Number.isInteger(Number(fields.season));
 
   const close = () => {
@@ -92,6 +98,8 @@ const CreateEditionDialog = ({
       season: Number(fields.season),
       edition: fields.edition.trim(),
       asOf: fields.asOf,
+      methodology: fields.methodology.trim(),
+      sources: [],
     });
     close();
     navigate(`/admin/power-rankings/${result.edition.id}`);
@@ -141,6 +149,11 @@ const CreateEditionDialog = ({
             label="Edition"
             placeholder="preseason, week-3, …"
             value={fields.edition}
+            error={
+              fields.edition.trim() !== '' &&
+              !editionSlugPattern.test(fields.edition.trim())
+            }
+            helperText='Lowercase slug, e.g. "preseason" or "week-1".'
             onChange={(event) =>
               setFields((previous) => ({
                 ...previous,
@@ -158,6 +171,19 @@ const CreateEditionDialog = ({
               setFields((previous) => ({
                 ...previous,
                 asOf: event.target.value,
+              }))
+            }
+          />
+          <TextField
+            required
+            label="Methodology"
+            multiline
+            minRows={3}
+            value={fields.methodology}
+            onChange={(event) =>
+              setFields((previous) => ({
+                ...previous,
+                methodology: event.target.value,
               }))
             }
           />
