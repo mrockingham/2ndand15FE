@@ -138,7 +138,7 @@ export const AdminPowerRankingsImportPage = () => {
       setPayload(parsed);
       const result = await previewMutation.mutateAsync({
         mode: 'PREVIEW',
-        payload: parsed,
+        data: parsed,
       });
       if (result.errors.length === 0) setValidatedContent(content);
     } catch (error: unknown) {
@@ -157,7 +157,7 @@ export const AdminPowerRankingsImportPage = () => {
     if (payload === null) return;
     await applyMutation.mutateAsync({
       mode: 'UPSERT',
-      payload,
+      data: payload,
     });
   };
 

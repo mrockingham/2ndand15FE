@@ -1,7 +1,8 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { jsonResponse } from '@/test/authFixtures';
+import { playerAttributionFixture } from '@/test/playerFixtures';
 import {
   powerRankingEditionSummaryFixture,
   powerRankingEntryFixtures,
@@ -9,6 +10,33 @@ import {
 } from '@/test/powerRankingsFixtures';
 import { renderApp } from '@/test/renderApp';
 import type { PowerRankingEditionSummary } from '@/features/powerRankings/types';
+
+// Top5Feature reads each featured team's banner from the same public Team
+// Hub overview endpoint the real Team Hub page uses, so every render of the
+// page triggers a handful of `/teams/:id/hub` requests -- stub them out with
+// a minimal overview shape (only `homepage.banner` matters to the card).
+const teamHubResponse = (imageUrl: string | null = null) =>
+  jsonResponse({
+    data: {
+      team: {},
+      schedule: { season: 2026, upcoming: [], recent: [] },
+      news: { articles: [] },
+      homepage: {
+        banner: { imageUrl, focalX: 50, focalY: 50, overlayOpacity: 35 },
+        editorial: { featuredItem: null, supportingItems: [] },
+        highlights: [],
+      },
+      historicalData: {
+        defaultSeason: null,
+        rosterSeasons: [],
+        statSeasons: [],
+        positions: [],
+        positionGroups: [],
+        coverageNotes: [],
+      },
+    },
+    meta: { attribution: playerAttributionFixture },
+  });
 
 const buildRouter = ({
   rankings = powerRankingEntryFixtures,
@@ -21,6 +49,8 @@ const buildRouter = ({
 } = {}) =>
   vi.fn<typeof fetch>((input) => {
     const url = String(input);
+    if (/\/teams\/[^/]+\/hub$/.test(url))
+      return Promise.resolve(teamHubResponse());
     if (url.includes('/power-rankings/editions'))
       return Promise.resolve(jsonResponse({ data: editions }));
     if (url.includes('/power-rankings')) {
@@ -55,10 +85,10 @@ describe('PowerRankingsPage', () => {
       ),
     ).toBeInTheDocument();
 
-    // Top 5 feature: rank 1 team name rendered as a heading link.
+    // Top 5 feature: rank 1 team name rendered as a Team Hub link.
     const topTeam = powerRankingEntryFixtures[0]!.team;
     expect(
-      screen.getByRole('heading', { name: topTeam.name }),
+      screen.getByRole('link', { name: topTeam.name }),
     ).toBeInTheDocument();
 
     // Ranks 6-32 render as rows (27 rows).
@@ -70,6 +100,107 @@ describe('PowerRankingsPage', () => {
     for (const entry of powerRankingEntryFixtures) {
       expect(screen.getAllByText(entry.team.name).length).toBeGreaterThan(0);
     }
+  });
+
+  it('shows full editorial content for all of ranks 1-5 without expanding', async () => {
+    const fetchImplementation = buildRouter();
+    renderApp('/power-rankings', { fetchImplementation });
+    await screen.findByRole('heading', { name: '2026 NFL Power Rankings' });
+
+    for (const entry of powerRankingEntryFixtures.slice(0, 5)) {
+      expect(
+        screen.getByRole('link', { name: entry.team.name }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(entry.headline)).toBeInTheDocument();
+      expect(screen.getByText(entry.summary)).toBeInTheDocument();
+      expect(screen.getByText(entry.strengths[0]!)).toBeInTheDocument();
+      expect(screen.getByText(entry.concerns[0]!)).toBeInTheDocument();
+    }
+  });
+
+  it('renders a team banner image as the Top 5 card background when available', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = String(input);
+      if (/\/teams\/[^/]+\/hub$/.test(url))
+        return Promise.resolve(
+          teamHubResponse('https://res.cloudinary.com/example/banner.jpg'),
+        );
+      if (url.includes('/power-rankings/editions'))
+        return Promise.resolve(
+          jsonResponse({ data: [powerRankingEditionSummaryFixture] }),
+        );
+      if (url.includes('/power-rankings'))
+        return Promise.resolve(
+          jsonResponse({
+            data: {
+              edition: powerRankingsDataFixture.edition,
+              rankings: powerRankingEntryFixtures,
+            },
+          }),
+        );
+      return Promise.reject(new TypeError(`Unexpected request: ${url}`));
+    });
+    renderApp('/power-rankings', { fetchImplementation });
+    await screen.findByRole('heading', { name: '2026 NFL Power Rankings' });
+
+    const topTeam = powerRankingEntryFixtures[0]!.team;
+    const card = screen
+      .getByRole('link', { name: topTeam.name })
+      .closest('.MuiPaper-root') as HTMLElement;
+    await waitFor(() =>
+      expect(
+        card.querySelector(
+          'img[src="https://res.cloudinary.com/example/banner.jpg"]',
+        ),
+      ).not.toBeNull(),
+    );
+  });
+
+  it('falls back to the team-color treatment when a banner image fails to load', async () => {
+    const fetchImplementation = vi.fn<typeof fetch>((input) => {
+      const url = String(input);
+      if (/\/teams\/[^/]+\/hub$/.test(url))
+        return Promise.resolve(
+          teamHubResponse('https://res.cloudinary.com/example/broken.jpg'),
+        );
+      if (url.includes('/power-rankings/editions'))
+        return Promise.resolve(
+          jsonResponse({ data: [powerRankingEditionSummaryFixture] }),
+        );
+      if (url.includes('/power-rankings'))
+        return Promise.resolve(
+          jsonResponse({
+            data: {
+              edition: powerRankingsDataFixture.edition,
+              rankings: powerRankingEntryFixtures,
+            },
+          }),
+        );
+      return Promise.reject(new TypeError(`Unexpected request: ${url}`));
+    });
+    renderApp('/power-rankings', { fetchImplementation });
+    await screen.findByRole('heading', { name: '2026 NFL Power Rankings' });
+
+    const topTeam = powerRankingEntryFixtures[0]!.team;
+    const card = screen
+      .getByRole('link', { name: topTeam.name })
+      .closest('.MuiPaper-root') as HTMLElement;
+    const image = await waitFor(() => {
+      const found = card.querySelector(
+        'img[src="https://res.cloudinary.com/example/broken.jpg"]',
+      );
+      if (!found) throw new Error('banner image not rendered yet');
+      return found as HTMLElement;
+    });
+    fireEvent.error(image);
+
+    await waitFor(() =>
+      expect(
+        card.querySelector(
+          'img[src="https://res.cloudinary.com/example/broken.jpg"]',
+        ),
+      ).toBeNull(),
+    );
   });
 
   it('links each team to its Team Hub page', async () => {
