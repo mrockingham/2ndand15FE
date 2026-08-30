@@ -18,6 +18,7 @@ import {
 } from '@/test/gameFixtures';
 import {
   emptyHomepageInsightsFixture,
+  heroSlideFixture,
   publicHomepageFixture,
 } from '@/test/homepageFixtures';
 import { playerAttributionFixture } from '@/test/playerFixtures';
@@ -125,25 +126,32 @@ const teamVideo = (
 });
 
 describe('Home page states', () => {
-  it('renders the visitor event hero and independent public content without a team hub request', async () => {
-    const fetchImplementation = homeRequestRouter();
+  it('loads the CMS visitor hero without flashing the static fallback and keeps public content independent', async () => {
+    const fetchImplementation = homeRequestRouter({
+      homepage: {
+        ...publicHomepageFixture,
+        heroSlides: [heroSlideFixture],
+      },
+    });
     renderApp('/', { fetchImplementation });
 
     expect(
-      screen.getByRole('img', {
+      screen.getByRole('region', { name: 'Loading featured stories' }),
+    ).toHaveAttribute('aria-busy', 'true');
+    expect(
+      screen.queryByRole('img', {
         name: /hall of fame game promotion featuring the carolina panthers and arizona cardinals/i,
       }),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: /your front row to football/i }),
+      await screen.findByRole('heading', {
+        name: 'Football. Smarter. Faster.',
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getAllByRole('link', { name: /sign in/i })[0],
     ).toHaveAttribute('href', '/login');
 
-    expect(
-      await screen.findByText(/Final · CAR 33–30 ARI/i),
-    ).toBeInTheDocument();
     expect(
       await screen.findByRole('heading', { name: /recent & upcoming games/i }),
     ).toBeInTheDocument();
@@ -176,6 +184,13 @@ describe('Home page states', () => {
         String(input).includes('/hub'),
       ),
     ).toBe(false);
+    expect(
+      fetchImplementation.mock.calls.some(([input]) =>
+        new URL(String(input)).pathname.endsWith(
+          `/games/${hallOfFameGameFixture.id}`,
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('renders a hybrid signed-in state with no favorite and never invents team content', async () => {
@@ -186,7 +201,7 @@ describe('Home page states', () => {
     });
 
     expect(
-      screen.getByRole('heading', {
+      await screen.findByRole('heading', {
         name: /choose your team. make home yours/i,
       }),
     ).toBeInTheDocument();
