@@ -252,7 +252,7 @@ describe('onboarding and personalized routes', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('personalizes home with a favorite and preserves the signed-out landing page', () => {
+  it('personalizes home with a favorite and preserves the signed-out landing page', async () => {
     const { unmount } = renderApp('/', {
       currentUser: userWithFavoriteFixture,
       restorationStatus: 'authenticated',
@@ -267,7 +267,9 @@ describe('onboarding and personalized routes', () => {
 
     renderApp('/');
     expect(
-      screen.getByRole('heading', { name: /your front row to football/i }),
+      await screen.findByRole('heading', {
+        name: /your front row to football/i,
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: /create account/i }),

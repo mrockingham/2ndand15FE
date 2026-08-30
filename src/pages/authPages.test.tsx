@@ -1,5 +1,7 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+import { OFFICIAL_BRAND_LOGO_URL } from '@/components/branding/BrandLogo';
 
 import { userKeys } from '@/features/users/queryKeys';
 import { useAuthStore } from '@/stores/authStore';
@@ -102,6 +104,20 @@ describe('registration', () => {
 });
 
 describe('login and route guards', () => {
+  it('renders the official linked logo on the login screen', () => {
+    renderApp('/login');
+
+    const main = screen.getByRole('main');
+    const brandLink = within(main).getByRole('link', {
+      name: '2nd & 15 home',
+    });
+    expect(brandLink).toHaveAttribute('href', '/');
+    const logo = within(brandLink).getByRole('img', { name: '2nd & 15' });
+    expect(logo).toHaveAttribute('src', OFFICIAL_BRAND_LOGO_URL);
+    expect(logo).toHaveAttribute('width', '1254');
+    expect(logo).toHaveAttribute('height', '1254');
+  });
+
   it('logs in and restores the intended protected destination', async () => {
     const user = userEvent.setup();
     const fetchImplementation = vi

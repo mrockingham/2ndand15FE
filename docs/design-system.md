@@ -138,7 +138,7 @@ The supplied conceptual references were interpreted for the shell as follows:
 - The desktop home dark reference is the primary composition: a slim header, strong left-aligned statement, and an immersive game-day visual region.
 - The light theme preserves hierarchy and geometry while replacing near-black layering with white panels, cool-neutral canvas color, restrained borders, and lighter shadows.
 - Purple remains the primary interactive color because it dominates the references; cyan is a secondary electric accent for focus and atmospheric detail.
-- The temporary `2nd & 15` wordmark uses a bespoke text-and-number badge made in CSS. No generated team/league mark was extracted from the references.
+- The official square `2nd & 15 Sports Network` badge is rendered through the shared `BrandLogo` component in public/Admin headers, authentication screens, and the footer. Page rendering uses the canonical Cloudinary asset with intrinsic dimensions to prevent layout shift; browser icons are faithful local derivatives of the same approved PNG.
 - The landing visual uses an abstract CSS field and explicitly says that live data is not connected. It does not reproduce the player imagery, team logos, scores, or fictional data in the mockups.
 - Desktop navigation shows all six long-term areas. Mobile shows Home, Games, News, and Stats plus a More sheet containing AI Hub and Fantasy, keeping five comfortable navigation targets.
 - Display typography uses a legal system font stack, heavy weight, tight tracking, and responsive scaling rather than attempting to identify or copy the mockup font.

@@ -12,7 +12,7 @@ import {
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 
 import { isNavigationPathActive, navigationItems } from '@/app/navigation';
-import { BrandMark } from '@/components/navigation/BrandMark';
+import { BrandLogo } from '@/components/branding/BrandLogo';
 import { ThemeToggle } from '@/components/navigation/ThemeToggle';
 import { TeamHelmet } from '@/components/team/TeamHelmet';
 import { useCurrentUserQuery } from '@/features/users/queries';
@@ -40,7 +40,7 @@ export const AppHeader = () => {
             gap: { xs: 1, md: 3 },
           }}
         >
-          <BrandMark />
+          <BrandLogo />
 
           <Box
             component="nav"

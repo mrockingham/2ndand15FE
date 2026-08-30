@@ -1,16 +1,25 @@
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
+
+import { OFFICIAL_BRAND_LOGO_URL } from '@/components/branding/BrandLogo';
 
 import { renderApp } from '@/test/renderApp';
 
 describe('application routing', () => {
-  it('renders the application shell and home route', () => {
+  it('renders the application shell and home route', async () => {
     renderApp('/');
 
+    const header = screen.getByRole('banner');
+    const brandLink = within(header).getByRole('link', {
+      name: '2nd & 15 home',
+    });
+    expect(brandLink).toHaveAttribute('href', '/');
     expect(
-      screen.getByRole('link', { name: '2nd & 15 home' }),
-    ).toBeInTheDocument();
+      within(brandLink).getByRole('img', { name: '2nd & 15' }),
+    ).toHaveAttribute('src', OFFICIAL_BRAND_LOGO_URL);
     expect(
-      screen.getByRole('heading', { name: /your front row to football/i }),
+      await screen.findByRole('heading', {
+        name: /your front row to football/i,
+      }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('navigation', { name: 'Primary navigation' }),

@@ -207,7 +207,7 @@ describe('AI Hub supported intelligence', () => {
     ]) {
       expect(screen.queryByText(text)).not.toBeInTheDocument();
     }
-    expect(document.querySelector('img')).toBeNull();
+    expect(screen.getByRole('main').querySelector('img')).toBeNull();
     expect(
       document.querySelectorAll('[data-team-helmet]').length,
     ).toBeGreaterThan(0);
