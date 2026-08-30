@@ -128,7 +128,7 @@ export type PowerRankingImportMode = 'PREVIEW' | 'UPSERT';
 
 export interface PowerRankingImportInput {
   readonly mode: PowerRankingImportMode;
-  readonly payload: unknown;
+  readonly data: unknown;
 }
 
 export interface PowerRankingImportIssue {

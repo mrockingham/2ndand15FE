@@ -150,6 +150,13 @@ export const importPowerRankings = async (
   (
     await client.request<DataResponse<PowerRankingImportResult>>(
       '/admin/power-rankings/import',
-      { authenticated: true, method: 'POST', body: input },
+      {
+        authenticated: true,
+        method: 'POST',
+        // Backend contract requires exactly { data, mode, publish } at the
+        // top level -- publish is always false here since import never
+        // auto-publishes; publishing is a separate explicit admin action.
+        body: { data: input.data, mode: input.mode, publish: false },
+      },
     )
   ).data;
