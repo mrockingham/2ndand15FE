@@ -7,6 +7,7 @@ import {
   Card,
   Chip,
   Container,
+  Skeleton,
   Stack,
   Typography,
 } from '@mui/material';
@@ -153,6 +154,24 @@ const PublicHero = ({ chooseTeam }: { readonly chooseTeam: boolean }) => {
   );
 };
 
+const PublicHeroLoading = () => (
+  <Box
+    component="section"
+    aria-label="Loading featured stories"
+    aria-busy="true"
+  >
+    <Skeleton
+      variant="rounded"
+      animation="wave"
+      sx={{
+        height: { xs: 390, sm: 500, lg: 620 },
+        transform: 'none',
+        bgcolor: 'action.hover',
+      }}
+    />
+  </Box>
+);
+
 const PersonalizationCallout = ({
   chooseTeam,
 }: {
@@ -249,7 +268,9 @@ export const PublicHomeContent = ({
 
   return (
     <Stack spacing={{ xs: 4, md: 5 }}>
-      {activeHeroSlides.length > 0 ? (
+      {homepageQuery.isPending ? (
+        <PublicHeroLoading />
+      ) : activeHeroSlides.length > 0 ? (
         <HomepageHeroCarousel slides={activeHeroSlides} />
       ) : (
         <PublicHero chooseTeam={chooseTeam} />

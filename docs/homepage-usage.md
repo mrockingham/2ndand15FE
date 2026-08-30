@@ -18,12 +18,14 @@ below).
 
 ## Hero fallback
 
-If `heroSlides` is empty (no slides configured yet) or the `/homepage`
-request fails, Home renders the original static Hall of Fame Game hero
-(`PublicHero` in `src/features/home/components/PublicHome.tsx`) unchanged.
-The CMS carousel (`HomepageHeroCarousel`) only renders once at least one
-active slide exists. This makes the CMS rollout safe: Home is never blank
-because content hasn't been configured yet.
+While the `/homepage` request is pending, Home reserves the Hero's full
+responsive height with a neutral loading skeleton. It does not render the
+static Hall of Fame Game image during that indeterminate state, which avoids
+flashing obsolete fallback artwork immediately before the CMS carousel loads.
+If `heroSlides` is empty (no slides configured yet) or the request fails, Home
+then renders the original static Hall of Fame Game hero (`PublicHero` in
+`src/features/home/components/PublicHome.tsx`) unchanged. The CMS carousel
+(`HomepageHeroCarousel`) renders once at least one active slide exists.
 
 ## Hero carousel
 
