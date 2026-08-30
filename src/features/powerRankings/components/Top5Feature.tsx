@@ -1,3 +1,4 @@
+import ExpandLessRounded from '@mui/icons-material/ExpandLessRounded';
 import { Box, Chip, Link, Paper, Stack, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useState } from 'react';
@@ -16,28 +17,12 @@ import {
 } from '@/features/teamVisualIdentity/teamTheme';
 import { getTeamVisualConfig } from '@/features/teamVisualIdentity/teamVisualConfigs';
 
-const MovementBadge = ({
-  entry,
-  onImage,
-}: {
-  readonly entry: PowerRankingEntry;
-  readonly onImage: boolean;
-}) => {
-  const movement = movementDisplay(entry.movement, entry.previousRank);
-  return (
-    <Chip
-      size="small"
-      label={movement.label}
-      sx={{
-        color: onImage ? '#FFFFFF' : movementToneColor[movement.tone],
-        borderColor: onImage
-          ? 'rgba(255,255,255,0.7)'
-          : movementToneColor[movement.tone],
-        fontWeight: 700,
-      }}
-      variant="outlined"
-    />
-  );
+// Uses the same public Team Hub overview the Team Hub hero already fetches
+// (`/teams/:id/hub`), so this only adds 5 requests total -- never all 32 --
+// and shares its cache with the real Team Hub pages.
+const useTeamBanner = (teamId: string) => {
+  const query = useTeamHubQuery(teamId);
+  return query.data?.overview.homepage.banner ?? null;
 };
 
 const IssueList = ({
@@ -57,7 +42,7 @@ const IssueList = ({
     <Box>
       <Typography
         variant="subtitle2"
-        sx={{ mt: 1, color: onImage ? onImageColor : color }}
+        sx={{ color: onImage ? onImageColor : color }}
       >
         {title}
       </Typography>
@@ -76,27 +61,20 @@ const IssueList = ({
   );
 };
 
-// Reuses the same banner/focal-point/overlay contract as the Team Hub hero
-// (`TeamHubHero.tsx`) so Top 5 cards look at home next to the rest of the
-// site. The full Team Hub overview is heavier than a banner-only lookup
-// would need, but it is the only existing public source for a team's
-// banner image, and this only runs for the 5 featured teams (never all 32).
-const FeatureCard = ({
-  entry,
-  emphasis,
-}: {
-  readonly entry: PowerRankingEntry;
-  readonly emphasis: 'primary' | 'secondary';
-}) => {
+// Same header/detail layout as the ranks 6-32 `RankingRow`, but permanently
+// expanded (Top 5 must show full editorial content without a click) and
+// with each team's Team Hub banner as a background, per-card, all five --
+// not just rank #1 -- falling back to the existing team-color gradient
+// treatment when there is no banner or the image fails to load.
+const Top5Row = ({ entry }: { readonly entry: PowerRankingEntry }) => {
   const theme = useTheme();
   const config = getTeamVisualConfig(entry.team.abbreviation);
   const tokens = getTeamThemeTokens(config, theme.palette.mode);
-  const bannerQuery = useTeamHubQuery(entry.team.id);
-  const banner = bannerQuery.data?.overview.homepage.banner ?? null;
+  const banner = useTeamBanner(entry.team.id);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const showImage =
     banner?.imageUrl != null && banner.imageUrl !== failedImageUrl;
-  const isPrimary = emphasis === 'primary';
+  const movement = movementDisplay(entry.movement, entry.previousRank);
 
   return (
     <Paper
@@ -106,7 +84,6 @@ const FeatureCard = ({
         position: 'relative',
         isolation: 'isolate',
         overflow: 'hidden',
-        p: { xs: 2.5, md: isPrimary ? 3.5 : 3 },
         borderColor: 'appSurfaces.borderStrong',
         backgroundImage: showImage
           ? undefined
@@ -148,34 +125,94 @@ const FeatureCard = ({
               inset: 0,
               zIndex: -1,
               background:
-                'linear-gradient(180deg, rgba(4,8,18,0.45) 0%, rgba(4,8,18,0.88) 100%)',
+                'linear-gradient(180deg, rgba(4,8,18,0.5) 0%, rgba(4,8,18,0.88) 100%)',
             }}
           />
         </>
       ) : null}
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={2.5}
-        sx={{ alignItems: { sm: 'flex-start' } }}
-      >
-        <TeamHelmet
-          team={entry.team.abbreviation}
-          size={isPrimary ? 'lg' : 'md'}
-          decorative
-        />
-        <Stack spacing={1} sx={{ flex: 1, minWidth: 0 }}>
+      <Box sx={{ p: 2 }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ alignItems: 'center', width: '100%', minWidth: 0 }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              width: 32,
+              flexShrink: 0,
+              color: showImage ? '#FFFFFF' : 'text.secondary',
+            }}
+          >
+            {entry.rank}
+          </Typography>
+          <TeamHelmet team={entry.team.abbreviation} size="sm" decorative />
+          <Stack spacing={0.25} sx={{ flex: 1, minWidth: 0 }}>
+            <Link
+              component={RouterLink}
+              to={`/teams/${entry.team.id}`}
+              color="inherit"
+              underline="hover"
+              sx={{ fontWeight: 700, color: showImage ? '#FFFFFF' : undefined }}
+            >
+              {entry.team.name}
+            </Link>
+            <Typography
+              noWrap
+              variant="body2"
+              sx={{
+                color: showImage ? 'rgba(255,255,255,0.85)' : 'text.secondary',
+              }}
+            >
+              {entry.headline}
+            </Typography>
+          </Stack>
+          <Chip
+            size="small"
+            label={movement.label}
+            sx={{
+              color: showImage ? '#FFFFFF' : movementToneColor[movement.tone],
+              borderColor: showImage
+                ? 'rgba(255,255,255,0.7)'
+                : movementToneColor[movement.tone],
+              fontWeight: 700,
+              display: { xs: 'none', sm: 'inline-flex' },
+            }}
+            variant="outlined"
+          />
+          <Chip
+            size="small"
+            label={entry.tier}
+            variant={showImage ? 'outlined' : 'filled'}
+            sx={{
+              display: { xs: 'none', md: 'inline-flex' },
+              ...(showImage
+                ? { color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.7)' }
+                : null),
+            }}
+          />
+          <ExpandLessRounded
+            aria-hidden="true"
+            sx={{ color: showImage ? '#FFFFFF' : 'text.secondary' }}
+          />
+        </Stack>
+        <Stack spacing={1.5} sx={{ pl: { sm: 6 }, pt: 1.5 }}>
           <Stack
             direction="row"
-            spacing={1.5}
-            sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+            spacing={1}
+            sx={{ display: { sm: 'none' }, flexWrap: 'wrap' }}
           >
-            <Typography
-              variant="overline"
-              sx={{ color: showImage ? '#FFFFFF' : 'primary.light' }}
-            >
-              {isPrimary ? '#1 Overall' : `#${String(entry.rank)}`}
-            </Typography>
-            <MovementBadge entry={entry} onImage={showImage} />
+            <Chip
+              size="small"
+              label={movement.label}
+              sx={{
+                color: showImage ? '#FFFFFF' : movementToneColor[movement.tone],
+                borderColor: showImage
+                  ? 'rgba(255,255,255,0.7)'
+                  : movementToneColor[movement.tone],
+              }}
+              variant="outlined"
+            />
             <Chip
               size="small"
               label={entry.tier}
@@ -187,28 +224,6 @@ const FeatureCard = ({
               }
             />
           </Stack>
-          <Typography
-            component="h2"
-            variant={isPrimary ? 'h3' : 'h5'}
-            sx={{ color: showImage ? '#FFFFFF' : undefined }}
-          >
-            <Link
-              component={RouterLink}
-              to={`/teams/${entry.team.id}`}
-              color="inherit"
-              underline="hover"
-            >
-              {entry.team.name}
-            </Link>
-          </Typography>
-          <Typography
-            variant={isPrimary ? 'h6' : 'subtitle1'}
-            sx={{
-              color: showImage ? 'rgba(255,255,255,0.85)' : 'text.secondary',
-            }}
-          >
-            {entry.headline}
-          </Typography>
           <Typography
             sx={{ color: showImage ? 'rgba(255,255,255,0.92)' : undefined }}
           >
@@ -227,7 +242,7 @@ const FeatureCard = ({
             onImage={showImage}
           />
         </Stack>
-      </Stack>
+      </Box>
     </Paper>
   );
 };
@@ -240,22 +255,10 @@ export const Top5Feature = ({
   const topFive = [...entries].sort((a, b) => a.rank - b.rank).slice(0, 5);
   if (topFive.length === 0) return null;
   return (
-    <Box
-      component="section"
-      aria-label="Top 5"
-      sx={{
-        display: 'grid',
-        gap: 2,
-        gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' },
-      }}
-    >
-      {topFive.map((entry, index) => (
-        <FeatureCard
-          key={entry.team.id}
-          entry={entry}
-          emphasis={index === 0 ? 'primary' : 'secondary'}
-        />
+    <Stack spacing={1.5} component="section" aria-label="Top 5">
+      {topFive.map((entry) => (
+        <Top5Row key={entry.team.id} entry={entry} />
       ))}
-    </Box>
+    </Stack>
   );
 };

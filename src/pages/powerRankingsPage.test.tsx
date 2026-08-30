@@ -85,10 +85,10 @@ describe('PowerRankingsPage', () => {
       ),
     ).toBeInTheDocument();
 
-    // Top 5 feature: rank 1 team name rendered as a heading link.
+    // Top 5 feature: rank 1 team name rendered as a Team Hub link.
     const topTeam = powerRankingEntryFixtures[0]!.team;
     expect(
-      screen.getByRole('heading', { name: topTeam.name }),
+      screen.getByRole('link', { name: topTeam.name }),
     ).toBeInTheDocument();
 
     // Ranks 6-32 render as rows (27 rows).
@@ -109,7 +109,7 @@ describe('PowerRankingsPage', () => {
 
     for (const entry of powerRankingEntryFixtures.slice(0, 5)) {
       expect(
-        screen.getByRole('heading', { name: entry.team.name }),
+        screen.getByRole('link', { name: entry.team.name }),
       ).toBeInTheDocument();
       expect(screen.getByText(entry.headline)).toBeInTheDocument();
       expect(screen.getByText(entry.summary)).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe('PowerRankingsPage', () => {
 
     const topTeam = powerRankingEntryFixtures[0]!.team;
     const card = screen
-      .getByRole('heading', { name: topTeam.name })
+      .getByRole('link', { name: topTeam.name })
       .closest('.MuiPaper-root') as HTMLElement;
     await waitFor(() =>
       expect(
@@ -183,7 +183,7 @@ describe('PowerRankingsPage', () => {
 
     const topTeam = powerRankingEntryFixtures[0]!.team;
     const card = screen
-      .getByRole('heading', { name: topTeam.name })
+      .getByRole('link', { name: topTeam.name })
       .closest('.MuiPaper-root') as HTMLElement;
     const image = await waitFor(() => {
       const found = card.querySelector(
