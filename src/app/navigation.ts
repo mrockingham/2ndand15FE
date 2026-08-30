@@ -4,6 +4,7 @@ import HomeRounded from '@mui/icons-material/HomeRounded';
 import NewspaperRounded from '@mui/icons-material/NewspaperRounded';
 import QueryStatsRounded from '@mui/icons-material/QueryStatsRounded';
 import LeaderboardRounded from '@mui/icons-material/LeaderboardRounded';
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded';
 import SportsFootballRounded from '@mui/icons-material/SportsFootballRounded';
 import SportsScoreRounded from '@mui/icons-material/SportsScoreRounded';
 import GroupsRounded from '@mui/icons-material/GroupsRounded';
@@ -23,6 +24,11 @@ export const navigationItems: NavigationItem[] = [
   { label: 'Teams', path: '/teams', icon: ShieldRounded },
   { label: 'Stats', path: '/stats', icon: QueryStatsRounded },
   { label: 'Standings', path: '/standings', icon: LeaderboardRounded },
+  {
+    label: 'Power Rankings',
+    path: '/power-rankings',
+    icon: TrendingUpRounded,
+  },
   { label: 'AI Hub', path: '/ai', icon: AutoAwesomeRounded },
   { label: 'Fantasy', path: '/fantasy', icon: SportsScoreRounded },
 ];

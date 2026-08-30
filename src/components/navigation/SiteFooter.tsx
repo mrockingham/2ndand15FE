@@ -1,11 +1,14 @@
 import { Box, Container, Link, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { BrandLogo } from '@/components/branding/BrandLogo';
+
 const footerLinks = [
   { label: 'News', path: '/news' },
   { label: 'Games', path: '/games' },
   { label: 'Stats', path: '/stats' },
   { label: 'Standings', path: '/standings' },
+  { label: 'Power Rankings', path: '/power-rankings' },
   { label: 'Teams', path: '/teams' },
   { label: 'Contact', path: '/contact' },
 ];
@@ -24,7 +27,7 @@ export const SiteFooter = () => (
           alignItems: { sm: 'center' },
         }}
       >
-        <Typography sx={{ fontWeight: 800 }}>2nd &amp; 15</Typography>
+        <BrandLogo size="footer" />
         <Stack
           component="nav"
           aria-label="Footer"

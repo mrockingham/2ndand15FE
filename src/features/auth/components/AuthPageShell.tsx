@@ -4,6 +4,8 @@ import { Box, Card, Container, Stack, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import type { PropsWithChildren, ReactNode } from 'react';
 
+import { BrandLogo } from '@/components/branding/BrandLogo';
+
 interface AuthPageShellProps extends PropsWithChildren {
   readonly description: string;
   readonly eyebrow: string;
@@ -111,6 +113,9 @@ export const AuthPageShell = ({
         }}
       >
         <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto' }}>
+          <Box sx={{ mb: 3 }}>
+            <BrandLogo size="auth" />
+          </Box>
           <Typography variant="overline" color="primary.light">
             {eyebrow}
           </Typography>

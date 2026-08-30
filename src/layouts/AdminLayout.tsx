@@ -13,6 +13,7 @@ import ArticleRounded from '@mui/icons-material/ArticleRounded';
 import InboxRounded from '@mui/icons-material/InboxRounded';
 import MailOutlineRounded from '@mui/icons-material/MailOutlineRounded';
 import RssFeedRounded from '@mui/icons-material/RssFeedRounded';
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded';
 import {
   AppBar,
   Box,
@@ -31,7 +32,7 @@ import {
 import { useState } from 'react';
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom';
 
-import { BrandMark } from '@/components/navigation/BrandMark';
+import { BrandLogo } from '@/components/branding/BrandLogo';
 import { ThemeToggle } from '@/components/navigation/ThemeToggle';
 import { useCurrentUserQuery } from '@/features/users/queries';
 
@@ -49,6 +50,11 @@ export const AdminLayout = () => {
       icon: GroupsRounded,
     },
     { label: 'Games', path: '/admin/games', icon: SportsFootballRounded },
+    {
+      label: 'Power Rankings',
+      path: '/admin/power-rankings',
+      icon: TrendingUpRounded,
+    },
     {
       label: 'Import schedule',
       path: '/admin/import',
@@ -87,7 +93,7 @@ export const AdminLayout = () => {
   const navigation = (showCloseButton = false) => (
     <>
       <Toolbar sx={{ px: 2, gap: 1 }}>
-        <BrandMark />
+        <BrandLogo size="compact" />
         {showCloseButton ? (
           <IconButton
             aria-label="Close administration navigation"
