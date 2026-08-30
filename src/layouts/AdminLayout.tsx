@@ -13,6 +13,7 @@ import ArticleRounded from '@mui/icons-material/ArticleRounded';
 import InboxRounded from '@mui/icons-material/InboxRounded';
 import MailOutlineRounded from '@mui/icons-material/MailOutlineRounded';
 import RssFeedRounded from '@mui/icons-material/RssFeedRounded';
+import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded';
 import {
   AppBar,
   Box,
@@ -49,6 +50,11 @@ export const AdminLayout = () => {
       icon: GroupsRounded,
     },
     { label: 'Games', path: '/admin/games', icon: SportsFootballRounded },
+    {
+      label: 'Power Rankings',
+      path: '/admin/power-rankings',
+      icon: TrendingUpRounded,
+    },
     {
       label: 'Import schedule',
       path: '/admin/import',

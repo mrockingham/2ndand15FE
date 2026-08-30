@@ -8,6 +8,7 @@ const footerLinks = [
   { label: 'Games', path: '/games' },
   { label: 'Stats', path: '/stats' },
   { label: 'Standings', path: '/standings' },
+  { label: 'Power Rankings', path: '/power-rankings' },
   { label: 'Teams', path: '/teams' },
   { label: 'Contact', path: '/contact' },
 ];

@@ -92,7 +92,8 @@ export const MobileNavigation = () => {
         <Box sx={{ px: 2, pt: 2.5, pb: 1 }}>
           <Typography variant="h4">More from 2nd &amp; 15</Typography>
           <Typography variant="body2" color="text.secondary">
-            Explore Teams, Stats, Standings, AI Hub, and Fantasy.
+            Explore Teams, Stats, Standings, Power Rankings, AI Hub, and
+            Fantasy.
           </Typography>
         </Box>
         <Divider />

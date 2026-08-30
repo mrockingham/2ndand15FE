@@ -57,6 +57,9 @@ const LazyStatsPage = lazy(async () => ({
 const LazyStandingsPage = lazy(async () => ({
   default: (await import('@/pages/StandingsPage')).StandingsPage,
 }));
+const LazyPowerRankingsPage = lazy(async () => ({
+  default: (await import('@/pages/PowerRankingsPage')).PowerRankingsPage,
+}));
 const LazyTeamsPage = lazy(async () => ({
   default: (await import('@/pages/TeamsPage')).TeamsPage,
 }));
@@ -144,6 +147,18 @@ const LazyAdminContactMessageDetailPage = lazy(async () => ({
   default: (await import('@/pages/AdminContactMessageDetailPage'))
     .AdminContactMessageDetailPage,
 }));
+const LazyAdminPowerRankingsPage = lazy(async () => ({
+  default: (await import('@/pages/AdminPowerRankingsPage'))
+    .AdminPowerRankingsPage,
+}));
+const LazyAdminPowerRankingsEditorPage = lazy(async () => ({
+  default: (await import('@/pages/AdminPowerRankingsEditorPage'))
+    .AdminPowerRankingsEditorPage,
+}));
+const LazyAdminPowerRankingsImportPage = lazy(async () => ({
+  default: (await import('@/pages/AdminPowerRankingsImportPage'))
+    .AdminPowerRankingsImportPage,
+}));
 
 const deferred = (element: ReactNode) => (
   <Suspense fallback={<RouteLoading />}>{element}</Suspense>
@@ -168,6 +183,10 @@ export const appRoutes: RouteObject[] = [
       },
       { path: 'stats', element: deferred(<LazyStatsPage />) },
       { path: 'standings', element: deferred(<LazyStandingsPage />) },
+      {
+        path: 'power-rankings',
+        element: deferred(<LazyPowerRankingsPage />),
+      },
       { path: 'teams', element: deferred(<LazyTeamsPage />) },
       { path: 'teams/:teamId', element: deferred(<LazyTeamHubPage />) },
       {
@@ -296,6 +315,18 @@ export const appRoutes: RouteObject[] = [
               {
                 path: 'contact-messages/:messageId',
                 element: deferred(<LazyAdminContactMessageDetailPage />),
+              },
+              {
+                path: 'power-rankings',
+                element: deferred(<LazyAdminPowerRankingsPage />),
+              },
+              {
+                path: 'power-rankings/import',
+                element: deferred(<LazyAdminPowerRankingsImportPage />),
+              },
+              {
+                path: 'power-rankings/:editionId',
+                element: deferred(<LazyAdminPowerRankingsEditorPage />),
               },
               {
                 element: <RequireAdministrativeRole adminOnly />,
