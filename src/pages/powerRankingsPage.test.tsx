@@ -11,6 +11,12 @@ import {
 import { renderApp } from '@/test/renderApp';
 import type { PowerRankingEditionSummary } from '@/features/powerRankings/types';
 
+// Top5Feature only shows the mascot (e.g. "Eagles") as the linked team name
+// in its light panel -- the city (e.g. "Philadelphia") is rendered
+// separately over the banner photo -- since a team's full `name` is always
+// "<City> <Mascot>".
+const mascotOf = (name: string) => name.trim().split(/\s+/).pop()!;
+
 // Top5Feature reads each featured team's banner from the same public Team
 // Hub overview endpoint the real Team Hub page uses, so every render of the
 // page triggers a handful of `/teams/:id/hub` requests -- stub them out with
@@ -85,10 +91,11 @@ describe('PowerRankingsPage', () => {
       ),
     ).toBeInTheDocument();
 
-    // Top 5 feature: rank 1 team name rendered as a Team Hub link.
+    // Top 5 feature: rank 1 mascot rendered as a Team Hub link, city
+    // rendered separately over the banner photo.
     const topTeam = powerRankingEntryFixtures[0]!.team;
     expect(
-      screen.getByRole('link', { name: topTeam.name }),
+      screen.getByRole('link', { name: mascotOf(topTeam.name) }),
     ).toBeInTheDocument();
 
     // Ranks 6-32 render as rows (27 rows).
@@ -96,9 +103,14 @@ describe('PowerRankingsPage', () => {
       expect(screen.getByText(entry.team.name)).toBeInTheDocument();
     }
 
-    // All 32 teams appear somewhere in the page.
-    for (const entry of powerRankingEntryFixtures) {
+    // All 32 teams appear somewhere in the page (Top 5 splits city/mascot).
+    for (const entry of powerRankingEntryFixtures.slice(5)) {
       expect(screen.getAllByText(entry.team.name).length).toBeGreaterThan(0);
+    }
+    for (const entry of powerRankingEntryFixtures.slice(0, 5)) {
+      expect(
+        screen.getAllByText(mascotOf(entry.team.name)).length,
+      ).toBeGreaterThan(0);
     }
   });
 
@@ -109,7 +121,7 @@ describe('PowerRankingsPage', () => {
 
     for (const entry of powerRankingEntryFixtures.slice(0, 5)) {
       expect(
-        screen.getByRole('link', { name: entry.team.name }),
+        screen.getByRole('link', { name: mascotOf(entry.team.name) }),
       ).toBeInTheDocument();
       expect(screen.getByText(entry.headline)).toBeInTheDocument();
       expect(screen.getByText(entry.summary)).toBeInTheDocument();
@@ -145,7 +157,7 @@ describe('PowerRankingsPage', () => {
 
     const topTeam = powerRankingEntryFixtures[0]!.team;
     const card = screen
-      .getByRole('link', { name: topTeam.name })
+      .getByRole('link', { name: mascotOf(topTeam.name) })
       .closest('.MuiPaper-root') as HTMLElement;
     await waitFor(() =>
       expect(
@@ -183,7 +195,7 @@ describe('PowerRankingsPage', () => {
 
     const topTeam = powerRankingEntryFixtures[0]!.team;
     const card = screen
-      .getByRole('link', { name: topTeam.name })
+      .getByRole('link', { name: mascotOf(topTeam.name) })
       .closest('.MuiPaper-root') as HTMLElement;
     const image = await waitFor(() => {
       const found = card.querySelector(
@@ -209,7 +221,7 @@ describe('PowerRankingsPage', () => {
     await screen.findByRole('heading', { name: '2026 NFL Power Rankings' });
 
     const topTeam = powerRankingEntryFixtures[0]!.team;
-    const link = screen.getByRole('link', { name: topTeam.name });
+    const link = screen.getByRole('link', { name: mascotOf(topTeam.name) });
     expect(link).toHaveAttribute('href', `/teams/${topTeam.id}`);
   });
 

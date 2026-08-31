@@ -1,7 +1,13 @@
-import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
-import ErrorRounded from '@mui/icons-material/ErrorRounded';
-import ExpandLessRounded from '@mui/icons-material/ExpandLessRounded';
-import { Box, Chip, Link, Paper, Stack, Typography } from '@mui/material';
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
+import {
+  Box,
+  Chip,
+  Divider,
+  Link,
+  Paper,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -13,8 +19,11 @@ import { useTeamHubQuery } from '@/features/teamHub/queries';
 import { getTeamThemeTokens } from '@/features/teamVisualIdentity/teamTheme';
 import { getTeamVisualConfig } from '@/features/teamVisualIdentity/teamVisualConfigs';
 
-const STRENGTH_COLOR = '#7CE7B8';
-const CONCERN_COLOR = '#FF9C8C';
+const INK = '#0B111E';
+const SUBTLE_INK = '#475569';
+const PANEL_BACKGROUND = '#F6F7F9';
+const STRENGTH_COLOR = '#16A34A';
+const CONCERN_COLOR = '#EA580C';
 
 // Uses the same public Team Hub overview the Team Hub hero already fetches
 // (`/teams/:id/hub`), so this only adds 5 requests total -- never all 32 --
@@ -24,34 +33,52 @@ const useTeamBanner = (teamId: string) => {
   return query.data?.overview.homepage.banner ?? null;
 };
 
+// A team's public `name` is always "<City> <Mascot>" (e.g. "Philadelphia
+// Eagles"), so the mascot is reliably the final word -- there is no
+// separate city field on the Power Rankings API contract to split on.
+const splitTeamName = (name: string) => {
+  const words = name.trim().split(/\s+/);
+  const mascot = words.pop() ?? name;
+  return { city: words.join(' '), mascot };
+};
+
 const IssueColumn = ({
   title,
   items,
   color,
-  icon,
 }: {
   readonly title: string;
   readonly items: readonly string[];
   readonly color: string;
-  readonly icon: 'check' | 'error';
 }) => {
   if (items.length === 0) return null;
-  const Icon = icon === 'check' ? CheckCircleRounded : ErrorRounded;
   return (
     <Stack spacing={1.25}>
-      <Typography sx={{ color, fontWeight: 800 }}>{title}</Typography>
+      <Typography
+        variant="overline"
+        sx={{ color, fontWeight: 800, letterSpacing: 1 }}
+      >
+        {title}
+      </Typography>
       <Stack spacing={1}>
         {items.map((item) => (
           <Stack
             key={item}
             direction="row"
             spacing={1.25}
-            sx={{ alignItems: 'center' }}
+            sx={{ alignItems: 'flex-start' }}
           >
-            <Icon sx={{ color, fontSize: 20, flexShrink: 0 }} />
-            <Typography sx={{ color: 'rgba(255,255,255,0.9)' }}>
-              {item}
-            </Typography>
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: color,
+                mt: '8px',
+                flexShrink: 0,
+              }}
+            />
+            <Typography sx={{ color: INK }}>{item}</Typography>
           </Stack>
         ))}
       </Stack>
@@ -59,11 +86,12 @@ const IssueColumn = ({
   );
 };
 
-// A full-bleed team-photo card with a frosted glass content panel floating
-// on top -- rank, helmet, team name, movement/tier chips, headline,
-// summary, and a two-column strengths/concerns list. Falls back to the
-// existing team-color gradient plus TeamHelmet when a team has no banner
-// image or it fails to load, so a broken URL never renders visibly broken.
+// A split card: the team's Team Hub banner photo fills the left side, with
+// the city/mascot lockup (plus a faint watermark helmet) overlaid at its
+// bottom; a light editorial panel on the right carries rank, tier/movement,
+// headline, summary, and strengths/concerns. Falls back to the existing
+// team-color gradient plus TeamHelmet when there is no banner image or it
+// fails to load, so a broken URL never renders visibly broken.
 const Top5Row = ({ entry }: { readonly entry: PowerRankingEntry }) => {
   const theme = useTheme();
   const config = getTeamVisualConfig(entry.team.abbreviation);
@@ -73,188 +101,194 @@ const Top5Row = ({ entry }: { readonly entry: PowerRankingEntry }) => {
   const showImage =
     banner?.imageUrl != null && banner.imageUrl !== failedImageUrl;
   const movement = movementDisplay(entry.movement, entry.previousRank);
+  const { city, mascot } = splitTeamName(entry.team.name);
 
   return (
     <Paper
       variant="outlined"
       sx={{
-        position: 'relative',
-        isolation: 'isolate',
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', md: '36% 64%' },
         overflow: 'hidden',
         borderColor: 'appSurfaces.borderStrong',
         borderRadius: 4,
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: { xs: 'auto', md: 420 },
       }}
     >
-      {showImage ? (
+      <Box sx={{ position: 'relative', minHeight: { xs: 240, md: 'auto' } }}>
+        {showImage ? (
+          <Box
+            component="img"
+            src={banner.imageUrl!}
+            alt=""
+            aria-hidden="true"
+            onError={() => setFailedImageUrl(banner.imageUrl)}
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: `${String(banner.focalX)}% ${String(banner.focalY)}%`,
+            }}
+          />
+        ) : (
+          <Box
+            aria-hidden="true"
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              background: `linear-gradient(160deg, ${tokens.primary}, ${tokens.secondary})`,
+            }}
+          />
+        )}
         <Box
-          component="img"
-          src={banner.imageUrl!}
-          alt=""
           aria-hidden="true"
-          onError={() => setFailedImageUrl(banner.imageUrl)}
           sx={{
             position: 'absolute',
             inset: 0,
-            zIndex: -2,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: `${String(banner.focalX)}% ${String(banner.focalY)}%`,
+            background:
+              'linear-gradient(0deg, rgba(4,8,18,0.92) 0%, rgba(4,8,18,0.15) 55%, transparent 75%)',
           }}
         />
-      ) : (
         <Box
           aria-hidden="true"
           sx={{
             position: 'absolute',
-            inset: 0,
-            zIndex: -2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            pr: 6,
-            background: `linear-gradient(160deg, ${tokens.primary}, ${tokens.secondary})`,
+            right: -20,
+            bottom: -30,
+            opacity: 0.16,
+            transform: 'scale(2.4)',
+            transformOrigin: 'bottom right',
           }}
         >
           <TeamHelmet team={entry.team.abbreviation} size="lg" />
         </Box>
-      )}
-      <Box
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: -1,
-          background:
-            'linear-gradient(105deg, rgba(4,8,18,0.35) 0%, rgba(4,8,18,0.1) 62%, transparent 78%)',
-        }}
-      />
-      <Box
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          width: 36,
-          height: 36,
-          borderRadius: '50%',
-          bgcolor: 'rgba(0,0,0,0.5)',
-          color: '#FFFFFF',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <ExpandLessRounded />
-      </Box>
-      <Box sx={{ p: { xs: 2, md: 3.5 }, flex: '1 1 auto', display: 'flex' }}>
-        <Box
-          sx={{
-            width: { xs: '100%', md: '68%' },
-            alignSelf: 'stretch',
-            bgcolor: 'rgba(6,12,24,0.62)',
-            backdropFilter: 'blur(14px)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 3,
-            color: '#FFFFFF',
-            p: { xs: 2.5, md: 3.5 },
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2.5,
-          }}
-        >
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{ alignItems: 'center', flexWrap: 'wrap' }}
-          >
-            <Stack direction="row" sx={{ alignItems: 'flex-end' }}>
-              <Typography
-                sx={{
-                  fontSize: { xs: 26, md: 32 },
-                  fontWeight: 800,
-                  lineHeight: 1,
-                  mb: '4px',
-                }}
-              >
-                #
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: { xs: 48, md: 60 },
-                  fontWeight: 900,
-                  lineHeight: 0.9,
-                }}
-              >
-                {entry.rank}
-              </Typography>
-            </Stack>
-            <TeamHelmet team={entry.team.abbreviation} size="md" decorative />
-            <Stack spacing={1}>
-              <Typography variant="h4" sx={{ fontWeight: 800 }}>
-                <Link
-                  component={RouterLink}
-                  to={`/teams/${entry.team.id}`}
-                  color="inherit"
-                  underline="hover"
-                >
-                  {entry.team.name}
-                </Link>
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                <Chip
-                  size="small"
-                  label={movement.label}
-                  variant="outlined"
-                  sx={{
-                    color: STRENGTH_COLOR,
-                    borderColor: STRENGTH_COLOR,
-                    fontWeight: 700,
-                  }}
-                />
-                <Chip
-                  size="small"
-                  label={entry.tier}
-                  variant="outlined"
-                  sx={{
-                    color: 'rgba(255,255,255,0.85)',
-                    borderColor: 'rgba(255,255,255,0.3)',
-                  }}
-                />
-              </Stack>
-            </Stack>
-          </Stack>
-          <Stack spacing={1.5}>
-            <Typography variant="h3" sx={{ fontWeight: 900 }}>
-              {entry.headline}
-            </Typography>
-            <Typography sx={{ color: 'rgba(255,255,255,0.8)' }}>
-              {entry.summary}
-            </Typography>
-          </Stack>
-          <Box
+        <Stack sx={{ position: 'absolute', left: 20, right: 20, bottom: 18 }}>
+          <Typography
+            variant="overline"
             sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-              columnGap: 4,
-              rowGap: 2,
-              mt: 'auto',
+              color: tokens.secondary,
+              fontWeight: 800,
+              letterSpacing: 2,
             }}
           >
-            <IssueColumn
-              title="Strengths"
-              items={entry.strengths}
-              color={STRENGTH_COLOR}
-              icon="check"
-            />
+            {city}
+          </Typography>
+          <Typography
+            sx={{
+              color: '#FFFFFF',
+              fontWeight: 900,
+              fontStyle: 'italic',
+              lineHeight: 0.95,
+              fontSize: { xs: 34, md: 44 },
+              textTransform: 'uppercase',
+            }}
+          >
+            {mascot}
+          </Typography>
+        </Stack>
+      </Box>
+      <Box
+        sx={{
+          position: 'relative',
+          bgcolor: PANEL_BACKGROUND,
+          color: INK,
+          p: { xs: 3, md: 4 },
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2.5,
+        }}
+      >
+        <ChevronRightRounded
+          aria-hidden="true"
+          sx={{ position: 'absolute', top: 20, right: 20, color: INK }}
+        />
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
+          <Stack direction="row" sx={{ alignItems: 'flex-end' }}>
+            <Typography
+              sx={{
+                fontSize: { xs: 28, md: 34 },
+                fontWeight: 800,
+                color: tokens.secondary,
+                lineHeight: 1,
+                mb: '4px',
+              }}
+            >
+              #
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: { xs: 52, md: 68 },
+                fontWeight: 900,
+                color: INK,
+                lineHeight: 0.9,
+              }}
+            >
+              {entry.rank}
+            </Typography>
+          </Stack>
+          <TeamHelmet team={entry.team.abbreviation} size="lg" decorative />
+          <Stack spacing={1}>
+            <Typography variant="h4" sx={{ fontWeight: 800, color: INK }}>
+              <Link
+                component={RouterLink}
+                to={`/teams/${entry.team.id}`}
+                color="inherit"
+                underline="hover"
+              >
+                {mascot}
+              </Link>
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+              <Chip
+                size="small"
+                label={movement.label}
+                sx={{ bgcolor: INK, color: '#FFFFFF', fontWeight: 700 }}
+              />
+              <Chip
+                size="small"
+                label={entry.tier}
+                variant="outlined"
+                sx={{ color: INK, borderColor: 'rgba(11,17,30,0.25)' }}
+              />
+            </Stack>
+          </Stack>
+        </Stack>
+        <Divider sx={{ borderColor: 'rgba(11,17,30,0.1)' }} />
+        <Stack spacing={1.5}>
+          <Typography variant="h3" sx={{ fontWeight: 900, color: INK }}>
+            {entry.headline}
+          </Typography>
+          <Typography sx={{ color: SUBTLE_INK }}>{entry.summary}</Typography>
+        </Stack>
+        <Divider sx={{ borderColor: 'rgba(11,17,30,0.1)' }} />
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+            columnGap: 4,
+            rowGap: 2,
+          }}
+        >
+          <IssueColumn
+            title="Strengths"
+            items={entry.strengths}
+            color={STRENGTH_COLOR}
+          />
+          <Box
+            sx={{
+              borderLeft: { sm: '1px solid rgba(11,17,30,0.1)' },
+              pl: { sm: 3 },
+            }}
+          >
             <IssueColumn
               title="Concerns"
               items={entry.concerns}
               color={CONCERN_COLOR}
-              icon="error"
             />
           </Box>
         </Box>
