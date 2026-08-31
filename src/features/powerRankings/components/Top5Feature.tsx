@@ -128,7 +128,14 @@ const Top5Row = ({ entry }: { readonly entry: PowerRankingEntry }) => {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              objectPosition: `${String(banner.focalX)}% ${String(banner.focalY)}%`,
+              objectPosition: {
+                xs: `${String(banner.focalX)}% ${String(banner.focalY)}%`,
+                // This panel is narrower than the source photo on desktop,
+                // so bias the crop toward the image's left side (while
+                // still respecting the admin-configured vertical focal
+                // point) to keep more of the player in frame.
+                md: `${String(Math.max(0, banner.focalX - 25))}% ${String(banner.focalY)}%`,
+              },
             }}
           />
         ) : (
