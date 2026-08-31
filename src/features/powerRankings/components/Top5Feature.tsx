@@ -8,7 +8,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { alpha, keyframes, useTheme } from '@mui/material/styles';
 import { useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
@@ -24,6 +24,208 @@ const SUBTLE_INK = '#475569';
 const PANEL_BACKGROUND = '#F6F7F9';
 const STRENGTH_COLOR = '#16A34A';
 const CONCERN_COLOR = '#EA580C';
+
+const energySweep = keyframes`
+  0% {
+    opacity: 0;
+    transform: translate3d(-170%, 0, 0) rotate(12deg);
+  }
+  12% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.72;
+  }
+  88%, 100% {
+    opacity: 0;
+    transform: translate3d(620%, 0, 0) rotate(12deg);
+  }
+`;
+
+const energyStreak = keyframes`
+  0% {
+    opacity: 0;
+    transform: translate3d(-150%, 0, 0) rotate(-11deg) scaleX(0.65);
+  }
+  14% {
+    opacity: 0.4;
+  }
+  52% {
+    opacity: 0.85;
+  }
+  90%, 100% {
+    opacity: 0;
+    transform: translate3d(480%, 0, 0) rotate(-11deg) scaleX(1);
+  }
+`;
+
+const energyFrameFlash = keyframes`
+  0%, 100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.72;
+  }
+`;
+
+const energySparkle = keyframes`
+  0%, 100% {
+    opacity: 0.12;
+    transform: scale(0.35) rotate(0deg);
+  }
+  42% {
+    opacity: 0.95;
+    transform: scale(1) rotate(45deg);
+  }
+  68% {
+    opacity: 0.28;
+    transform: scale(0.55) rotate(68deg);
+  }
+`;
+
+const SPARKLES = [
+  { top: '8%', left: '52%', size: 3, duration: 1.7 },
+  { top: '14%', left: '18%', size: 5, duration: 2.1 },
+  { top: '26%', left: '76%', size: 7, duration: 2.8 },
+  { top: '31%', left: '7%', size: 3, duration: 2.4 },
+  { top: '43%', left: '36%', size: 4, duration: 1.9 },
+  { top: '38%', left: '59%', size: 3, duration: 3.3 },
+  { top: '57%', left: '88%', size: 5, duration: 2.5 },
+  { top: '53%', left: '21%', size: 7, duration: 3.5 },
+  { top: '62%', left: '49%', size: 3, duration: 1.8 },
+  { top: '69%', left: '12%', size: 6, duration: 3.1 },
+  { top: '79%', left: '64%', size: 4, duration: 2.3 },
+  { top: '73%', left: '81%', size: 3, duration: 2 },
+  { top: '88%', left: '32%', size: 4, duration: 2.7 },
+  { top: '91%', left: '93%', size: 3, duration: 3 },
+] as const;
+
+const TeamEnergyOverlay = ({
+  primary,
+  secondary,
+}: {
+  readonly primary: string;
+  readonly secondary: string;
+}) => (
+  <Box
+    aria-hidden="true"
+    data-team-energy="true"
+    sx={{
+      position: 'absolute',
+      inset: 0,
+      overflow: 'hidden',
+      pointerEvents: 'none',
+      opacity: 0.78,
+      transition: 'opacity 220ms ease',
+      // Static color pools help the motion feel native to each photo even
+      // while the travelling light is between passes.
+      background: [
+        `radial-gradient(circle at 14% 74%, ${alpha(primary, 0.3)} 0%, transparent 44%)`,
+        `radial-gradient(circle at 88% 18%, ${alpha(secondary, 0.2)} 0%, transparent 36%)`,
+      ].join(', '),
+      '@media (prefers-reduced-motion: reduce)': {
+        opacity: 0.46,
+      },
+    }}
+  >
+    <Box
+      sx={{
+        position: 'absolute',
+        top: '-35%',
+        bottom: '-35%',
+        left: '-22%',
+        width: '24%',
+        background: `linear-gradient(90deg, transparent 0%, ${alpha(primary, 0.16)} 22%, ${alpha(secondary, 0.76)} 50%, ${alpha(primary, 0.2)} 78%, transparent 100%)`,
+        filter: 'blur(7px)',
+        mixBlendMode: 'screen',
+        willChange: 'transform, opacity',
+        animation: `${energySweep} 4.2s linear infinite`,
+        '@media (prefers-reduced-motion: reduce)': {
+          animation: 'none',
+          display: 'none',
+        },
+      }}
+    />
+    {SPARKLES.map((sparkle, index) => {
+      const color = index % 2 === 0 ? secondary : primary;
+      return (
+        <Box
+          key={`${sparkle.top}-${sparkle.left}`}
+          sx={{
+            position: 'absolute',
+            top: sparkle.top,
+            left: sparkle.left,
+            width: sparkle.size,
+            height: sparkle.size,
+            borderRadius: '50%',
+            bgcolor: color,
+            boxShadow: `0 0 ${String(sparkle.size * 2)}px ${alpha(color, 0.92)}`,
+            mixBlendMode: 'screen',
+            willChange: 'transform, opacity',
+            animation: `${energySparkle} ${String(sparkle.duration)}s ease-in-out infinite`,
+            '&::before, &::after': {
+              content: '""',
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              background: `linear-gradient(90deg, transparent, ${alpha(color, 0.9)}, transparent)`,
+              transform: 'translate(-50%, -50%)',
+            },
+            '&::before': {
+              width: sparkle.size * 5,
+              height: 1,
+            },
+            '&::after': {
+              width: 1,
+              height: sparkle.size * 5,
+            },
+            '@media (prefers-reduced-motion: reduce)': {
+              display: 'none',
+            },
+          }}
+        />
+      );
+    })}
+    <Box
+      sx={{
+        position: 'absolute',
+        top: '36%',
+        left: '-38%',
+        width: '42%',
+        height: 2,
+        borderRadius: 999,
+        background: `linear-gradient(90deg, transparent, ${alpha(secondary, 0.92)} 46%, ${alpha(primary, 0.76)} 72%, transparent)`,
+        boxShadow: [
+          `0 18px 0 ${alpha(primary, 0.34)}`,
+          `0 43px 0 ${alpha(secondary, 0.22)}`,
+          `0 0 13px ${alpha(secondary, 0.72)}`,
+        ].join(', '),
+        mixBlendMode: 'screen',
+        willChange: 'transform, opacity',
+        animation: `${energyStreak} 4.2s linear infinite`,
+        '@media (prefers-reduced-motion: reduce)': {
+          animation: 'none',
+          display: 'none',
+        },
+      }}
+    />
+    <Box
+      sx={{
+        position: 'absolute',
+        inset: 0,
+        boxShadow: [
+          `inset 0 0 0 1px ${alpha(secondary, 0.28)}`,
+          `inset 0 0 32px ${alpha(primary, 0.22)}`,
+        ].join(', '),
+        animation: `${energyFrameFlash} 4.2s ease-in-out infinite`,
+        '@media (prefers-reduced-motion: reduce)': {
+          animation: 'none',
+          opacity: 0.22,
+        },
+      }}
+    />
+  </Box>
+);
 
 // Uses the same public Team Hub overview the Team Hub hero already fetches
 // (`/teams/:id/hub`), so this only adds 5 requests total -- never all 32 --
@@ -112,9 +314,18 @@ const Top5Row = ({ entry }: { readonly entry: PowerRankingEntry }) => {
         overflow: 'hidden',
         borderColor: 'appSurfaces.borderStrong',
         borderRadius: 4,
+        '&:hover [data-team-energy="true"]': {
+          opacity: 1,
+        },
       }}
     >
-      <Box sx={{ position: 'relative', minHeight: { xs: 240, md: 'auto' } }}>
+      <Box
+        sx={{
+          position: 'relative',
+          minHeight: { xs: 240, md: 'auto' },
+          isolation: 'isolate',
+        }}
+      >
         {showImage ? (
           <Box
             component="img"
@@ -134,7 +345,7 @@ const Top5Row = ({ entry }: { readonly entry: PowerRankingEntry }) => {
                 // so bias the crop toward the image's left side (while
                 // still respecting the admin-configured vertical focal
                 // point) to keep more of the player in frame.
-                md: `${String(Math.max(0, banner.focalX - 25))}% ${String(banner.focalY)}%`,
+                md: `${String(Math.max(0, banner.focalX + 25))}% ${String(banner.focalY)}%`,
               },
             }}
           />
@@ -157,6 +368,12 @@ const Top5Row = ({ entry }: { readonly entry: PowerRankingEntry }) => {
               'linear-gradient(0deg, rgba(4,8,18,0.92) 0%, rgba(4,8,18,0.15) 55%, transparent 75%)',
           }}
         />
+        {showImage ? (
+          <TeamEnergyOverlay
+            primary={tokens.primary}
+            secondary={tokens.secondary}
+          />
+        ) : null}
         <Box
           aria-hidden="true"
           sx={{

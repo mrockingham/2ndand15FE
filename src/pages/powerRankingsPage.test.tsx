@@ -166,6 +166,7 @@ describe('PowerRankingsPage', () => {
         ),
       ).not.toBeNull(),
     );
+    expect(card.querySelector('[data-team-energy="true"]')).not.toBeNull();
   });
 
   it('falls back to the team-color treatment when a banner image fails to load', async () => {
@@ -213,6 +214,7 @@ describe('PowerRankingsPage', () => {
         ),
       ).toBeNull(),
     );
+    expect(card.querySelector('[data-team-energy="true"]')).toBeNull();
   });
 
   it('links each team to its Team Hub page', async () => {
