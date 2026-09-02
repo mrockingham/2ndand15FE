@@ -30,13 +30,18 @@ On PowerShell:
 Copy-Item .env.example .env
 ```
 
-The current setting is:
+The supported settings are:
 
 ```env
 VITE_API_BASE_URL=http://localhost:3000/api/v1
+# VITE_SITE_URL=https://www.example.com
+# VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
-Change it for your local backend when necessary. Vite environment values are public browser configuration and must never contain secrets.
+Change the API URL for your local backend when necessary. Set the canonical
+site URL and GA4 measurement ID in the Vercel Production environment before
+launch; see [docs/seo-analytics.md](docs/seo-analytics.md). Vite environment
+values are public browser configuration and must never contain secrets.
 
 ## Local development
 

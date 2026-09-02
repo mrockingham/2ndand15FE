@@ -5,7 +5,10 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { AppHeader } from '@/components/navigation/AppHeader';
 import { MobileNavigation } from '@/components/navigation/MobileNavigation';
 import { SiteFooter } from '@/components/navigation/SiteFooter';
+import { AnalyticsConsentBanner } from '@/features/analytics/AnalyticsConsentBanner';
+import { AnalyticsRouteTracker } from '@/features/analytics/AnalyticsRouteTracker';
 import { GlobalScoreboardBar } from '@/features/games/components/GlobalScoreboardBar';
+import { SeoManager } from '@/features/seo/SeoManager';
 
 const focusedAuthRoutes = new Set([
   '/login',
@@ -34,6 +37,8 @@ export const AppLayout = () => {
 
   return (
     <Box sx={{ minHeight: '100vh' }}>
+      <SeoManager />
+      <AnalyticsRouteTracker />
       <Box
         component="a"
         href="#main-content"
@@ -71,6 +76,7 @@ export const AppLayout = () => {
       </Box>
       {usesFocusedAuthLayout ? null : <SiteFooter />}
       {usesFocusedAuthLayout ? null : <MobileNavigation />}
+      <AnalyticsConsentBanner />
     </Box>
   );
 };

@@ -2,6 +2,10 @@ import { Box, Container, Link, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { BrandLogo } from '@/components/branding/BrandLogo';
+import {
+  isAnalyticsConfigured,
+  requestAnalyticsChoices,
+} from '@/features/analytics/analytics';
 
 const footerLinks = [
   { label: 'News', path: '/news' },
@@ -46,6 +50,23 @@ export const SiteFooter = () => (
               {link.label}
             </Link>
           ))}
+          {isAnalyticsConfigured() ? (
+            <Link
+              component="button"
+              type="button"
+              color="text.secondary"
+              underline="hover"
+              onClick={requestAnalyticsChoices}
+              sx={{
+                border: 0,
+                bgcolor: 'transparent',
+                cursor: 'pointer',
+                p: 0,
+              }}
+            >
+              Analytics choices
+            </Link>
+          ) : null}
         </Stack>
         <Typography variant="body2" color="text.secondary">
           © 2026 2nd &amp; 15
