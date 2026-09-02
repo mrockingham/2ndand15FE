@@ -9,24 +9,60 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
 
+import { OFFICIAL_BRAND_LOGO_URL } from '@/components/branding/BrandLogo';
 import { ArticleHero } from '@/features/articles/components/ArticleHero';
 import { MarkdownContent } from '@/features/articles/components/MarkdownContent';
 import { usePublicArticleQuery } from '@/features/articles/queries';
+import {
+  buildPageTitle,
+  getCanonicalUrl,
+  SITE_NAME,
+  useSeoMetadata,
+} from '@/features/seo/seo';
 import { ApiError } from '@/services/api/apiClient';
 
 export const ArticleDetailPage = () => {
   const { slug = '' } = useParams();
   const query = usePublicArticleQuery(slug);
-  useEffect(() => {
-    if (query.data)
-      document.title = `${query.data.seoTitle ?? query.data.title} | 2nd & 15`;
-    return () => {
-      document.title = '2nd & 15';
+  const metadata = useMemo(() => {
+    const article = query.data;
+    const canonicalPath = `/news/${slug}`;
+    const description =
+      article?.seoDescription ??
+      article?.summary ??
+      'Read NFL news and independent analysis from 2nd & 15.';
+    return {
+      title: buildPageTitle(article?.seoTitle ?? article?.title ?? 'NFL News'),
+      description,
+      canonicalPath,
+      imageUrl: article?.heroImageUrl,
+      type: 'article' as const,
+      publishedAt: article?.publishedAt,
+      structuredData: article
+        ? {
+            '@context': 'https://schema.org',
+            '@type': 'NewsArticle',
+            headline: article.title,
+            description,
+            datePublished: article.publishedAt,
+            mainEntityOfPage: getCanonicalUrl(canonicalPath),
+            ...(article.heroImageUrl ? { image: article.heroImageUrl } : {}),
+            publisher: {
+              '@type': 'Organization',
+              name: SITE_NAME,
+              logo: {
+                '@type': 'ImageObject',
+                url: OFFICIAL_BRAND_LOGO_URL,
+              },
+            },
+          }
+        : undefined,
     };
-  }, [query.data]);
+  }, [query.data, slug]);
+  useSeoMetadata(metadata, query.data !== undefined);
   if (query.isPending)
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>

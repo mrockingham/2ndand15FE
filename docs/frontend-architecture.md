@@ -199,8 +199,11 @@ The exact local/backend URLs are deployment configuration, not hard-coded consta
 - Reserve image dimensions and lazy-load non-critical approved imagery.
 - Avoid loading visualization and fantasy code on the landing/auth routes.
 - Use query cancellation for abandoned navigation where possible.
-- Add error reporting and product analytics only after providers and privacy requirements are chosen; never include tokens or password-reset data.
+- GA4 is the selected product-analytics provider. Follow `seo-analytics.md`:
+  require opt-in consent, track public pathnames only, and never include query
+  strings, tokens, user identifiers, private-route activity, or API data.
 
 ## Decisions deferred safely
 
-The app can be scaffolded before choosing a hosting provider, analytics vendor, error-reporting vendor, or full play-visualizer rendering technology. Those decisions should be made when their milestones begin and recorded as small architecture decisions.
+Error reporting and full play-visualizer rendering technology remain deferred.
+GA4 and Vercel-hosted crawl assets are now recorded in `seo-analytics.md`.
