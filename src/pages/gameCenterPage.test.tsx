@@ -17,6 +17,33 @@ import {
   type GamePlay,
   type GameTeamStats,
 } from '@/features/games/types';
+import { isWebglAvailable } from '@/features/games/three/webgl';
+
+vi.mock('@/features/games/three/webgl', () => ({
+  isWebglAvailable: vi.fn(() => false),
+}));
+
+vi.mock('@/features/games/three/Play3DField', () => ({
+  Play3DField: ({
+    play,
+    replayVersion,
+    reduceMotion,
+    expanded,
+  }: {
+    readonly play: GamePlay;
+    readonly replayVersion: number;
+    readonly reduceMotion: boolean;
+    readonly expanded?: boolean;
+  }) => (
+    <div
+      data-testid="play-3d-field-stub"
+      data-play-id={play.id}
+      data-replay-version={replayVersion}
+      data-reduce-motion={String(reduceMotion)}
+      data-expanded={String(Boolean(expanded))}
+    />
+  ),
+}));
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -523,10 +550,16 @@ describe('Game Center', () => {
       name: 'Play-by-play, newest first',
     });
     expect(within(list).getAllByRole('listitem')).toHaveLength(20);
-    expect(
-      screen.queryByText(turnoverPlayFixture.description),
-    ).not.toBeInTheDocument();
-    expect(document.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
+    // The play deck's outgoing card animates off-screen rather than
+    // unmounting immediately, so give its exit transition a beat.
+    await waitFor(() =>
+      expect(
+        screen.queryByText(turnoverPlayFixture.description),
+      ).not.toBeInTheDocument(),
+    );
+    expect(within(list).getAllByRole('button', { pressed: true })).toHaveLength(
+      1,
+    );
   });
 
   it('keeps the scoreboard visible when a background game refetch fails after a successful load', async () => {
@@ -570,5 +603,114 @@ describe('Game Center', () => {
     expect(
       screen.queryByRole('heading', { name: 'Game unavailable' }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('Game Center 3D play visualization toggle', () => {
+  beforeEach(() => {
+    vi.mocked(isWebglAvailable).mockReturnValue(true);
+  });
+
+  it('defaults to the 2D tactical view', async () => {
+    const live: Game = { ...gameFixture, status: 'IN_PROGRESS' };
+    renderApp(`/games/${live.id}`, {
+      fetchImplementation: buildFetch(live, { plays: gamePlaysFixture }),
+    });
+
+    expect(await screen.findByTestId('tactical-field')).toBeInTheDocument();
+    expect(screen.queryByTestId('play-3d-field-stub')).not.toBeInTheDocument();
+  });
+
+  it('lazy-loads the 3D renderer with the currently selected play when toggled', async () => {
+    const live: Game = { ...gameFixture, status: 'IN_PROGRESS' };
+    renderApp(`/games/${live.id}`, {
+      fetchImplementation: buildFetch(live, { plays: gamePlaysFixture }),
+    });
+    await screen.findByTestId('tactical-field');
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '3D visualization' }),
+    );
+
+    const stub = await screen.findByTestId('play-3d-field-stub');
+    expect(stub).toHaveAttribute('data-play-id', gamePlaysFixture.at(-1)!.id);
+    expect(screen.queryByTestId('tactical-field')).not.toBeInTheDocument();
+  });
+
+  it('passes historical selection, replay, and return-to-live through to the 3D renderer', async () => {
+    const live: Game = { ...gameFixture, status: 'IN_PROGRESS' };
+    renderApp(`/games/${live.id}`, {
+      fetchImplementation: buildFetch(live, { plays: gamePlaysFixture }),
+    });
+    await screen.findByTestId('tactical-field');
+
+    const turnoverRow = screen.getByRole('button', {
+      name: new RegExp(turnoverPlayFixture.description),
+    });
+    await userEvent.click(turnoverRow);
+    expect(screen.getByText('REPLAY')).toBeInTheDocument();
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '3D visualization' }),
+    );
+    let stub = await screen.findByTestId('play-3d-field-stub');
+    expect(stub).toHaveAttribute('data-play-id', turnoverPlayFixture.id);
+    expect(screen.getByText('REPLAY')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Replay' }));
+    stub = await screen.findByTestId('play-3d-field-stub');
+    expect(stub).toHaveAttribute('data-replay-version', '1');
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Return to Live' }),
+    );
+    stub = await screen.findByTestId('play-3d-field-stub');
+    expect(stub).toHaveAttribute('data-play-id', gamePlaysFixture.at(-1)!.id);
+    expect(screen.getByText('LIVE PLAY')).toBeInTheDocument();
+  });
+
+  it('snaps the 3D renderer to reduced motion when preferred', async () => {
+    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    const live: Game = { ...gameFixture, status: 'IN_PROGRESS' };
+    renderApp(`/games/${live.id}`, {
+      fetchImplementation: buildFetch(live, { plays: gamePlaysFixture }),
+    });
+    await screen.findByTestId('tactical-field');
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '3D visualization' }),
+    );
+    const stub = await screen.findByTestId('play-3d-field-stub');
+    expect(stub).toHaveAttribute('data-reduce-motion', 'true');
+  });
+
+  it('falls back to 2D with a notice when WebGL cannot initialize', async () => {
+    vi.mocked(isWebglAvailable).mockReturnValue(false);
+    const live: Game = { ...gameFixture, status: 'IN_PROGRESS' };
+    renderApp(`/games/${live.id}`, {
+      fetchImplementation: buildFetch(live, { plays: gamePlaysFixture }),
+    });
+    await screen.findByTestId('tactical-field');
+
+    await userEvent.click(
+      screen.getByRole('button', { name: '3D visualization' }),
+    );
+
+    expect(
+      await screen.findByText(
+        '3D visualization is unavailable in this browser. Showing the 2D tactical view instead.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('tactical-field')).toBeInTheDocument();
+    expect(screen.queryByTestId('play-3d-field-stub')).not.toBeInTheDocument();
   });
 });

@@ -6,6 +6,7 @@ import {
   heroImageFilter,
   heroImageObjectPosition,
   heroImageTransform,
+  heroScrimGradient,
   heroSlotAlign,
 } from '@/features/homepage/presentation';
 import type {
@@ -110,6 +111,7 @@ export const HomepageHeroSlide = ({
   const orderedBlocks = SLOT_ORDER.map((slot) => bySlot.get(slot)).filter(
     (block): block is HeroContentBlock => block !== undefined,
   );
+  const scrim = heroScrimGradient(slide);
 
   return (
     <Box
@@ -146,23 +148,10 @@ export const HomepageHeroSlide = ({
         sx={{
           position: 'absolute',
           inset: 0,
-          zIndex: -2,
-          background: {
-            xs: 'linear-gradient(180deg, rgba(5,9,20,0.05) 38%, rgba(5,9,20,0.96) 100%)',
-            md: 'linear-gradient(90deg, rgba(5,9,20,0.74) 0%, rgba(5,9,20,0.04) 38%, rgba(5,9,20,0.06) 72%, rgba(5,9,20,0.76) 100%), linear-gradient(180deg, transparent 55%, rgba(5,9,20,0.9) 100%)',
-          },
+          zIndex: -1,
+          background: { xs: scrim.xs, md: scrim.md },
         }}
       />
-      {slide.overlayOpacity > 0 ? (
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            zIndex: -1,
-            bgcolor: `rgba(0,0,0,${String(slide.overlayOpacity / 100)})`,
-          }}
-        />
-      ) : null}
 
       <Stack
         sx={{

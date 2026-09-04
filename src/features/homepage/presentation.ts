@@ -52,6 +52,24 @@ export const heroImageTransform = (
     ? undefined
     : `scale(${String(slide.imageScale / 100)})`;
 
+/** Scales the fixed text-legibility scrim by the slide's `overlayOpacity`,
+ * so that field is the single, admin-visible control for how much an image
+ * is darkened -- at 0 the scrim is fully off and the image renders as
+ * uploaded, at 100 it matches the original always-on gradient. */
+const scrimAlpha = (base: number, overlayOpacity: number) =>
+  Math.round(base * (Math.max(0, Math.min(100, overlayOpacity)) / 100) * 1000) /
+  1000;
+
+export const heroScrimGradient = (
+  slide: Pick<PublicHeroSlide, 'overlayOpacity'>,
+): { readonly xs: string; readonly md: string } => {
+  const a = (base: number) => scrimAlpha(base, slide.overlayOpacity);
+  return {
+    xs: `linear-gradient(180deg, rgba(5,9,20,${String(a(0.05))}) 38%, rgba(5,9,20,${String(a(0.96))}) 100%)`,
+    md: `linear-gradient(90deg, rgba(5,9,20,${String(a(0.74))}) 0%, rgba(5,9,20,${String(a(0.04))}) 38%, rgba(5,9,20,${String(a(0.06))}) 72%, rgba(5,9,20,${String(a(0.76))}) 100%), linear-gradient(180deg, transparent 55%, rgba(5,9,20,${String(a(0.9))}) 100%)`,
+  };
+};
+
 export const heroSlotAlign: Readonly<
   Record<HeroContentSlot, 'left' | 'center' | 'right'>
 > = {

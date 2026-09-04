@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 
 import {
   ExpandedPlayVisualizerDialog,
@@ -10,9 +11,32 @@ import {
   gamePlaysFixture,
   penaltyPlayFixture,
   scoringPlayFixture,
+  turnoverPlayFixture,
 } from '@/test/gamePlaysFixtures';
 
 const noop = () => undefined;
+
+const PlaybackHarness = ({
+  initialPlayId,
+}: {
+  readonly initialPlayId: string;
+}) => {
+  const [playId, setPlayId] = useState(initialPlayId);
+  const play = gamePlaysFixture.find((item) => item.id === playId)!;
+  return (
+    <TacticalPlayVisualizer
+      game={{ ...gameFixture, status: 'IN_PROGRESS' }}
+      play={play}
+      plays={gamePlaysFixture}
+      replayMode={false}
+      replayVersion={0}
+      onReplay={noop}
+      onExpand={noop}
+      onReturnToLive={noop}
+      onSelectPlay={setPlayId}
+    />
+  );
+};
 
 describe('TacticalPlayVisualizer', () => {
   it('renders factual field markers, a pass trajectory, and exactly 11 schematic markers per side', () => {
@@ -20,11 +44,13 @@ describe('TacticalPlayVisualizer', () => {
       <TacticalPlayVisualizer
         game={{ ...gameFixture, status: 'FINAL' }}
         play={scoringPlayFixture}
+        plays={gamePlaysFixture}
         replayMode={false}
         replayVersion={0}
         onReplay={noop}
         onExpand={noop}
         onReturnToLive={noop}
+        onSelectPlay={noop}
       />,
     );
 
@@ -54,11 +80,13 @@ describe('TacticalPlayVisualizer', () => {
           ...penaltyPlayFixture,
           description: `${penaltyPlayFixture.description} - No Play.`,
         }}
+        plays={gamePlaysFixture}
         replayMode
         replayVersion={0}
         onReplay={noop}
         onExpand={noop}
         onReturnToLive={noop}
+        onSelectPlay={noop}
       />,
     );
     expect(screen.getByTestId('play-result-overlay')).toHaveTextContent(
@@ -84,11 +112,13 @@ describe('TacticalPlayVisualizer', () => {
       <TacticalPlayVisualizer
         game={{ ...gameFixture, status: 'FINAL' }}
         play={scoringPlayFixture}
+        plays={gamePlaysFixture}
         replayMode={false}
         replayVersion={0}
         onReplay={noop}
         onExpand={noop}
         onReturnToLive={noop}
+        onSelectPlay={noop}
       />,
     );
     const field = screen.getByTestId('tactical-field');
@@ -105,11 +135,13 @@ describe('TacticalPlayVisualizer', () => {
       <TacticalPlayVisualizer
         game={{ ...gameFixture, status: 'IN_PROGRESS' }}
         play={scoringPlayFixture}
+        plays={gamePlaysFixture}
         replayMode
         replayVersion={0}
         onReplay={onReplay}
         onExpand={noop}
         onReturnToLive={onReturnToLive}
+        onSelectPlay={noop}
       />,
     );
     await user.click(screen.getByRole('button', { name: 'Replay' }));
@@ -138,5 +170,53 @@ describe('TacticalPlayVisualizer', () => {
     expect(
       screen.getByRole('list', { name: 'Play-by-play, newest first' }),
     ).toBeInTheDocument();
+  });
+
+  it('steps through plays with the playback controls, including jumping back to the first play', async () => {
+    const user = userEvent.setup();
+    render(<PlaybackHarness initialPlayId={gamePlaysFixture.at(-1)!.id} />);
+
+    const controls = screen.getByTestId('play-playback-controls');
+    expect(within(controls).getByText('Play 5 of 5')).toBeInTheDocument();
+
+    await user.click(
+      within(controls).getByRole('button', { name: 'Previous play' }),
+    );
+    expect(screen.getByText('Play 4 of 5')).toBeInTheDocument();
+
+    await user.click(
+      within(controls).getByRole('button', {
+        name: 'Start from the beginning',
+      }),
+    );
+    expect(screen.getByText('Play 1 of 5')).toBeInTheDocument();
+    expect(
+      within(controls).getByRole('button', { name: 'Previous play' }),
+    ).toBeDisabled();
+    expect(
+      within(controls).getByRole('button', {
+        name: 'Start from the beginning',
+      }),
+    ).toBeDisabled();
+  });
+
+  it('renders a play deck under the schematic caption with the current play on top', async () => {
+    const user = userEvent.setup();
+    render(<PlaybackHarness initialPlayId={scoringPlayFixture.id} />);
+
+    const deck = screen.getByTestId('play-deck');
+    expect(
+      within(deck).getByText(scoringPlayFixture.description),
+    ).toBeInTheDocument();
+    expect(
+      within(deck).getByText(turnoverPlayFixture.description),
+    ).toBeInTheDocument();
+
+    const backgroundCard = within(deck)
+      .getByText(turnoverPlayFixture.description)
+      .closest('[data-testid="play-deck-card"]')!;
+    await user.click(backgroundCard);
+
+    expect(screen.getByText('Play 2 of 5')).toBeInTheDocument();
   });
 });

@@ -64,13 +64,11 @@ describe('CuratedVideoForm — YouTube checker integration', () => {
   });
 
   it('does not overwrite a title the admin already typed', async () => {
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new Response(JSON.stringify({ title: 'oEmbed title' }), {
-          status: 200,
-        }),
-      );
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ title: 'oEmbed title' }), {
+        status: 200,
+      }),
+    );
     const user = userEvent.setup();
     renderInDialog(
       <CuratedVideoForm

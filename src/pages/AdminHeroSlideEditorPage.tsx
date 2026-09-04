@@ -141,15 +141,21 @@ const ImageControlsCard = ({
       </Stack>
       {(
         [
-          ['imageBrightness', 'Brightness', 25, 150],
-          ['imageContrast', 'Contrast', 50, 150],
-          ['imageSaturation', 'Saturation', 0, 200],
-          ['overlayOpacity', 'Dark Overlay', 0, 100],
-          ['focalPointX', 'Horizontal Focal Point', 0, 100],
-          ['focalPointY', 'Vertical Focal Point', 0, 100],
-          ['imageScale', 'Zoom', 100, 200],
+          ['imageBrightness', 'Brightness', 25, 150, undefined],
+          ['imageContrast', 'Contrast', 50, 150, undefined],
+          ['imageSaturation', 'Saturation', 0, 200, undefined],
+          [
+            'overlayOpacity',
+            'Dark Overlay',
+            0,
+            100,
+            'Controls all image darkening, including the gradient behind the text. Set to 0 to show the image with no darkening effects.',
+          ],
+          ['focalPointX', 'Horizontal Focal Point', 0, 100, undefined],
+          ['focalPointY', 'Vertical Focal Point', 0, 100, undefined],
+          ['imageScale', 'Zoom', 100, 200, undefined],
         ] as const
-      ).map(([field, label, min, max]) => (
+      ).map(([field, label, min, max, helperText]) => (
         <Box key={field}>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             {label}: {fields[field]}
@@ -161,6 +167,11 @@ const ImageControlsCard = ({
             max={max}
             onChange={(_, value) => onChange({ [field]: value as number })}
           />
+          {helperText === undefined ? null : (
+            <Typography variant="caption" color="text.secondary">
+              {helperText}
+            </Typography>
+          )}
         </Box>
       ))}
     </Stack>
