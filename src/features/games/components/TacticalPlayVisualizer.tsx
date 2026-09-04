@@ -18,7 +18,11 @@ import {
 } from '@mui/material';
 import { memo, useId, useMemo } from 'react';
 
+import { Play3DBoundary } from '@/features/games/components/Play3DBoundary';
+import { PlayDeck } from '@/features/games/components/PlayDeck';
+import { PlaybackControls } from '@/features/games/components/PlaybackControls';
 import { PlayFeed } from '@/features/games/components/PlayFeed';
+import { usePlayPlaybackNavigation } from '@/features/games/components/usePlayPlaybackNavigation';
 import {
   buildPlayAnimation,
   type FieldPoint,
@@ -568,22 +572,40 @@ const PlaySummary = ({ play }: { readonly play: GamePlay }) => {
 export const TacticalPlayVisualizer = ({
   game,
   play,
+  plays,
   replayMode,
   replayVersion,
   onReplay,
   onExpand,
   onReturnToLive,
+  onSelectPlay,
 }: {
   readonly game: Game;
   readonly play: GamePlay;
+  readonly plays: readonly GamePlay[];
   readonly replayMode: boolean;
   readonly replayVersion: number;
   readonly onReplay: () => void;
   readonly onExpand: () => void;
   readonly onReturnToLive: () => void;
+  readonly onSelectPlay: (playId: string) => void;
 }) => {
   const { offense, defense } = playTeams(game, play);
   const isLive = game.status === 'IN_PROGRESS' || game.status === 'HALFTIME';
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  const {
+    orderedPlays,
+    currentIndex,
+    hasPrevious,
+    hasNext,
+    isPlaying,
+    stackDirection,
+    goToFirst,
+    goToPrevious,
+    goToNext,
+    jumpTo,
+    togglePlaying,
+  } = usePlayPlaybackNavigation({ play, plays, reduceMotion, onSelectPlay });
   return (
     <Stack spacing={1.5}>
       <Stack
@@ -627,11 +649,29 @@ export const TacticalPlayVisualizer = ({
         defense={defense}
         replayVersion={replayVersion}
       />
+      <PlaybackControls
+        position={currentIndex === -1 ? 0 : currentIndex + 1}
+        total={orderedPlays.length}
+        hasPrevious={hasPrevious}
+        hasNext={hasNext}
+        isPlaying={isPlaying}
+        onFirst={goToFirst}
+        onPrevious={goToPrevious}
+        onNext={goToNext}
+        onTogglePlay={togglePlaying}
+      />
       <PlaySummary play={play} />
       <Typography variant="caption" color="text.secondary">
         Field position and play result use stored play-by-play data. Formation
         and player movement are schematic.
       </Typography>
+      <PlayDeck
+        plays={orderedPlays}
+        currentPlayId={play.id}
+        direction={stackDirection}
+        reduceMotion={reduceMotion}
+        onSelectPlay={jumpTo}
+      />
     </Stack>
   );
 };
@@ -644,10 +684,12 @@ export const ExpandedPlayVisualizerDialog = ({
   selectedPlayId,
   replayMode,
   replayVersion,
+  mode = '2D',
   onClose,
   onSelectPlay,
   onReplay,
   onReturnToLive,
+  onUnavailable3D,
 }: {
   readonly open: boolean;
   readonly game: Game;
@@ -656,13 +698,16 @@ export const ExpandedPlayVisualizerDialog = ({
   readonly selectedPlayId: string | null;
   readonly replayMode: boolean;
   readonly replayVersion: number;
+  readonly mode?: '2D' | '3D';
   readonly onClose: () => void;
   readonly onSelectPlay: (playId: string) => void;
   readonly onReplay: () => void;
   readonly onReturnToLive: () => void;
+  readonly onUnavailable3D?: () => void;
 }) => {
   const { offense, defense } = playTeams(game, play);
   const isLive = game.status === 'IN_PROGRESS' || game.status === 'HALFTIME';
+  const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
   return (
     <Dialog
       open={open}
@@ -732,13 +777,25 @@ export const ExpandedPlayVisualizerDialog = ({
                 </Button>
               ) : null}
             </Stack>
-            <TacticalField
-              play={play}
-              offense={offense}
-              defense={defense}
-              replayVersion={replayVersion}
-              expanded
-            />
+            {mode === '3D' ? (
+              <Play3DBoundary
+                play={play}
+                offense={offense}
+                defense={defense}
+                replayVersion={replayVersion}
+                expanded
+                reduceMotion={reduceMotion}
+                onUnavailable={() => onUnavailable3D?.()}
+              />
+            ) : (
+              <TacticalField
+                play={play}
+                offense={offense}
+                defense={defense}
+                replayVersion={replayVersion}
+                expanded
+              />
+            )}
             <PlaySummary play={play} />
           </Stack>
           <Box

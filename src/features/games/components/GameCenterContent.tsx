@@ -5,6 +5,8 @@ import {
   Button,
   CircularProgress,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -13,6 +15,7 @@ import {
   ExpandedPlayVisualizerDialog,
   TacticalPlayVisualizer,
 } from '@/features/games/components/TacticalPlayVisualizer';
+import { TacticalPlayVisualizer3D } from '@/features/games/components/TacticalPlayVisualizer3D';
 import { FreshnessIndicator } from '@/features/games/components/FreshnessIndicator';
 import { GameCenterModule } from '@/features/games/components/GameCenterModule';
 import { GameCenterRefreshButton } from '@/features/games/components/GameCenterRefreshButton';
@@ -63,6 +66,9 @@ export const GameCenterContent = ({
   const [selectedPlayId, setSelectedPlayId] = useState<string | null>(null);
   const [replayVersion, setReplayVersion] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [visualizationMode, setVisualizationMode] = useState<'2D' | '3D'>('2D');
+  const [visualization3DUnavailable, setVisualization3DUnavailable] =
+    useState(false);
   const [previousPlays, setPreviousPlays] = useState(plays);
   if (plays !== previousPlays) {
     const previousSelectedPlay =
@@ -229,15 +235,63 @@ export const GameCenterContent = ({
         <Stack spacing={2} sx={{ minWidth: 0, order: { xs: 1, lg: 2 } }}>
           {latestPlay === null ? null : (
             <GameCenterModule title="Play Visualization" eyebrow="On the Field">
-              <TacticalPlayVisualizer
-                game={game}
-                play={selectedPlay ?? latestPlay}
-                replayMode={replayMode}
-                replayVersion={replayVersion}
-                onReplay={() => setReplayVersion((version) => version + 1)}
-                onExpand={() => setExpanded(true)}
-                onReturnToLive={() => setSelectedPlayId(null)}
-              />
+              <Stack spacing={1.5}>
+                <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
+                  <ToggleButtonGroup
+                    size="small"
+                    exclusive
+                    value={visualizationMode}
+                    onChange={(_event, next: '2D' | '3D' | null) => {
+                      if (next === null) return;
+                      setVisualization3DUnavailable(false);
+                      setVisualizationMode(next);
+                    }}
+                    aria-label="Play visualization dimension"
+                  >
+                    <ToggleButton value="2D" aria-label="2D visualization">
+                      2D
+                    </ToggleButton>
+                    <ToggleButton value="3D" aria-label="3D visualization">
+                      3D
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Stack>
+                {visualization3DUnavailable ? (
+                  <Alert severity="warning">
+                    3D visualization is unavailable in this browser. Showing the
+                    2D tactical view instead.
+                  </Alert>
+                ) : null}
+                {visualizationMode === '3D' && !visualization3DUnavailable ? (
+                  <TacticalPlayVisualizer3D
+                    game={game}
+                    play={selectedPlay ?? latestPlay}
+                    plays={plays}
+                    replayMode={replayMode}
+                    replayVersion={replayVersion}
+                    onReplay={() => setReplayVersion((version) => version + 1)}
+                    onExpand={() => setExpanded(true)}
+                    onReturnToLive={() => setSelectedPlayId(null)}
+                    onSelectPlay={handleSelectPlay}
+                    onUnavailable={() => {
+                      setVisualization3DUnavailable(true);
+                      setVisualizationMode('2D');
+                    }}
+                  />
+                ) : (
+                  <TacticalPlayVisualizer
+                    game={game}
+                    play={selectedPlay ?? latestPlay}
+                    plays={plays}
+                    replayMode={replayMode}
+                    replayVersion={replayVersion}
+                    onReplay={() => setReplayVersion((version) => version + 1)}
+                    onExpand={() => setExpanded(true)}
+                    onReturnToLive={() => setSelectedPlayId(null)}
+                    onSelectPlay={handleSelectPlay}
+                  />
+                )}
+              </Stack>
             </GameCenterModule>
           )}
           <GameCenterModule title="Play-by-Play" eyebrow="Gamecast">
@@ -281,10 +335,15 @@ export const GameCenterContent = ({
           selectedPlayId={selectedPlay.id}
           replayMode={replayMode}
           replayVersion={replayVersion}
+          mode={visualization3DUnavailable ? '2D' : visualizationMode}
           onClose={() => setExpanded(false)}
           onSelectPlay={handleSelectPlay}
           onReplay={() => setReplayVersion((version) => version + 1)}
           onReturnToLive={() => setSelectedPlayId(null)}
+          onUnavailable3D={() => {
+            setVisualization3DUnavailable(true);
+            setVisualizationMode('2D');
+          }}
         />
       )}
     </Stack>
